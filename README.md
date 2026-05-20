@@ -1,11 +1,11 @@
 # Poly Trader
 
-Automated BTC 5-minute Polymarket trading dashboard with **exhaustion fade** strategy (ported from [shine-trader](references/shine-trader)), Binance 5m data, and paper/live modes.
+Automated BTC 5-minute Polymarket trading dashboard with **BoS flow** strategy (`flow_active` preset from [trading-cursor-models](docs/bos_flow/STRATEGY.md)), Binance 5m data, and paper/live modes.
 
 ## Stack
 
 - **Backend:** ASP.NET Core 10, SQLite, SignalR, hosted trading engine
-- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS 4, Lightweight Charts
+- **Frontend:** React 19, TypeScript, Vite, Tailwind CSS 4, [shadcn/ui](https://ui.shadcn.com) (Base UI), Lightweight Charts
 
 ## Prerequisites
 
@@ -59,13 +59,16 @@ Open http://localhost:5173
 
 ## Strategy
 
-Backend runs `BreakOfStructureAnalyzer` + exhaustion fade via `BetResolver` (same logic as `client/src/utils/chart/`). On each closed Binance 5m candle the engine: (1) settles the open bet if one was signaled at that bar’s open, (2) opens a new bet for the **next** candle only when exhaustion fade signals — matching the chart backtest.
+Backend runs **bos_flow** via `BosFlowSignals` + `BetResolver` (same logic as `client/src/utils/chart/bosFlowSignals.ts`). On each closed Binance 5m candle the engine: (1) settles the bet signaled at that bar’s open, (2) opens a new bet for the **next** candle when bos_flow signals.
+
+Defaults: `flow_active` preset, 1% compound stake capped at $500, 1.8% entry fee. See [docs/bos_flow/STRATEGY.md](docs/bos_flow/STRATEGY.md).
 
 ## Project layout
 
 ```
 src/PolyTrader.Api/          REST + SignalR
-src/PolyTrader.Core/         Strategy + domain
+src/PolyTrader.Core/         Bos flow strategy + domain
+docs/bos_flow/               Strategy spec (ported)
 src/PolyTrader.Infrastructure/ EF, Binance WS, Polymarket
 client/                      React UI
 tests/PolyTrader.Core.Tests/ Strategy golden tests

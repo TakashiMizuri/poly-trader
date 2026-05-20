@@ -1,198 +1,160 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   api,
   type BalanceResponse,
-  type ConnectivityStatus,
   type EngineSettings,
-  type MarketWindow,
 } from '@/api/client'
-import { createTradingConnection } from '@/api/signalR'
-import { EngineControls } from '@/components/EngineControls'
+import { usePoll } from '@/api/hooks'
+import { useTradingLiveEvent } from '@/api/tradingLive'
+import { PageCard } from '@/components/app-ui'
+import { DashboardBalancePanel } from '@/components/DashboardBalancePanel'
+import { DashboardEnginePanel } from '@/components/DashboardEnginePanel'
 import { LiveChart } from '@/components/LiveChart'
-import { MarketProgressBar } from '@/components/MarketProgressBar'
-import { TradeHistoryTable } from '@/components/TradeHistoryTable'
+import { PositionsPanel } from '@/components/PositionsPanel'
 import { useBinanceLiveCandles } from '@/hooks/useBinanceLiveCandles'
+import { clearPollCache } from '@/api/poll-cache'
+import { GLOBAL_RESET_EVENT } from '@/lib/appReset'
+
+type AccountSnapshot = {
+  settings: EngineSettings
+  balance: BalanceResponse
+}
+
+type ChartMarker = { time: number; side: string; won?: boolean | null }
+
+async function fetchAccount(): Promise<AccountSnapshot> {
+  const [settings, balance] = await Promise.all([
+    api<EngineSettings>('/api/engine'),
+    api<BalanceResponse>('/api/balance'),
+  ])
+  return { settings, balance }
+}
 
 export function DashboardPage() {
-  const [settings, setSettings] = useState<EngineSettings | null>(null)
-  const [balance, setBalance] = useState<BalanceResponse | null>(null)
-  const [history, setHistory] = useState<Array<{ time: number; value: number }>>([])
-  const [connectivity, setConnectivity] = useState<ConnectivityStatus | null>(null)
   const [tradeRefreshKey, setTradeRefreshKey] = useState(0)
 
-  const { candles } = useBinanceLiveCandles({
-    symbol: 'BTCUSDT',
-    interval: '5m',
-    liveRefreshMs: 1000,
+  const accountPoll = usePoll(useCallback(() => fetchAccount(), []), false, {
+    cacheKey: 'api/account',
   })
-  const [market, setMarket] = useState<MarketWindow | null>(null)
-  const [markers, setMarkers] = useState<
-    Array<{ time: number; side: string; won?: boolean | null }>
-  >([])
 
-  const paperAccountId = balance?.paperAccountId ?? settings?.activePaperAccountId
+  const settings = accountPoll.data?.settings ?? null
+  const balance = accountPoll.data?.balance ?? null
 
-  const refreshAccount = useCallback(async () => {
-    const [s, b, c] = await Promise.all([
-      api<EngineSettings>('/api/engine'),
-      api<BalanceResponse>('/api/balance'),
-      api<ConnectivityStatus>('/api/health/connectivity'),
-    ])
-    setSettings(s)
-    setBalance(b)
-    setConnectivity(c)
+  const paperAccountId =
+    balance?.paperAccountId ?? settings?.activePaperAccountId
+  const tradingMode = balance?.mode ?? settings?.tradingMode
 
-    const accountId = b.paperAccountId ?? s.activePaperAccountId
-    const historyPath =
-      accountId != null
-        ? `/api/balance/history?paperAccountId=${accountId}`
-        : '/api/balance/history'
-    setHistory(await api<Array<{ time: number; value: number }>>(historyPath))
-  }, [])
+  const markersCacheKey = useMemo(
+    () => `api/trades/chart-markers:${paperAccountId ?? 'all'}`,
+    [paperAccountId],
+  )
 
-  const loadMarket = useCallback(async () => {
-    setMarket(await api<MarketWindow>('/api/market/active'))
-  }, [])
-
-  const loadMarkers = useCallback(async () => {
+  const fetchMarkers = useCallback(async (): Promise<ChartMarker[]> => {
     const path =
       paperAccountId != null
         ? `/api/trades/chart-markers?paperAccountId=${paperAccountId}`
         : '/api/trades/chart-markers'
-    const rows = await api<
-      Array<{ time: number; side: string; won?: boolean | null }>
-    >(path)
-    setMarkers(rows)
+    return api<ChartMarker[]>(path)
   }, [paperAccountId])
 
-  useEffect(() => {
-    void refreshAccount()
-    void loadMarket()
-    void loadMarkers()
+  const markersPoll = usePoll(fetchMarkers, false, {
+    cacheKey: markersCacheKey,
+  })
+  const markers = markersPoll.data ?? []
 
-    const conn = createTradingConnection()
-    conn.on('BalanceUpdated', () => void refreshAccount())
-    conn.on('EngineStatus', () => void refreshAccount())
-    conn.on('MarketWindowUpdated', () => void loadMarket())
-    conn.on('TradePlaced', () => {
+  const refreshAccount = accountPoll.refresh
+  const loadMarkers = markersPoll.refresh
+
+  const { candles, status: candleStatus } = useBinanceLiveCandles({
+    symbol: 'BTCUSDT',
+    interval: '5m',
+    liveRefreshMs: 1000,
+  })
+
+  const chartLoading =
+    candles.length === 0 && candleStatus !== 'error'
+
+  const feedCacheKey = useMemo(() => {
+    const params = new URLSearchParams({ limit: '50' })
+    if (tradingMode) params.set('mode', tradingMode)
+    if (tradingMode === 'Paper' && paperAccountId != null) {
+      params.set('paperAccountId', String(paperAccountId))
+    }
+    return `api/trades/feed:${params.toString()}`
+  }, [paperAccountId, tradingMode])
+
+  useEffect(() => {
+    const onGlobalReset = () => {
+      clearPollCache(feedCacheKey)
+      void refreshAccount()
       void loadMarkers()
       setTradeRefreshKey((k) => k + 1)
-      void refreshAccount()
-    })
-    conn.start().catch(console.error)
-
-    const marketPoll = setInterval(() => void loadMarket(), 5000)
-    return () => {
-      clearInterval(marketPoll)
-      void conn.stop()
     }
-  }, [refreshAccount, loadMarket, loadMarkers])
+    window.addEventListener(GLOBAL_RESET_EVENT, onGlobalReset)
+    return () => window.removeEventListener(GLOBAL_RESET_EVENT, onGlobalReset)
+  }, [feedCacheKey, refreshAccount, loadMarkers])
 
-  const isPaper = (balance?.mode ?? settings?.tradingMode) === 'Paper'
-  const displayBalance =
-    balance?.paperBalance ??
-    settings?.activePaperBalance ??
-    null
+  const bumpTrades = useCallback(() => {
+    clearPollCache(feedCacheKey)
+    setTradeRefreshKey((k) => k + 1)
+  }, [feedCacheKey])
 
-  const maxBalance = Math.max(...history.map((x) => x.value), 1)
+  useTradingLiveEvent('BalanceUpdated', () => void refreshAccount())
+  useTradingLiveEvent('EngineStatus', () => {
+    void refreshAccount()
+    bumpTrades()
+  })
+  useTradingLiveEvent('MarketWindowUpdated', bumpTrades)
+  useTradingLiveEvent('TradePlaced', () => {
+    void loadMarkers()
+    bumpTrades()
+    void refreshAccount()
+  })
+  useTradingLiveEvent('CandleClosed', bumpTrades)
 
   return (
-    <div className="grid h-full w-full grid-rows-[auto_minmax(0,1fr)] gap-2 p-2">
-      <div className="space-y-2">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          <StatCard
-            label={
-              isPaper && balance?.paperAccountName
-                ? `Paper: ${balance.paperAccountName}`
-                : 'Paper balance'
-            }
-            value={
-              displayBalance != null ? `$${displayBalance.toFixed(2)}` : '—'
-            }
-            hint={isPaper ? 'Simulated · live Polymarket prices' : undefined}
-          />
-          <StatCard
-            label="Live USDC"
-            value={
-              balance?.liveBalance != null
-                ? `$${balance.liveBalance.toFixed(2)}`
-                : '—'
-            }
-          />
-          <StatCard
-            label="Mode"
-            value={balance?.mode ?? settings?.tradingMode ?? '—'}
-          />
-        </div>
-        {connectivity && (
-          <div className="rounded-lg border border-[#1e2633] bg-[#12161e] px-3 py-2 text-sm">
-            <ul className="flex flex-wrap gap-x-6 gap-y-1 text-[#9ca3af]">
-              <li>Binance: {connectivity.binance}</li>
-              <li>Polymarket WS: {connectivity.polymarketMarketWs}</li>
-              <li>CLOB: {connectivity.polymarketClob}</li>
-            </ul>
-          </div>
-        )}
+    <div className="flex h-full min-h-0 w-full flex-col gap-3 p-3 md:gap-4 md:p-4">
+      <div className="flex min-h-[7.25rem] shrink-0 flex-col gap-3 sm:flex-row sm:items-stretch">
+        <DashboardBalancePanel
+          settings={settings}
+          balance={balance}
+          tradingMode={tradingMode}
+          onUpdated={refreshAccount}
+        />
+        <DashboardEnginePanel
+          settings={settings}
+          onUpdated={refreshAccount}
+        />
       </div>
 
-      <div className="grid min-h-0 gap-2 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="flex min-h-0 min-w-0 flex-col gap-2 overflow-hidden">
-          <MarketProgressBar market={market} />
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[#1e2633] bg-[#12161e]">
-            <LiveChart candles={candles} timeframe="5m" engineMarkers={markers} />
-          </div>
-        </div>
+      <section className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1.7fr)_minmax(280px,1fr)]">
+        <PageCard
+          title="BTC / USDT"
+          fill
+          className="min-h-[min(52vh,480px)] lg:min-h-0"
+          contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+          action={
+            <span className="font-mono text-xs tabular-nums text-muted-foreground">
+              5m · Binance
+            </span>
+          }
+        >
+          <LiveChart
+            candles={candles}
+            timeframe="5m"
+            engineMarkers={markers}
+            loading={chartLoading}
+            className="min-h-0 flex-1"
+          />
+        </PageCard>
 
-        <aside className="flex min-h-0 flex-col gap-2 overflow-hidden">
-          <EngineControls settings={settings} onUpdated={refreshAccount} />
-          <div className="shrink-0 rounded-xl border border-[#1e2633] bg-[#12161e] p-4">
-            <h2 className="mb-3 text-sm font-medium">Balance history</h2>
-            <div className="flex h-20 items-end gap-0.5">
-              {history.length === 0 ? (
-                <p className="text-sm text-[#9ca3af]">No history yet</p>
-              ) : (
-                history.slice(-60).map((p) => (
-                  <div
-                    key={p.time}
-                    className="flex-1 bg-[#3dd6c6]/60"
-                    style={{
-                      height: `${Math.max(4, (p.value / maxBalance) * 100)}%`,
-                    }}
-                    title={`$${p.value.toFixed(2)}`}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-          <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden rounded-xl border border-[#1e2633] bg-[#12161e] p-3">
-            <h2 className="shrink-0 text-sm font-medium">Trade history</h2>
-            <TradeHistoryTable
-              refreshKey={tradeRefreshKey}
-              paperAccountId={paperAccountId}
-              tradingMode={balance?.mode ?? settings?.tradingMode}
-              className="min-h-0 flex-1 overflow-y-auto pr-1"
-            />
-          </div>
-        </aside>
-      </div>
-    </div>
-  )
-}
-
-function StatCard({
-  label,
-  value,
-  hint,
-}: {
-  label: string
-  value: string
-  hint?: string
-}) {
-  return (
-    <div className="rounded-lg border border-[#1e2633] bg-[#12161e] px-3 py-2">
-      <p className="text-xs text-[#9ca3af]">{label}</p>
-      <p className="mt-0.5 text-lg font-semibold text-[#3dd6c6]">{value}</p>
-      {hint && <p className="mt-0.5 text-xs text-[#6b7280]">{hint}</p>}
+        <PositionsPanel
+          refreshKey={tradeRefreshKey}
+          paperAccountId={paperAccountId}
+          tradingMode={tradingMode}
+          className="min-h-[min(40vh,360px)] lg:min-h-0"
+        />
+      </section>
     </div>
   )
 }

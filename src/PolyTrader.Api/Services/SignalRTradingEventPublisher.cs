@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using PolyTrader.Core.Abstractions;
+using PolyTrader.Core.Strategy;
 using PolyTrader.Api.Hubs;
 using PolyTrader.Infrastructure.Entities;
 
@@ -38,9 +39,20 @@ public static class TradeMapper
         mode = t.Mode.ToString(),
         t.StakeUsd,
         t.EntryPrice,
+        entryShares = TrendBetStrategySimulator.ComputeEntryShares(t.StakeUsd, t.EntryPrice),
         t.Won,
         t.PnlUsd,
         t.PaperAccountId,
-        t.CreatedAt
+        t.PolymarketOrderId,
+        market = t.Market == null
+            ? null
+            : new
+            {
+                t.Market.Title,
+                t.Market.Slug,
+                windowStartUtc = t.Market.WindowStartUtc,
+                windowEndUtc = t.Market.WindowEndUtc,
+            },
+        t.CreatedAt,
     };
 }

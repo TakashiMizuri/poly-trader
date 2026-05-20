@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PolyTrader.Infrastructure.Data;
+using PolyTrader.Infrastructure.Entities;
+using PolyTrader.Infrastructure.Polymarket;
 
 namespace PolyTrader.Api.Controllers;
 
@@ -8,41 +8,50 @@ namespace PolyTrader.Api.Controllers;
 [Route("api/[controller]")]
 public sealed class MarketController : ControllerBase
 {
-    private readonly PolyTraderDbContext _db;
+    private readonly IPolymarketGammaService _gamma;
 
-    public MarketController(PolyTraderDbContext db) => _db = db;
+    public MarketController(IPolymarketGammaService gamma) => _gamma = gamma;
 
     [HttpGet("active")]
     public async Task<ActionResult<object>> Active(CancellationToken ct)
     {
-        var market = await _db.Markets
-            .AsNoTracking()
-            .Where(m => m.IsActive)
-            .OrderByDescending(m => m.UpdatedAt)
-            .FirstOrDefaultAsync(ct);
-
-        if (market == null)
+        var windows = await _gamma.DiscoverBtc5mWindowsAsync(ct);
+        if (windows.Current == null && windows.NextScheduled == null)
         {
             return Ok(new { active = false });
         }
 
         var now = DateTime.UtcNow;
+        return Ok(new
+        {
+            active = windows.Current != null,
+            current = MapWindow(windows.Current, now),
+            next = MapWindow(windows.NextScheduled, now),
+        });
+    }
+
+    private static object? MapWindow(MarketEntity? market, DateTime now)
+    {
+        if (market == null) return null;
+
         var start = market.WindowStartUtc ?? now;
         var end = market.WindowEndUtc ?? start.AddMinutes(5);
         var totalMs = (end - start).TotalMilliseconds;
-        var elapsedMs = Math.Clamp((now - start).TotalMilliseconds, 0, totalMs);
-        var progress = totalMs > 0 ? elapsedMs / totalMs * 100 : 0;
+        var windowStarted = now >= start;
+        var elapsedMs = windowStarted
+            ? Math.Clamp((now - start).TotalMilliseconds, 0, totalMs)
+            : 0;
+        var progress = windowStarted && totalMs > 0 ? elapsedMs / totalMs * 100 : 0;
 
-        return Ok(new
+        return new
         {
-            active = true,
             market.Title,
             market.Slug,
             market.ConditionId,
             startAt = start,
             endAt = end,
-            now,
-            progressPercent = progress
-        });
+            windowStarted,
+            progressPercent = progress,
+        };
     }
 }

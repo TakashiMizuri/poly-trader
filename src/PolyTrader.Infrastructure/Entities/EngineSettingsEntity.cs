@@ -1,4 +1,5 @@
 using PolyTrader.Core.Models;
+using PolyTrader.Core.Strategy;
 
 namespace PolyTrader.Infrastructure.Entities;
 
@@ -9,7 +10,20 @@ public sealed class EngineSettingsEntity
     public int? ActivePaperAccountId { get; set; }
     public PaperAccountEntity? ActivePaperAccount { get; set; }
     public bool IsRunning { get; set; }
+    /// <summary>Stake sizing applied while the engine is running (updated on start when pending differs).</summary>
+    public BetStakeMode BetStakeMode { get; set; } = BetStakeMode.Percent;
+    /// <summary>Fixed USD stake when <see cref="BetStakeMode"/> is Fixed.</summary>
     public double BetStakeUsd { get; set; } = 1;
-    public double CommissionPercent { get; set; }
+    /// <summary>Percent of balance per bet when mode is Percent (3 = 3%).</summary>
+    public double BetStakePercent { get; set; } = 3;
+    /// <summary>Cap stake in USD; null = no cap.</summary>
+    public double? MaxBetStakeUsd { get; set; } = 500;
+
+    /// <summary>UI draft; synced to active when engine is stopped or on start.</summary>
+    public BetStakeMode PendingBetStakeMode { get; set; } = BetStakeMode.Percent;
+    public double PendingBetStakeUsd { get; set; } = 1;
+    public double PendingBetStakePercent { get; set; } = 3;
+    public double? PendingMaxBetStakeUsd { get; set; } = 500;
+    public double CommissionPercent { get; set; } = 1.8;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

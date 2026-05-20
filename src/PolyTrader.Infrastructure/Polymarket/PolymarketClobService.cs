@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
@@ -10,6 +11,10 @@ public interface IPolymarketClobService
 {
     bool IsConfigured { get; }
     Task<double?> GetCollateralBalanceAsync(CancellationToken ct = default);
+    /// <summary>Best ask (market buy) from CLOB REST.</summary>
+    Task<double?> TryGetBuyPriceAsync(string tokenId, CancellationToken ct = default);
+    /// <summary>Midpoint from CLOB REST.</summary>
+    Task<double?> TryGetMidPriceAsync(string tokenId, CancellationToken ct = default);
     Task<string?> PlaceMarketOrderAsync(string tokenId, double sizeUsd, CancellationToken ct = default);
 }
 
@@ -53,6 +58,87 @@ public sealed class PolymarketClobService : IPolymarketClobService
             return null;
         }
     }
+
+    public async Task<double?> TryGetBuyPriceAsync(string tokenId, CancellationToken ct = default) =>
+        await TryGetClobPriceAsync(tokenId, "BUY", ct);
+
+    public async Task<double?> TryGetMidPriceAsync(string tokenId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(tokenId))
+        {
+            return null;
+        }
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            var url = $"{ClobHost}/midpoint?token_id={Uri.EscapeDataString(tokenId)}";
+            using var doc = await JsonDocument.ParseAsync(
+                await client.GetStreamAsync(url, ct),
+                cancellationToken: ct);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("mid", out var mid))
+            {
+                return ParsePriceElement(mid);
+            }
+
+            if (root.TryGetProperty("mid_price", out var midPrice))
+            {
+                return ParsePriceElement(midPrice);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "CLOB midpoint fetch failed for {TokenId}", tokenId);
+        }
+
+        return null;
+    }
+
+    private async Task<double?> TryGetClobPriceAsync(
+        string tokenId,
+        string side,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(tokenId))
+        {
+            return null;
+        }
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            var url =
+                $"{ClobHost}/price?token_id={Uri.EscapeDataString(tokenId)}&side={Uri.EscapeDataString(side)}";
+            using var doc = await JsonDocument.ParseAsync(
+                await client.GetStreamAsync(url, ct),
+                cancellationToken: ct);
+            if (doc.RootElement.TryGetProperty("price", out var price))
+            {
+                return ParsePriceElement(price);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "CLOB {Side} price fetch failed for {TokenId}", side, tokenId);
+        }
+
+        return null;
+    }
+
+    private static double? ParsePriceElement(JsonElement el) =>
+        el.ValueKind switch
+        {
+            JsonValueKind.Number => el.GetDouble(),
+            JsonValueKind.String => double.TryParse(
+                el.GetString(),
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out var v)
+                ? v
+                : null,
+            _ => null,
+        };
 
     public async Task<string?> PlaceMarketOrderAsync(string tokenId, double sizeUsd, CancellationToken ct = default)
     {

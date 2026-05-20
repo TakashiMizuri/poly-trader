@@ -124,19 +124,37 @@ export function patchFormingCandleWithPrice(
 
 const BINANCE_KLINES_PAGE_SIZE = 1000;
 
+function intervalDurationMs(interval: BinanceKlineInterval): number {
+	switch (interval) {
+		case '1s':
+			return 1000;
+		case '1m':
+			return 60_000;
+		case '5m':
+			return 300_000;
+		case '15m':
+			return 900_000;
+		case '1h':
+			return 3_600_000;
+	}
+}
+
 async function fetchBinanceKlinesPage(
 	symbol: string,
 	interval: BinanceKlineInterval,
 	limit: number,
-	endTimeMs?: number,
+	options?: { startTimeMs?: number; endTimeMs?: number },
 ): Promise<ChartCandle[]> {
 	const params = new URLSearchParams({
 		symbol: symbol.toUpperCase(),
 		interval,
 		limit: String(Math.min(BINANCE_KLINES_PAGE_SIZE, Math.max(1, limit))),
 	});
-	if (endTimeMs != null) {
-		params.set('endTime', String(endTimeMs));
+	if (options?.startTimeMs != null) {
+		params.set('startTime', String(options.startTimeMs));
+	}
+	if (options?.endTimeMs != null) {
+		params.set('endTime', String(options.endTimeMs));
 	}
 
 	const response = await fetch(
@@ -168,12 +186,9 @@ export async function fetchBinanceKlines(
 			BINANCE_KLINES_PAGE_SIZE,
 			target - merged.length,
 		);
-		const batch = await fetchBinanceKlinesPage(
-			symbol,
-			interval,
-			batchLimit,
+		const batch = await fetchBinanceKlinesPage(symbol, interval, batchLimit, {
 			endTimeMs,
-		);
+		});
 		if (batch.length === 0) {
 			break;
 		}
@@ -188,10 +203,47 @@ export async function fetchBinanceKlines(
 	return merged.length > target ? merged.slice(-target) : merged;
 }
 
+/** Loads all klines from `startTimeMs` through the latest bar (paginates forward). */
+export async function fetchBinanceKlinesSince(
+	symbol: string,
+	interval: BinanceKlineInterval,
+	startTimeMs: number,
+): Promise<ChartCandle[]> {
+	const merged: ChartCandle[] = [];
+	const stepMs = intervalDurationMs(interval);
+	let cursor = startTimeMs;
+
+	while (true) {
+		const batch = await fetchBinanceKlinesPage(
+			symbol,
+			interval,
+			BINANCE_KLINES_PAGE_SIZE,
+			{ startTimeMs: cursor },
+		);
+		if (batch.length === 0) {
+			break;
+		}
+
+		for (const candle of batch) {
+			if (candle.time * 1000 >= startTimeMs) {
+				merged.push(candle);
+			}
+		}
+
+		const last = batch[batch.length - 1];
+		const nextCursor = last.time * 1000 + stepMs;
+		if (nextCursor <= cursor || batch.length < BINANCE_KLINES_PAGE_SIZE) {
+			break;
+		}
+		cursor = nextCursor;
+	}
+
+	return merged;
+}
+
 export function mergeKlineUpdate(
 	candles: ChartCandle[],
 	update: ChartCandle,
-	maxCandles: number,
 ): ChartCandle[] {
 	if (candles.length === 0) {
 		return [update];
@@ -199,13 +251,11 @@ export function mergeKlineUpdate(
 
 	const last = candles[candles.length - 1];
 	if (update.time === last.time) {
-		const next = candles.slice(0, -1).concat(update);
-		return next.length > maxCandles ? next.slice(-maxCandles) : next;
+		return candles.slice(0, -1).concat(update);
 	}
 
 	if (update.time > last.time) {
-		const next = candles.concat(update);
-		return next.length > maxCandles ? next.slice(-maxCandles) : next;
+		return candles.concat(update);
 	}
 
 	const index = candles.findIndex((c) => c.time === update.time);

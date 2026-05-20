@@ -74,15 +74,11 @@ class EngineMarkersPaneRenderer implements IPrimitivePaneRenderer {
 
           const trend = resolveTrend(marker)
           const x = timeToCoordinateNearest(timeScale, candle.time)
-          const anchorPrice = trend === 'long' ? candle.low : candle.high
-          const y = series.priceToCoordinate(anchorPrice)
+          const y = series.priceToCoordinate(candle.high)
           if (x === null || typeof y !== 'number' || !Number.isFinite(y)) continue
 
           const px = Math.round(x * horizontalPixelRatio)
-          const py = Math.round(
-            (trend === 'long' ? y + LABEL_OFFSET_PX : y - LABEL_OFFSET_PX) *
-              verticalPixelRatio,
-          )
+          const py = Math.round((y - LABEL_OFFSET_PX) * verticalPixelRatio)
 
           if (marker.won === true) context.fillStyle = WIN_COLOR
           else if (marker.won === false) context.fillStyle = LOSS_COLOR

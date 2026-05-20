@@ -43,15 +43,6 @@ public static class BreakOfStructureAnalyzer
     /// <summary>Keep in sync with PolyTraderOptions.CandleHistoryLimit (5000).</summary>
     public const int BosMaxCandles = 5000;
 
-    public static BosAnalysisOptions OptionsFromParams(TrendBetStrategyParams p) => new()
-    {
-        StructureLookback = p.StructureLookback,
-        MinSegmentBars = p.BosMinSegmentBars,
-        MinBarsBetweenFlips = p.BosMinBarsBetweenFlips,
-        BreakBuffer = p.BosBreakBuffer,
-        BodyBreakOnly = p.BosBodyBreakOnly,
-    };
-
     public static BosAnalysis AnalyzeTrendAndBos(
         IReadOnlyList<ChartCandle> candles,
         BosAnalysisOptions? options = null)

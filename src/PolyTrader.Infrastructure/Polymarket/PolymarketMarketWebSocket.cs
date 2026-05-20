@@ -137,11 +137,20 @@ public sealed class PolymarketMarketWebSocket : IPolymarketMarketWebSocket, IAsy
 
     {
 
+        var nextIds = new[] { yesTokenId, noTokenId };
+        if (_assetIds.Length == 2
+            && string.Equals(_assetIds[0], yesTokenId, StringComparison.Ordinal)
+            && string.Equals(_assetIds[1], noTokenId, StringComparison.Ordinal)
+            && IsConnected)
+        {
+            return;
+        }
+
         await StopAsync();
 
         Prices.Clear();
 
-        _assetIds = [yesTokenId, noTokenId];
+        _assetIds = nextIds;
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
@@ -330,81 +339,63 @@ public sealed class PolymarketMarketWebSocket : IPolymarketMarketWebSocket, IAsy
 
 
     private void ProcessMessage(string json)
-
     {
-
         try
-
         {
-
             using var doc = JsonDocument.Parse(json);
-
             var root = doc.RootElement;
 
-            var eventType = root.TryGetProperty("event_type", out var et) ? et.GetString()
-
-                : root.TryGetProperty("type", out var t) ? t.GetString() : null;
-
-
-
-            var assetId = root.TryGetProperty("asset_id", out var a) ? a.GetString() : null;
-
-
-
-            switch (eventType)
-
+            if (root.ValueKind == JsonValueKind.Array)
             {
+                foreach (var item in root.EnumerateArray())
+                {
+                    ProcessMessageElement(item);
+                }
 
-                case "best_bid_ask":
-
-                    if (string.IsNullOrEmpty(assetId)) break;
-
-                    var state = Prices.GetOrCreate(assetId);
-
-                    if (root.TryGetProperty("best_bid", out var bid))
-
-                        state.BestBid = double.Parse(bid.GetString() ?? "0", CultureInfo.InvariantCulture);
-
-                    if (root.TryGetProperty("best_ask", out var ask))
-
-                        state.BestAsk = double.Parse(ask.GetString() ?? "0", CultureInfo.InvariantCulture);
-
-                    PricesUpdated?.Invoke(this, EventArgs.Empty);
-
-                    break;
-
-                case "last_trade_price":
-
-                    if (string.IsNullOrEmpty(assetId)) break;
-
-                    var tradeState = Prices.GetOrCreate(assetId);
-
-                    if (root.TryGetProperty("price", out var p))
-
-                        tradeState.LastTradePrice = double.Parse(p.GetString() ?? "0", CultureInfo.InvariantCulture);
-
-                    PricesUpdated?.Invoke(this, EventArgs.Empty);
-
-                    break;
-
-                case "market_resolved":
-
-                    MarketResolved?.Invoke(this, assetId ?? "");
-
-                    break;
-
+                return;
             }
 
+            ProcessMessageElement(root);
         }
-
         catch (Exception ex)
-
         {
-
             _logger.LogDebug(ex, "Failed to parse Polymarket WS message");
-
         }
+    }
 
+    private void ProcessMessageElement(JsonElement root)
+    {
+        if (root.ValueKind != JsonValueKind.Object) return;
+
+        var eventType = root.TryGetProperty("event_type", out var et) ? et.GetString()
+            : root.TryGetProperty("type", out var t) ? t.GetString() : null;
+
+        var assetId = root.TryGetProperty("asset_id", out var a) ? a.GetString() : null;
+
+        switch (eventType)
+        {
+            case "best_bid_ask":
+                if (string.IsNullOrEmpty(assetId)) break;
+                var state = Prices.GetOrCreate(assetId);
+                if (root.TryGetProperty("best_bid", out var bid))
+                    state.BestBid = double.Parse(bid.GetString() ?? "0", CultureInfo.InvariantCulture);
+                if (root.TryGetProperty("best_ask", out var ask))
+                    state.BestAsk = double.Parse(ask.GetString() ?? "0", CultureInfo.InvariantCulture);
+                PricesUpdated?.Invoke(this, EventArgs.Empty);
+                break;
+
+            case "last_trade_price":
+                if (string.IsNullOrEmpty(assetId)) break;
+                var tradeState = Prices.GetOrCreate(assetId);
+                if (root.TryGetProperty("price", out var p))
+                    tradeState.LastTradePrice = double.Parse(p.GetString() ?? "0", CultureInfo.InvariantCulture);
+                PricesUpdated?.Invoke(this, EventArgs.Empty);
+                break;
+
+            case "market_resolved":
+                MarketResolved?.Invoke(this, assetId ?? "");
+                break;
+        }
     }
 
 

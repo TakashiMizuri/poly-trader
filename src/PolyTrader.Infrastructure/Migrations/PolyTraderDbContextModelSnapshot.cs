@@ -79,6 +79,13 @@ namespace PolyTrader.Infrastructure.Migrations
                     b.Property<int?>("ActivePaperAccountId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("BetStakeMode")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("BetStakePercent")
+                        .HasColumnType("REAL");
+
                     b.Property<double>("BetStakeUsd")
                         .HasColumnType("REAL");
 
@@ -87,6 +94,22 @@ namespace PolyTrader.Infrastructure.Migrations
 
                     b.Property<bool>("IsRunning")
                         .HasColumnType("INTEGER");
+
+                    b.Property<double?>("MaxBetStakeUsd")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("PendingBetStakeMode")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("PendingBetStakePercent")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("PendingBetStakeUsd")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("PendingMaxBetStakeUsd")
+                        .HasColumnType("REAL");
 
                     b.Property<string>("TradingMode")
                         .IsRequired()
@@ -215,6 +238,43 @@ namespace PolyTrader.Infrastructure.Migrations
                     b.ToTable("Positions");
                 });
 
+            modelBuilder.Entity("PolyTrader.Infrastructure.Entities.SkippedBetEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("CandleTime")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("MarketId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("PaperAccountId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SkipReason")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MarketId");
+
+                    b.HasIndex("CandleTime", "Mode", "PaperAccountId", "MarketId")
+                        .IsUnique();
+
+                    b.ToTable("SkippedBets");
+                });
+
             modelBuilder.Entity("PolyTrader.Infrastructure.Entities.TradeEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -283,6 +343,17 @@ namespace PolyTrader.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("PolyTrader.Infrastructure.Entities.PositionEntity", b =>
+                {
+                    b.HasOne("PolyTrader.Infrastructure.Entities.MarketEntity", "Market")
+                        .WithMany()
+                        .HasForeignKey("MarketId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Market");
+                });
+
+            modelBuilder.Entity("PolyTrader.Infrastructure.Entities.SkippedBetEntity", b =>
                 {
                     b.HasOne("PolyTrader.Infrastructure.Entities.MarketEntity", "Market")
                         .WithMany()

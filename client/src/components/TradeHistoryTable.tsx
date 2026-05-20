@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api } from '@/api/client'
+import { Card } from '@/components/ui/card'
+import { formatDisplayDateTime } from '@/lib/displayLocale'
+import { useTimeFormat } from '@/context/TimeFormatContext'
 import { cn } from '@/lib/utils'
 
 interface TradeRow {
@@ -10,6 +13,7 @@ interface TradeRow {
   mode: string
   stakeUsd: number
   entryPrice: number
+  entryShares?: number
   won?: boolean | null
   pnlUsd?: number | null
   paperAccountId?: number
@@ -29,6 +33,7 @@ export function TradeHistoryTable({
   tradingMode,
   className,
 }: Props) {
+  const { timeFormat } = useTimeFormat()
   const [trades, setTrades] = useState<TradeRow[]>([])
 
   useEffect(() => {
@@ -42,7 +47,7 @@ export function TradeHistoryTable({
 
   if (trades.length === 0) {
     return (
-      <p className={cn('py-6 text-center text-sm text-[#9ca3af]', className)}>
+      <p className={cn('py-6 text-center text-sm text-muted-foreground', className)}>
         No trades yet
       </p>
     )
@@ -51,17 +56,22 @@ export function TradeHistoryTable({
   return (
     <ul className={cn('flex flex-col gap-2', className)}>
       {trades.map((t) => (
-        <li
-          key={t.id}
-          className="rounded-lg border border-[#1e2633] bg-[#0c0f14] p-3"
-        >
-          <p className="text-xs text-[#9ca3af]">
-            {new Date(t.candleTime * 1000).toLocaleString()}
+        <Card key={t.id} className="p-3">
+          <p className="text-xs text-muted-foreground">
+            {formatDisplayDateTime(t.candleTime * 1000, timeFormat)}
           </p>
           <dl className="mt-2 space-y-1.5 text-sm">
             <TradeField label="Side" value={t.side} />
             <TradeField label="Trend" value={t.trend} />
-            <TradeField label="Entry" value={t.entryPrice.toFixed(4)} />
+            <TradeField label="Price" value={t.entryPrice.toFixed(4)} />
+            <TradeField
+              label="Shares"
+              value={
+                t.entryShares != null
+                  ? t.entryShares.toFixed(2)
+                  : (t.stakeUsd / t.entryPrice).toFixed(2)
+              }
+            />
             <TradeField label="Stake" value={`$${t.stakeUsd.toFixed(2)}`} />
             <TradeField
               label="Won"
@@ -73,13 +83,13 @@ export function TradeHistoryTable({
               valueClassName={
                 t.pnlUsd != null
                   ? t.pnlUsd >= 0
-                    ? 'text-[#3dd6c6]'
-                    : 'text-[#ef4444]'
+                    ? 'text-primary'
+                    : 'text-destructive'
                   : undefined
               }
             />
           </dl>
-        </li>
+        </Card>
       ))}
     </ul>
   )
@@ -96,8 +106,8 @@ function TradeField({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <dt className="text-[#9ca3af]">{label}</dt>
-      <dd className={cn('font-medium text-[#e8eaed]', valueClassName)}>{value}</dd>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className={cn('font-medium text-foreground', valueClassName)}>{value}</dd>
     </div>
   )
 }

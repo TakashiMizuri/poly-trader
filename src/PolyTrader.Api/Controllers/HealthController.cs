@@ -15,5 +15,6 @@ public sealed class HealthController : ControllerBase
     public ActionResult<object> Get() => Ok(new { status = "ok" });
 
     [HttpGet("connectivity")]
-    public ActionResult<ConnectivityStatusDto> Connectivity() => Ok(_connectivity.GetStatus());
+    public async Task<ActionResult<ConnectivityResponseDto>> Connectivity(CancellationToken ct) =>
+        Ok(await _connectivity.RunChecksAsync(ct));
 }

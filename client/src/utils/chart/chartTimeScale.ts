@@ -35,8 +35,7 @@ export function applyInitialTimeScaleWindow(
   seriesLogicalLength: number,
   initialVisibleBarCount: number,
 ): void {
-  tscale.fitContent()
-  if (seriesLogicalLength > 2) {
+  if (seriesLogicalLength > 0) {
     const span = Math.min(initialVisibleBarCount, seriesLogicalLength)
     const to = seriesLogicalLength - 1
     const from = Math.max(0, to - span + 1)

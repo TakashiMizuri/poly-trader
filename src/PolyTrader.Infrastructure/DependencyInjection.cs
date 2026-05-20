@@ -40,9 +40,11 @@ public static class DependencyInjection
 
         services.AddSingleton<IBinanceMarketService, BinanceMarketService>();
         services.AddSingleton<IPolymarketGammaService, PolymarketGammaService>();
+        services.AddSingleton<IPolymarketDataApiService, PolymarketDataApiService>();
         services.AddSingleton<IPolymarketMarketWebSocket, PolymarketMarketWebSocket>();
         services.AddSingleton<IPolymarketClobService, PolymarketClobService>();
         services.AddSingleton<IConnectivityService, ConnectivityService>();
+        services.AddScoped<GlobalResetService>();
         services.AddHostedService<TradingEngineHostedService>();
 
         return services;
@@ -55,6 +57,8 @@ public static class DependencyInjection
         var logger = scope.ServiceProvider.GetService<ILogger<PolyTraderDbContext>>();
 
         await db.Database.MigrateAsync();
+        await EnsureEngineStakeSizingColumnsAsync(db, logger);
+        await EnsureEngineStakePendingColumnsAsync(db, logger);
 
         if (!await SchemaTableExistsAsync(db, "EngineSettings"))
         {
@@ -103,6 +107,126 @@ public static class DependencyInjection
                     await db.SaveChangesAsync();
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Repairs DBs where <c>EngineStakeSizing</c> was recorded in history but <c>Up()</c> was empty
+    /// (snapshot was updated before <c>dotnet ef migrations add</c>).
+    /// </summary>
+    private static async Task EnsureEngineStakeSizingColumnsAsync(
+        PolyTraderDbContext db,
+        ILogger<PolyTraderDbContext>? logger)
+    {
+        if (!await SchemaTableExistsAsync(db, "EngineSettings"))
+        {
+            return;
+        }
+
+        if (await ColumnExistsAsync(db, "EngineSettings", "BetStakeMode"))
+        {
+            return;
+        }
+
+        logger?.LogWarning(
+            "EngineSettings is missing stake sizing columns; applying schema repair.");
+
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "EngineSettings" ADD COLUMN "BetStakeMode" TEXT NOT NULL DEFAULT 'Percent';
+            """);
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "EngineSettings" ADD COLUMN "BetStakePercent" REAL NOT NULL DEFAULT 3;
+            """);
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "EngineSettings" ADD COLUMN "MaxBetStakeUsd" REAL NULL DEFAULT 500;
+            """);
+
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            INSERT OR IGNORE INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+            VALUES ('20260520154029_EngineStakeSizing', '10.0.8');
+            """);
+    }
+
+    private static async Task EnsureEngineStakePendingColumnsAsync(
+        PolyTraderDbContext db,
+        ILogger<PolyTraderDbContext>? logger)
+    {
+        if (!await SchemaTableExistsAsync(db, "EngineSettings"))
+        {
+            return;
+        }
+
+        if (await ColumnExistsAsync(db, "EngineSettings", "PendingBetStakeMode"))
+        {
+            return;
+        }
+
+        logger?.LogWarning(
+            "EngineSettings is missing pending stake columns; applying schema repair.");
+
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "EngineSettings" ADD COLUMN "PendingBetStakeMode" TEXT NOT NULL DEFAULT 'Percent';
+            """);
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "EngineSettings" ADD COLUMN "PendingBetStakeUsd" REAL NOT NULL DEFAULT 1;
+            """);
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "EngineSettings" ADD COLUMN "PendingBetStakePercent" REAL NOT NULL DEFAULT 3;
+            """);
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "EngineSettings" ADD COLUMN "PendingMaxBetStakeUsd" REAL NULL DEFAULT 500;
+            """);
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            UPDATE "EngineSettings"
+            SET
+                "PendingBetStakeMode" = "BetStakeMode",
+                "PendingBetStakeUsd" = "BetStakeUsd",
+                "PendingBetStakePercent" = "BetStakePercent",
+                "PendingMaxBetStakeUsd" = "MaxBetStakeUsd";
+            """);
+
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            INSERT OR IGNORE INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+            VALUES ('20260520160624_EngineStakePending', '10.0.8');
+            """);
+    }
+
+    private static async Task<bool> ColumnExistsAsync(
+        PolyTraderDbContext db,
+        string tableName,
+        string columnName)
+    {
+        var connection = db.Database.GetDbConnection();
+        await connection.OpenAsync();
+        try
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText = $"PRAGMA table_info(\"{tableName}\")";
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var name = reader.GetString(1);
+                if (string.Equals(name, columnName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        finally
+        {
+            await connection.CloseAsync();
         }
     }
 

@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { MARKET_DATA_MAX_CANDLES } from '@/constants/marketData';
+import {
+	lastMarketDataCandles,
+	MARKET_DATA_MAX_CANDLES,
+} from '@/constants/marketData';
+import {
+	readCandleCache,
+	writeCandleCache,
+} from '@/lib/candleCache';
 import type { ChartCandle } from '@/types/candle';
 import {
 	fetchBinanceKlines,
@@ -19,15 +26,14 @@ import {
 const DEFAULT_SYMBOL = 'BTCUSDT';
 const DEFAULT_INTERVAL: BinanceKlineInterval = '5m';
 const DEFAULT_HISTORY_LIMIT = MARKET_DATA_MAX_CANDLES;
-const DEFAULT_MAX_CANDLES = MARKET_DATA_MAX_CANDLES;
 const DEFAULT_LIVE_REFRESH_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 30_000;
 
 export interface UseBinanceLiveCandlesOptions {
 	symbol?: string;
 	interval?: BinanceKlineInterval;
+	/** How many recent closed bars to load on connect (default: 1000). */
 	historyLimit?: number;
-	maxCandles?: number;
 	/** Poll latest trade into the forming bar (e.g. every 1s on 5m). */
 	liveRefreshMs?: number;
 	enabled?: boolean;
@@ -40,13 +46,16 @@ export function useBinanceLiveCandles(
 		symbol = DEFAULT_SYMBOL,
 		interval = DEFAULT_INTERVAL,
 		historyLimit = DEFAULT_HISTORY_LIMIT,
-		maxCandles = DEFAULT_MAX_CANDLES,
 		liveRefreshMs = DEFAULT_LIVE_REFRESH_MS,
 		enabled = true,
 	} = options;
 
-	const [candles, setCandles] = useState<ChartCandle[]>([]);
-	const [status, setStatus] = useState<BinanceConnectionStatus>('idle');
+	const [candles, setCandles] = useState<ChartCandle[]>(
+		() => readCandleCache(symbol, interval) ?? [],
+	);
+	const [status, setStatus] = useState<BinanceConnectionStatus>(() =>
+		readCandleCache(symbol, interval)?.length ? 'connected' : 'idle',
+	);
 	const [error, setError] = useState<string | null>(null);
 	const [lastPrice, setLastPrice] = useState<number | null>(null);
 	const [lastEventTime, setLastEventTime] = useState<number | null>(null);
@@ -98,12 +107,14 @@ export function useBinanceLiveCandles(
 
 	const applyKline = useCallback(
 		(candle: ChartCandle) => {
-			setCandles((prev) => mergeKlineUpdate(prev, candle, maxCandles));
+			setCandles((prev) =>
+				lastMarketDataCandles(mergeKlineUpdate(prev, candle)),
+			);
 			setLastPrice(candle.close);
 			setLastEventTime(Date.now());
 			latestTradePriceRef.current = candle.close;
 		},
-		[maxCandles],
+		[],
 	);
 
 	const applyTradePrice = useCallback((price: number) => {
@@ -260,11 +271,9 @@ export function useBinanceLiveCandles(
 				);
 				if (cancelled) return;
 
-				const trimmed =
-					history.length > maxCandles
-						? history.slice(-maxCandles)
-						: history;
+				const trimmed = lastMarketDataCandles(history, historyLimit);
 				setCandles(trimmed);
+				writeCandleCache(symbol, interval, trimmed);
 				const last = trimmed[trimmed.length - 1];
 				if (last) {
 					setLastPrice(last.close);
@@ -295,7 +304,6 @@ export function useBinanceLiveCandles(
 		symbol,
 		interval,
 		historyLimit,
-		maxCandles,
 		liveRefreshMs,
 		useTradeTick,
 		enabled,
@@ -307,6 +315,15 @@ export function useBinanceLiveCandles(
 		clearTickTimer,
 		scheduleReconnect,
 	]);
+
+	useEffect(() => {
+		if (candles.length === 0) return;
+		const id = globalThis.setTimeout(
+			() => writeCandleCache(symbol, interval, candles),
+			2_000,
+		);
+		return () => globalThis.clearTimeout(id);
+	}, [candles, symbol, interval]);
 
 	return {
 		candles,

@@ -1,0 +1,110 @@
+import { HubConnectionState, type HubConnection } from '@microsoft/signalr'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
+import { createTradingConnection } from '@/api/signalR'
+
+export type TradingLiveEvent =
+  | 'BalanceUpdated'
+  | 'EngineStatus'
+  | 'MarketWindowUpdated'
+  | 'TradePlaced'
+  | 'CandleClosed'
+
+type TradingLiveContextValue = {
+  liveConnected: boolean
+  /** False until the first hub start attempt finishes (avoids "Reconnecting" flash on load). */
+  liveConnectAttempted: boolean
+  subscribe: (event: TradingLiveEvent, handler: () => void) => () => void
+}
+
+const TradingLiveContext = createContext<TradingLiveContextValue | null>(null)
+
+export function TradingLiveProvider({ children }: { children: ReactNode }) {
+  const [liveConnected, setLiveConnected] = useState(false)
+  const [liveConnectAttempted, setLiveConnectAttempted] = useState(false)
+  const connRef = useRef<HubConnection | null>(null)
+  const handlersRef = useRef(
+    new Map<TradingLiveEvent, Set<() => void>>(),
+  )
+
+  const emit = useCallback((event: TradingLiveEvent) => {
+    handlersRef.current.get(event)?.forEach((h) => h())
+  }, [])
+
+  const subscribe = useCallback(
+    (event: TradingLiveEvent, handler: () => void) => {
+      let set = handlersRef.current.get(event)
+      if (!set) {
+        set = new Set()
+        handlersRef.current.set(event, set)
+      }
+      set.add(handler)
+      return () => set!.delete(handler)
+    },
+    [],
+  )
+
+  useEffect(() => {
+    const conn = createTradingConnection()
+    connRef.current = conn
+
+    const syncLive = () =>
+      setLiveConnected(conn.state === HubConnectionState.Connected)
+
+    conn.onreconnected(syncLive)
+    conn.onclose(syncLive)
+    conn.on('BalanceUpdated', () => emit('BalanceUpdated'))
+    conn.on('EngineStatus', () => emit('EngineStatus'))
+    conn.on('MarketWindowUpdated', () => emit('MarketWindowUpdated'))
+    conn.on('TradePlaced', () => emit('TradePlaced'))
+    conn.on('CandleClosed', () => emit('CandleClosed'))
+
+    conn
+      .start()
+      .then(syncLive)
+      .catch(console.error)
+      .finally(() => setLiveConnectAttempted(true))
+
+    return () => {
+      void conn.stop()
+      connRef.current = null
+    }
+  }, [emit])
+
+  return (
+    <TradingLiveContext.Provider
+      value={{ liveConnected, liveConnectAttempted, subscribe }}
+    >
+      {children}
+    </TradingLiveContext.Provider>
+  )
+}
+
+export function useTradingLive() {
+  const ctx = useContext(TradingLiveContext)
+  if (!ctx) {
+    throw new Error('useTradingLive must be used within TradingLiveProvider')
+  }
+  return ctx
+}
+
+export function useTradingLiveEvent(
+  event: TradingLiveEvent,
+  handler: () => void,
+) {
+  const { subscribe } = useTradingLive()
+  const handlerRef = useRef(handler)
+  handlerRef.current = handler
+
+  useEffect(
+    () => subscribe(event, () => handlerRef.current()),
+    [event, subscribe],
+  )
+}

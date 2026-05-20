@@ -51,15 +51,11 @@ class BetMarkersPaneRenderer implements IPrimitivePaneRenderer {
 
         for (const bet of bets) {
           const x = timeToCoordinateNearest(timeScale, bet.time)
-          const anchorPrice = bet.trend === 'long' ? bet.low : bet.high
-          const y = series.priceToCoordinate(anchorPrice)
+          const y = series.priceToCoordinate(bet.low)
           if (x === null || typeof y !== 'number' || !Number.isFinite(y)) continue
 
           const px = Math.round(x * horizontalPixelRatio)
-          const py = Math.round(
-            (bet.trend === 'long' ? y + LABEL_OFFSET_PX : y - LABEL_OFFSET_PX) *
-              verticalPixelRatio,
-          )
+          const py = Math.round((y + LABEL_OFFSET_PX) * verticalPixelRatio)
 
           context.fillStyle = bet.won ? WIN_COLOR : LOSS_COLOR
           context.fillText(bet.won ? '+' : '-', px, py)

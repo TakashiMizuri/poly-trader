@@ -19,15 +19,31 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
+export type BetStakeMode = 'percent' | 'fixed' | 'Percent' | 'Fixed'
+
 export interface EngineSettings {
   tradingMode: string
   isRunning: boolean
+  /** Draft stake (UI); applied to engine on start or while engine is stopped. */
+  betStakeMode: BetStakeMode
   betStakeUsd: number
+  betStakePercent: number
+  maxBetStakeUsd: number | null
+  /** Stake sizing used by the running engine until restart. */
+  activeBetStakeMode: BetStakeMode
+  activeBetStakeUsd: number
+  activeBetStakePercent: number
+  activeMaxBetStakeUsd: number | null
+  hasPendingStakeChanges: boolean
   commissionPercent: number
   activePaperAccountId: number | null
   activePaperAccountName: string | null
   activePaperBalance: number | null
   updatedAt: string
+}
+
+export function normalizeBetStakeMode(mode: BetStakeMode): 'percent' | 'fixed' {
+  return String(mode).toLowerCase() === 'fixed' ? 'fixed' : 'percent'
 }
 
 export interface PaperAccount {
@@ -60,9 +76,16 @@ export interface BalanceResponse {
   activePaperAccountId: number | null
 }
 
-export interface ConnectivityStatus {
-  binance: string
-  polymarketMarketWs: string
-  polymarketClob: string
-  engineConfigured: boolean
+export type CheckStatus = 'ok' | 'warn' | 'error' | 'idle'
+
+export interface ConnectivityCheck {
+  id: string
+  label: string
+  status: CheckStatus
+  detail?: string
+}
+
+export interface ConnectivityResponse {
+  checks: ConnectivityCheck[]
+  checkedAt: string
 }

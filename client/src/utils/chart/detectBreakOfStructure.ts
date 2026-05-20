@@ -1,8 +1,4 @@
-import { MARKET_DATA_MAX_CANDLES } from '@/constants/marketData';
 import type { ChartCandle } from '@/types/candle';
-import type { TrendBetStrategyParams } from '@/types/trendBetStrategy';
-
-export const BOS_MAX_CANDLES = MARKET_DATA_MAX_CANDLES;
 
 export type BosDirection = 'bullish' | 'bearish';
 export type MarketTrend = 'long' | 'short';
@@ -230,8 +226,21 @@ export function getBosFlipBarTimes(lines: BosLine[]): ReadonlySet<number> {
 	return new Set(lines.map((line) => line.toTime));
 }
 
+/** @deprecated Chart overlay only; bos_flow uses separate signal path. */
 export function bosOptionsFromTrendBetParams(
-	params: TrendBetStrategyParams,
+	params?: Partial<{
+		structureLookback: number
+		bosMinSegmentBars: number
+		bosMinBarsBetweenFlips: number
+		bosBreakBuffer: number
+		bosBodyBreakOnly: boolean
+	}>,
 ): BosAnalysisOptions {
-	return bosOptionsFromStrategyParams(params);
+	return bosOptionsFromStrategyParams({
+		structureLookback: params?.structureLookback ?? 5,
+		bosMinSegmentBars: params?.bosMinSegmentBars ?? 0,
+		bosMinBarsBetweenFlips: params?.bosMinBarsBetweenFlips ?? 0,
+		bosBreakBuffer: params?.bosBreakBuffer ?? 0,
+		bosBodyBreakOnly: params?.bosBodyBreakOnly ?? false,
+	});
 }

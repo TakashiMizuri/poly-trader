@@ -108,12 +108,17 @@ public sealed class PaperAccountsController : ControllerBase
     }
 
     [HttpPost("{id:int}/reset")]
-    public async Task<ActionResult<PaperAccountDto>> Reset(int id, CancellationToken ct)
+    public async Task<ActionResult<PaperAccountDto>> Reset(
+        int id,
+        [FromBody] ResetPaperAccountRequest? req,
+        CancellationToken ct)
     {
         var account = await _db.PaperAccounts.FirstOrDefaultAsync(a => a.Id == id, ct);
         if (account == null) return NotFound();
 
-        account.Balance = account.InitialBalance;
+        var resetBalance = req?.InitialBalance is > 0 ? req.InitialBalance.Value : account.InitialBalance;
+        account.InitialBalance = resetBalance;
+        account.Balance = resetBalance;
         account.UpdatedAt = DateTime.UtcNow;
 
         _db.BalanceSnapshots.Add(new BalanceSnapshotEntity
@@ -158,4 +163,6 @@ public sealed class PaperAccountsController : ControllerBase
     public sealed record CreatePaperAccountRequest(string? Name, double? InitialBalance);
 
     public sealed record UpdatePaperAccountRequest(string? Name, bool? IsArchived);
+
+    public sealed record ResetPaperAccountRequest(double? InitialBalance);
 }

@@ -75,33 +75,45 @@ public sealed class TrendBetSimulation
 
 public static class TrendBetStrategySimulator
 {
+    public const int MaxCandles = 5000;
+
+    /// <summary>
+    /// Polymarket payout: buy <paramref name="stake"/> USD of shares at <paramref name="entryPrice"/>;
+    /// win pays $1/share, loss pays $0. Entry fee is <paramref name="commissionPercent"/> of stake.
+    /// </summary>
     public static (double Pnl, double Commission) ComputeBetPnl(
         bool won,
         double stake,
-        double commissionPercent)
+        double commissionPercent,
+        double entryPrice = 0.5)
     {
+        var price = entryPrice is > 0 and <= 1 ? entryPrice : 0.5;
         var commission = stake * (commissionPercent / 100);
-        var gross = won ? stake : -stake;
-        return (gross - commission, commission);
+        var shares = stake / price;
+        var payout = won ? shares : 0;
+        return (payout - stake - commission, commission);
+    }
+
+    public static double ComputeEntryShares(double stakeUsd, double entryPrice)
+    {
+        var price = entryPrice is > 0 and <= 1 ? entryPrice : 0.5;
+        return stakeUsd / price;
     }
 
     /// <summary>
-    /// Backtest: bet only when strategy signals at bar open (exhaustion fade by default).
+    /// Backtest: bet only when bos_flow signals at bar open (Polymarket 1:1 model).
     /// </summary>
     public static TrendBetSimulation? Simulate(
         IReadOnlyList<ChartCandle> candles,
-        IReadOnlyList<MarketTrend> trendAtOpen,
-        IReadOnlyList<bool> bosFlipAt,
         TrendBetStrategyParams? parameters = null)
     {
-        if (candles.Count == 0 ||
-            trendAtOpen.Count != candles.Count ||
-            bosFlipAt.Count != candles.Count)
+        if (candles.Count == 0)
         {
             return null;
         }
 
         var p = parameters ?? TrendBetStrategyParams.Default;
+        var signals = BosFlowSignals.Generate(candles, p.BosFlow);
         var bets = new List<TrendBet>();
         var equityCurve = new List<EquityPoint>();
 
@@ -116,8 +128,7 @@ public static class TrendBetStrategySimulator
 
         for (var i = 0; i < candles.Count; i++)
         {
-            var betSide = BetResolver.ResolveAtOpen(i, candles, trendAtOpen, p);
-            if (betSide == null)
+            if (!signals.EntryBar[i] || signals.Side[i] is null)
             {
                 skippedBars++;
                 continue;
@@ -131,7 +142,7 @@ public static class TrendBetStrategySimulator
             }
 
             var candle = candles[i];
-            var trend = betSide.Value;
+            var trend = signals.Side[i]!.Value;
             var won = IsBetWon(trend, candle);
             var (pnl, commission) = ComputeBetPnl(won, stake.Value, p.CommissionPercent);
             balance = SafeBetStake.ClampBalanceAfterBet(balance + pnl);
@@ -196,48 +207,56 @@ public static class TrendBetStrategySimulator
         };
     }
 
+    /// <param name="nextBar">
+    /// Optional forming bar at <c>closedCandle.Time + interval</c> (real open[i] from Binance).
+    /// Decision still uses only bars [0..i-1] per STRATEGY.md; open[i] is allowed for timestamp.
+    /// </param>
     public static CandleCloseStrategyResult? ProcessCandleClose(
         ChartCandle closedCandle,
         IReadOnlyList<ChartCandle> closedCandles,
         long candleIntervalSeconds,
-        TrendBetStrategyParams? parameters = null)
+        TrendBetStrategyParams? parameters = null,
+        ChartCandle? nextBar = null)
     {
         if (closedCandles.Count == 0)
         {
             return null;
         }
 
-        var last = closedCandles[^1];
-        if (last.Time != closedCandle.Time)
+        var closedIndexInInput = -1;
+        for (var i = closedCandles.Count - 1; i >= 0; i--)
+        {
+            if (closedCandles[i].Time == closedCandle.Time)
+            {
+                closedIndexInInput = i;
+                break;
+            }
+        }
+
+        if (closedIndexInInput < 0)
         {
             return null;
         }
 
-        var window = closedCandles.Count <= BreakOfStructureAnalyzer.BosMaxCandles
-            ? closedCandles
-            : closedCandles.Skip(closedCandles.Count - BreakOfStructureAnalyzer.BosMaxCandles).ToList();
+        // Live buffer may already include the next forming bar after the close event.
+        var throughClose = closedCandles.Take(closedIndexInInput + 1).ToList();
+        var window = throughClose.Count <= MaxCandles
+            ? throughClose
+            : throughClose.Skip(throughClose.Count - MaxCandles).ToList();
 
         var p = parameters ?? TrendBetStrategyParams.Default;
-        var bos = BreakOfStructureAnalyzer.AnalyzeTrendAndBos(
-            window,
-            BreakOfStructureAnalyzer.OptionsFromParams(p));
-
-        var closedIndex = bos.TrendAtOpen.Count - 1;
+        var closedIndex = window.Count - 1;
+        if (window[closedIndex].Time != closedCandle.Time)
+        {
+            return null;
+        }
 
         TrendBetSettlement? settlement = null;
-        var betAtOpen = BetResolver.ResolveAtOpen(
-            closedIndex,
-            window,
-            bos.TrendAtOpen,
-            p);
+        var betAtOpen = BetResolver.ResolveAtOpen(closedIndex, window, p.BosFlow);
 
         if (betAtOpen != null)
         {
-            var balanceAtOpen = ComputeBalanceAtBarOpen(
-                window,
-                bos.TrendAtOpen,
-                closedIndex,
-                p);
+            var balanceAtOpen = ComputeBalanceAtBarOpen(window, closedIndex, p);
             var stake = BetStakeResolver.ResolveForBalance(balanceAtOpen, p)
                 ?? BetStakeResolver.RequestedStake(balanceAtOpen, p);
             var won = IsBetWon(betAtOpen.Value, closedCandle);
@@ -254,18 +273,43 @@ public static class TrendBetStrategySimulator
         TrendBetEntrySignal? entry = null;
         if (candleIntervalSeconds > 0)
         {
-            var nextBet = BetResolver.ResolveForUpcomingBar(
-                window,
-                bos.TrendAtOpen,
-                bos.TrendForNextOpen,
-                p);
+            var nextOpenTime = closedCandle.Time + candleIntervalSeconds;
+            var nextIndex = window.Count;
+            var extended = window.ToList();
+            if (nextBar != null && nextBar.Time == nextOpenTime)
+            {
+                // Real bar open from exchange (allowed: open[i] only; gates use closed = i-1).
+                extended.Add(new ChartCandle
+                {
+                    Time = nextBar.Time,
+                    Open = nextBar.Open,
+                    High = nextBar.Open,
+                    Low = nextBar.Open,
+                    Close = nextBar.Open,
+                });
+            }
+            else
+            {
+                var anchor = window[^1];
+                extended.Add(new ChartCandle
+                {
+                    Time = nextOpenTime,
+                    Open = anchor.Close,
+                    High = anchor.Close,
+                    Low = anchor.Close,
+                    Close = anchor.Close,
+                });
+            }
 
-            if (nextBet != null)
+            var signals = BosFlowSignals.Generate(extended, p.BosFlow);
+            if (nextIndex < signals.EntryBar.Count
+                && signals.EntryBar[nextIndex]
+                && signals.Side[nextIndex] is { } side)
             {
                 entry = new TrendBetEntrySignal
                 {
-                    TargetCandleTime = closedCandle.Time + candleIntervalSeconds,
-                    Trend = nextBet.Value
+                    TargetCandleTime = nextOpenTime,
+                    Trend = side,
                 };
             }
         }
@@ -309,19 +353,26 @@ public static class TrendBetStrategySimulator
 
     private static double ComputeBalanceAtBarOpen(
         IReadOnlyList<ChartCandle> candles,
-        IReadOnlyList<MarketTrend> trendAtOpen,
         int barIndex,
         TrendBetStrategyParams parameters)
     {
+        var signals = BosFlowSignals.Generate(candles, parameters.BosFlow);
         var balance = parameters.StartBalance;
         for (var i = 0; i < barIndex; i++)
         {
-            var betSide = BetResolver.ResolveAtOpen(i, candles, trendAtOpen, parameters);
-            if (betSide == null) continue;
+            if (!signals.EntryBar[i] || signals.Side[i] is null)
+            {
+                continue;
+            }
+
             var stake = BetStakeResolver.ResolveForBalance(balance, parameters);
-            if (stake == null) continue;
+            if (stake == null)
+            {
+                continue;
+            }
+
             var (pnl, _) = ComputeBetPnl(
-                IsBetWon(betSide.Value, candles[i]),
+                IsBetWon(signals.Side[i]!.Value, candles[i]),
                 stake.Value,
                 parameters.CommissionPercent);
             balance = SafeBetStake.ClampBalanceAfterBet(balance + pnl);
@@ -330,7 +381,7 @@ public static class TrendBetStrategySimulator
         return balance;
     }
 
-    private static bool IsBetWon(MarketTrend trend, ChartCandle candle) =>
+    public static bool IsBetWon(MarketTrend trend, ChartCandle candle) =>
         trend == MarketTrend.Long
             ? candle.Close > candle.Open
             : candle.Close < candle.Open;

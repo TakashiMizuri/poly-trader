@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace PolyTrader.Infrastructure.Entities;
 
 public sealed class MarketEntity
@@ -6,6 +8,11 @@ public sealed class MarketEntity
     public string ConditionId { get; set; } = "";
     public string? Slug { get; set; }
     public string? Title { get; set; }
+
+    /// <summary>From Gamma API; not stored in SQLite.</summary>
+    [NotMapped]
+    public string? ImageUrl { get; set; }
+
     public string YesTokenId { get; set; } = "";
     public string NoTokenId { get; set; } = "";
     public DateTime? WindowStartUtc { get; set; }

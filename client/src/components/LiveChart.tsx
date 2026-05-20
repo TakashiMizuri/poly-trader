@@ -2,32 +2,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   CandlestickSeries,
   CrosshairMode,
-  LineSeries,
   createChart,
   type IChartApi,
   type ISeriesApi,
-  type Time,
 } from 'lightweight-charts'
 import type { ChartCandle } from '@/types/candle'
 import type { Timeframe } from '@/types/timeframe'
-import {
-  analyzeTrendAndBos,
-  BOS_MAX_CANDLES,
-  bosOptionsFromTrendBetParams,
-} from '@/utils/chart/detectBreakOfStructure'
+import { lastMarketDataCandles } from '@/constants/marketData'
+import { DEFAULT_TREND_BET_STRATEGY_PARAMS } from '@/types/trendBetStrategy'
+import { analyzeTrendAndBos } from '@/utils/chart/detectBreakOfStructure'
 import { simulateTrendBetStrategy } from '@/utils/chart/simulateTrendBetStrategy'
-import type { TrendBetStrategyParams } from '@/types/trendBetStrategy'
-import {
-  loadTrendBetStrategyParams,
-  normalizeTrendBetStrategyParams,
-  saveTrendBetStrategyParams,
-} from '@/lib/trendBetStrategyParams'
-import {
-  TrendStrategyPanel,
-  loadChartLayers,
-  saveChartLayers,
-  type ChartLayerVisibility,
-} from '@/components/TrendStrategyPanel'
 import {
   applyInitialTimeScaleWindow,
   applyTimeScaleBaseOptions,
@@ -42,10 +26,19 @@ import {
   getInitialVisibleBarCount,
 } from '@/utils/chart/futureWhitespaceSeries'
 import { useTheme } from '@/context/ThemeContext'
+import { ChartContextMenu, type ChartContextMenuAnchor } from '@/components/ChartContextMenu'
+import { ChartSettingsDialog } from '@/components/ChartSettingsDialog'
+import {
+  DEFAULT_CHART_DISPLAY_PREFS,
+  loadChartDisplayPrefs,
+  saveChartDisplayPrefs,
+  type ChartDisplayPrefs,
+} from '@/lib/chartDisplayPrefs'
+import { GLOBAL_RESET_EVENT } from '@/lib/appReset'
 import { getChartPalette } from '@/lib/chartTheme'
 import { cn } from '@/lib/utils'
-import { BosOverlayPrimitive } from '@/utils/chartPrimitives/BosOverlayPrimitive'
 import { BetMarkersPrimitive } from '@/utils/chartPrimitives/BetMarkersPrimitive'
+import { BosOverlayPrimitive } from '@/utils/chartPrimitives/BosOverlayPrimitive'
 import {
   EngineMarkersPrimitive,
   type EngineChartMarker,
@@ -55,6 +48,8 @@ interface LiveChartProps {
   candles: ChartCandle[]
   timeframe?: Timeframe
   engineMarkers?: EngineChartMarker[]
+  /** Show a centered spinner while candle history is loading. */
+  loading?: boolean
   /** Fixed height in px; omit when parent supplies height via flex (fillHeight). */
   height?: number
   className?: string
@@ -64,52 +59,48 @@ export function LiveChart({
   candles,
   timeframe = '5m',
   engineMarkers = [],
+  loading = false,
   height,
   className,
 }: LiveChartProps) {
   const { theme } = useTheme()
+  const surfaceRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const [contextMenu, setContextMenu] = useState<ChartContextMenuAnchor | null>(
+    null,
+  )
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [displayPrefs, setDisplayPrefs] = useState<ChartDisplayPrefs>(
+    loadChartDisplayPrefs,
+  )
   const chartRef = useRef<IChartApi | null>(null)
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
-  const equitySeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
   const bosOverlayRef = useRef<BosOverlayPrimitive | null>(null)
   const betMarkersRef = useRef<BetMarkersPrimitive | null>(null)
   const engineMarkersRef = useRef<EngineMarkersPrimitive | null>(null)
   const isInitializedRef = useRef(false)
   const prevCandleCountRef = useRef(0)
   const lastHorizScrollRef = useRef<number | null>(null)
+  const [isLayoutReady, setIsLayoutReady] = useState(false)
 
-  const [strategyParams, setStrategyParams] = useState<TrendBetStrategyParams>(
-    loadTrendBetStrategyParams,
-  )
-  const [chartLayers, setChartLayers] = useState<ChartLayerVisibility>(loadChartLayers)
-
-  const handleStrategyParamsChange = useCallback(
-    (next: TrendBetStrategyParams) => {
-      const normalized = normalizeTrendBetStrategyParams(next)
-      setStrategyParams(normalized)
-      saveTrendBetStrategyParams(normalized)
-    },
-    [],
-  )
-
-  const handleChartLayersChange = useCallback((next: ChartLayerVisibility) => {
-    setChartLayers(next)
-    saveChartLayers(next)
-  }, [])
-
-  const bosCandles = useMemo(
-    () => (candles.length > 0 ? candles.slice(-BOS_MAX_CANDLES) : []),
+  const chartCandles = useMemo(
+    () => lastMarketDataCandles(candles),
     [candles],
   )
 
+  const strategySimulation = useMemo(() => {
+    if (chartCandles.length === 0) return null
+    return simulateTrendBetStrategy(
+      chartCandles,
+      undefined,
+      DEFAULT_TREND_BET_STRATEGY_PARAMS,
+    )
+  }, [chartCandles])
+
   const bosAnalysis = useMemo(
     () =>
-      bosCandles.length > 0
-        ? analyzeTrendAndBos(
-            bosCandles,
-            bosOptionsFromTrendBetParams(strategyParams),
-          )
+      chartCandles.length > 0
+        ? analyzeTrendAndBos(chartCandles)
         : {
             lines: [],
             segments: [],
@@ -117,41 +108,56 @@ export function LiveChart({
             bosFlipAt: [],
             trendForNextOpen: 'long' as const,
           },
-    [
-      bosCandles,
-      strategyParams.structureLookback,
-      strategyParams.bosMinSegmentBars,
-      strategyParams.bosMinBarsBetweenFlips,
-      strategyParams.bosBreakBuffer,
-      strategyParams.bosBodyBreakOnly,
-    ],
+    [chartCandles],
   )
 
-  const strategySimulation = useMemo(() => {
-    if (
-      bosCandles.length === 0 ||
-      bosAnalysis.trendAtOpen.length !== bosCandles.length
-    ) {
-      return null
-    }
-    return simulateTrendBetStrategy(
-      bosCandles,
-      bosAnalysis.trendAtOpen,
-      strategyParams,
-      bosAnalysis.bosFlipAt,
-    )
-  }, [bosCandles, bosAnalysis, strategyParams])
+  const displayBosAnalysis = useMemo(
+    () => ({
+      ...bosAnalysis,
+      segments: displayPrefs.showTrends ? bosAnalysis.segments : [],
+      lines: displayPrefs.showBosOverlay ? bosAnalysis.lines : [],
+    }),
+    [bosAnalysis, displayPrefs.showTrends, displayPrefs.showBosOverlay],
+  )
 
-  const displayBosAnalysis = useMemo(() => {
-    if (chartLayers.bosOverlay) return bosAnalysis
-    return {
-      lines: [],
-      segments: [],
-      trendAtOpen: [] as typeof bosAnalysis.trendAtOpen,
-      bosFlipAt: [] as typeof bosAnalysis.bosFlipAt,
-      trendForNextOpen: 'long' as const,
+  const handleDisplayPrefsChange = useCallback((next: ChartDisplayPrefs) => {
+    setDisplayPrefs(next)
+    saveChartDisplayPrefs(next)
+  }, [])
+
+  const openContextMenu = useCallback((clientX: number, clientY: number) => {
+    const surface = surfaceRef.current
+    if (!surface) return
+    const rect = surface.getBoundingClientRect()
+    setContextMenu({
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+    })
+  }, [])
+
+  const handleSurfaceContextMenu = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      event.preventDefault()
+      openContextMenu(event.clientX, event.clientY)
+    },
+    [openContextMenu],
+  )
+
+  useEffect(() => {
+    const onGlobalReset = () => {
+      setDisplayPrefs({ ...DEFAULT_CHART_DISPLAY_PREFS })
+      setContextMenu(null)
+      setSettingsOpen(false)
     }
-  }, [bosAnalysis, chartLayers.bosOverlay])
+    window.addEventListener(GLOBAL_RESET_EVENT, onGlobalReset)
+    return () => window.removeEventListener(GLOBAL_RESET_EVENT, onGlobalReset)
+  }, [])
+
+  useEffect(() => {
+    if (loading || chartCandles.length === 0) {
+      setIsLayoutReady(false)
+    }
+  }, [loading, chartCandles.length])
 
   useEffect(() => {
     if (!containerRef.current || isInitializedRef.current) return
@@ -205,24 +211,6 @@ export function LiveChart({
     })
     seriesRef.current = series
 
-    chart.priceScale('left').applyOptions({
-      visible: true,
-      borderColor: palette.border,
-      scaleMargins: { top: 0.08, bottom: 0.08 },
-    })
-
-    const equitySeries = chart.addSeries(LineSeries, {
-      priceScaleId: 'left',
-      color: palette.equity,
-      lineWidth: 2,
-      title: 'Balance $',
-      priceFormat: {
-        type: 'custom',
-        formatter: (price: number) => `$${price.toFixed(0)}`,
-      },
-    })
-    equitySeriesRef.current = equitySeries
-
     const handleResize = () => {
       if (!containerRef.current || !chartRef.current) return
       chartRef.current.applyOptions({
@@ -257,7 +245,6 @@ export function LiveChart({
       chart.remove()
       chartRef.current = null
       seriesRef.current = null
-      equitySeriesRef.current = null
       isInitializedRef.current = false
       prevCandleCountRef.current = 0
       lastHorizScrollRef.current = null
@@ -267,7 +254,6 @@ export function LiveChart({
   useEffect(() => {
     const chart = chartRef.current
     const series = seriesRef.current
-    const equitySeries = equitySeriesRef.current
     if (!chart || !series || !isInitializedRef.current) return
 
     const palette = getChartPalette()
@@ -289,8 +275,6 @@ export function LiveChart({
       wickUpColor: palette.up,
       wickDownColor: palette.down,
     })
-    chart.priceScale('left').applyOptions({ borderColor: palette.border })
-    equitySeries?.applyOptions({ color: palette.equity })
   }, [theme])
 
   useEffect(() => {
@@ -308,26 +292,14 @@ export function LiveChart({
   }, [displayBosAnalysis])
 
   useEffect(() => {
-    const equitySeries = equitySeriesRef.current
-    if (!equitySeries) return
-    if (!strategySimulation || !chartLayers.equityCurve) {
-      equitySeries.setData([])
-      return
-    }
-    const equityData = strategySimulation.equityCurve.map((point) => ({
-      time: point.time as Time,
-      value: point.value,
-    }))
-    equitySeries.setData(equityData.length > 0 ? equityData : [])
-  }, [strategySimulation, chartLayers.equityCurve])
-
-  useEffect(() => {
     const chart = chartRef.current
     const series = seriesRef.current
     if (!chart || !series || !isInitializedRef.current) return
 
     const bets =
-      chartLayers.betMarkers && strategySimulation ? strategySimulation.bets : []
+      displayPrefs.showBetMarkers && strategySimulation
+        ? strategySimulation.bets
+        : []
     if (!betMarkersRef.current) {
       const primitive = new BetMarkersPrimitive(chart, series, bets)
       series.attachPrimitive(primitive)
@@ -335,31 +307,30 @@ export function LiveChart({
       return
     }
     betMarkersRef.current.setBets(bets)
-  }, [strategySimulation, chartLayers.betMarkers])
+  }, [strategySimulation, displayPrefs.showBetMarkers])
 
   useEffect(() => {
     const chart = chartRef.current
     const series = seriesRef.current
     if (!chart || !series || !isInitializedRef.current) return
 
-    const markers = chartLayers.engineMarkers ? engineMarkers : []
     if (!engineMarkersRef.current) {
       const primitive = new EngineMarkersPrimitive(
         chart,
         series,
-        markers,
-        candles,
+        engineMarkers,
+        chartCandles,
       )
       series.attachPrimitive(primitive)
       engineMarkersRef.current = primitive
       return
     }
-    engineMarkersRef.current.setMarkers(markers, candles)
-  }, [engineMarkers, candles, chartLayers.engineMarkers])
+    engineMarkersRef.current.setMarkers(engineMarkers, chartCandles)
+  }, [engineMarkers, chartCandles])
 
   useEffect(() => {
     if (!seriesRef.current || !isInitializedRef.current) return
-    if (candles.length === 0) {
+    if (chartCandles.length === 0) {
       prevCandleCountRef.current = 0
       return
     }
@@ -373,14 +344,29 @@ export function LiveChart({
       lastHorizScrollRef.current,
     )
 
-    const chartData = buildSeriesDataWithFutureWhitespace(candles, timeframe)
+    const chartData = buildSeriesDataWithFutureWhitespace(chartCandles, timeframe)
     const seriesLogicalLength = chartData.length
     seriesRef.current.setData(chartData)
 
     if (chart) {
       applyTimeScaleBaseOptions(chart.timeScale())
 
-      if (!isFirstPopulation && scrollToRestore !== null) {
+      if (isFirstPopulation) {
+        applyInitialTimeScaleWindow(
+          chart.timeScale(),
+          seriesLogicalLength,
+          getInitialVisibleBarCount(timeframe),
+        )
+        sampleScrollIntoRef(chart.timeScale(), (v) => {
+          lastHorizScrollRef.current = v
+        })
+        prevCandleCountRef.current = chartCandles.length
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (chartRef.current) setIsLayoutReady(true)
+          })
+        })
+      } else if (scrollToRestore !== null) {
         restoreTimeScaleScroll(
           chart.timeScale(),
           chartRef,
@@ -389,30 +375,25 @@ export function LiveChart({
             lastHorizScrollRef.current = v
           },
         )
-        prevCandleCountRef.current = candles.length
+        prevCandleCountRef.current = chartCandles.length
       } else {
         requestAnimationFrame(() => {
           if (!chartRef.current) return
-          const tscale = chartRef.current.timeScale()
-          if (isFirstPopulation) {
-            applyInitialTimeScaleWindow(
-              tscale,
-              seriesLogicalLength,
-              getInitialVisibleBarCount(timeframe),
-            )
-          }
-          sampleScrollIntoRef(tscale, (v) => {
+          sampleScrollIntoRef(chartRef.current.timeScale(), (v) => {
             lastHorizScrollRef.current = v
           })
-          prevCandleCountRef.current = candles.length
+          prevCandleCountRef.current = chartCandles.length
         })
       }
     } else {
-      prevCandleCountRef.current = candles.length
+      prevCandleCountRef.current = chartCandles.length
     }
-  }, [candles, timeframe])
+  }, [chartCandles, timeframe])
 
   const fillParent = height == null
+  const hasCandles = chartCandles.length > 0
+  const showOverlay =
+    !hasCandles && (loading || !isLayoutReady)
 
   return (
     <div
@@ -430,47 +411,41 @@ export function LiveChart({
         )}
         style={fillParent ? undefined : { height: height ?? 420 }}
       >
-        <div ref={containerRef} className="h-full w-full" />
-        {strategySimulation && (
-          <TrendStrategyPanel
-            simulation={strategySimulation}
-            candleCount={bosCandles.length}
-            params={strategyParams}
-            onParamsChange={handleStrategyParamsChange}
-            layers={chartLayers}
-            onLayersChange={handleChartLayersChange}
+        <div
+          ref={surfaceRef}
+          className="relative h-full w-full"
+          onContextMenu={handleSurfaceContextMenu}
+        >
+          <div
+            ref={containerRef}
+            className="h-full w-full"
           />
-        )}
-      </div>
-      <div className="shrink-0 border-t border-border px-1 py-1.5">
-        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground sm:text-xs">
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2 w-3 rounded-sm bg-primary/35" />
-            Long trend
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2 w-3 rounded-sm bg-destructive/35" />
-            Short trend
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="font-semibold text-warn">—</span>
-            Bullish BoS
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="font-semibold text-chart-3">—</span>
-            Bearish BoS
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="font-semibold text-primary">+</span>
-            <span className="font-semibold text-destructive">-</span>
-            Win / loss
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="font-semibold text-primary">L</span>
-            <span className="font-semibold text-destructive">S</span>
-            Engine trades
-          </span>
+          {showOverlay && (
+            <div
+              className="absolute inset-0 z-10 flex items-center justify-center bg-chart-background"
+              aria-busy="true"
+              aria-label="Loading chart data"
+            >
+              {loading && (
+                <div className="h-9 w-9 animate-spin rounded-full border-2 border-chart-text/20 border-t-chart-text/70" />
+              )}
+            </div>
+          )}
+          {contextMenu && (
+            <ChartContextMenu
+              anchor={contextMenu}
+              containerRef={surfaceRef}
+              onChartSettings={() => setSettingsOpen(true)}
+              onClose={() => setContextMenu(null)}
+            />
+          )}
         </div>
+        <ChartSettingsDialog
+          open={settingsOpen}
+          prefs={displayPrefs}
+          onPrefsChange={handleDisplayPrefsChange}
+          onClose={() => setSettingsOpen(false)}
+        />
       </div>
     </div>
   )
