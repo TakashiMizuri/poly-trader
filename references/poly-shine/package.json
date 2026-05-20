@@ -1,0 +1,22 @@
+{
+  "name": "poly-shine",
+  "private": true,
+  "packageManager": "npm@10.9.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "db:generate": "npm run generate -w @poly-shine/db",
+    "db:migrate": "npm run migrate -w @poly-shine/db",
+    "db:studio": "npm run studio -w @poly-shine/db",
+    "lint": "turbo run lint",
+    "dev:web": "turbo run dev --filter=@poly-shine/api --filter=@poly-shine/web"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  }
+}

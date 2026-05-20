@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="src/PolyTrader.Api/PolyTrader.Api.csproj" />
+  <Project Path="src/PolyTrader.Core/PolyTrader.Core.csproj" />
+  <Project Path="src/PolyTrader.Infrastructure/PolyTrader.Infrastructure.csproj" />
+  <Project Path="tests/PolyTrader.Core.Tests/PolyTrader.Core.Tests.csproj" />
+</Solution>

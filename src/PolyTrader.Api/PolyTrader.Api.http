@@ -1,0 +1,6 @@
+@PolyTrader.Api_HostAddress = http://localhost:5211
+
+GET {{PolyTrader.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
