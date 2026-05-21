@@ -1,0 +1,33 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5088:5088"
+    env_file:
+      - .env
+    environment:
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/polytrader.db
+      - PolyTrader__ConnectionString=Data Source=/app/data/polytrader.db
+    volumes:
+      - polytrader-data:/app/data
+      - polytrader-logs:/app/logs
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+      args:
+        VITE_API_URL: ${VITE_API_URL:-}
+        VITE_API_TOKEN: ${VITE_API_TOKEN:-}
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  polytrader-data:
+  polytrader-logs:

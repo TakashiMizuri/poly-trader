@@ -1,7 +1,36 @@
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
+const TOKEN_KEY = 'poly-trader-api-token'
+
+export function getStoredToken(): string {
+  const baked = import.meta.env.VITE_API_TOKEN
+  if (typeof baked === 'string' && baked.trim()) {
+    return baked.trim()
+  }
+  return localStorage.getItem(TOKEN_KEY) ?? ''
+}
+
+export function setStoredToken(token: string) {
+  const t = token.trim()
+  if (t) {
+    localStorage.setItem(TOKEN_KEY, t)
+  } else {
+    localStorage.removeItem(TOKEN_KEY)
+  }
+}
 
 function getToken(): string | null {
-  return import.meta.env.VITE_API_TOKEN ?? localStorage.getItem('api_token')
+  const t = getStoredToken()
+  return t || null
+}
+
+/** True when the API rejects unauthenticated requests (WEB_API_TOKEN is set on the server). */
+export async function isApiAuthRequired(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/api/engine`)
+    return res.status === 401
+  } catch {
+    return false
+  }
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -39,6 +68,7 @@ export interface EngineSettings {
   activePaperAccountId: number | null
   activePaperAccountName: string | null
   activePaperBalance: number | null
+  autoRedeemEnabled: boolean
   updatedAt: string
 }
 
@@ -72,8 +102,10 @@ export interface BalanceResponse {
   paperAccountId: number | null
   paperAccountName: string | null
   liveBalance: number | null
+  clobConfigured?: boolean
   mode: string
   activePaperAccountId: number | null
+  commissionPercent?: number
 }
 
 export type CheckStatus = 'ok' | 'warn' | 'error' | 'idle'
@@ -88,4 +120,10 @@ export interface ConnectivityCheck {
 export interface ConnectivityResponse {
   checks: ConnectivityCheck[]
   checkedAt: string
+}
+
+export interface LiveStatus {
+  clobConfigured: boolean
+  liveBalanceUsd: number | null
+  canTrade: boolean
 }

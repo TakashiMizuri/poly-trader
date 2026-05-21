@@ -2,11 +2,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using PolyTrader.Core.Abstractions;
 using PolyTrader.Infrastructure.Binance;
 using PolyTrader.Infrastructure.Data;
 using PolyTrader.Infrastructure.Options;
 using PolyTrader.Infrastructure.Polymarket;
 using PolyTrader.Infrastructure.Services;
+using PolyTrader.Infrastructure.Telegram;
 
 namespace PolyTrader.Infrastructure;
 
@@ -28,6 +30,10 @@ public static class DependencyInjection
             }
 
             opts.WebApiToken ??= configuration["WEB_API_TOKEN"];
+            opts.PolymarketPolygonRpc ??= configuration["POLYMARKET_POLYGON_RPC"];
+            opts.CorsOrigins ??= configuration["CORS_ORIGINS"];
+            opts.TelegramBotToken ??= configuration["TELEGRAM_BOT_TOKEN"];
+            opts.TelegramAdminChatIds ??= configuration["TELEGRAM_ADMIN_CHAT_IDS"];
         });
 
         services.AddHttpClient();
@@ -42,10 +48,21 @@ public static class DependencyInjection
         services.AddSingleton<IPolymarketGammaService, PolymarketGammaService>();
         services.AddSingleton<IPolymarketDataApiService, PolymarketDataApiService>();
         services.AddSingleton<IPolymarketMarketWebSocket, PolymarketMarketWebSocket>();
+        services.AddSingleton<IPolymarketWalletResolver, PolymarketWalletResolver>();
+        services.AddSingleton<IPolymarketRestTradingClient, PolymarketRestTradingClient>();
         services.AddSingleton<IPolymarketClobService, PolymarketClobService>();
+        services.AddSingleton<ILiveTradeSettlementService, LiveTradeSettlementService>();
+        services.AddSingleton<IPolymarketCtfRedeemService, PolymarketCtfRedeemService>();
+        services.AddSingleton<IPolymarketRedeemService, PolymarketRedeemService>();
         services.AddSingleton<IConnectivityService, ConnectivityService>();
         services.AddScoped<GlobalResetService>();
+        services.AddScoped<InProgressWindowSkipService>();
+        services.AddScoped<BalanceHistoryService>();
+        services.AddScoped<IEngineSettingsService, EngineSettingsService>();
+        services.AddSingleton<ITelegramNotifier, TelegramNotifier>();
+        services.AddSingleton<BalanceChartImageBuilder>();
         services.AddHostedService<TradingEngineHostedService>();
+        services.AddHostedService<PolymarketRedeemHostedService>();
 
         return services;
     }
@@ -56,9 +73,13 @@ public static class DependencyInjection
         var db = scope.ServiceProvider.GetRequiredService<PolyTraderDbContext>();
         var logger = scope.ServiceProvider.GetService<ILogger<PolyTraderDbContext>>();
 
+        logger?.LogInformation("Applying database migrations");
         await db.Database.MigrateAsync();
+        logger?.LogInformation("Database migrations complete");
         await EnsureEngineStakeSizingColumnsAsync(db, logger);
         await EnsureEngineStakePendingColumnsAsync(db, logger);
+        await EnsureTradeRequestedStakeUsdColumnAsync(db, logger);
+        await EnsureEngineAutoRedeemEnabledColumnAsync(db, logger);
 
         if (!await SchemaTableExistsAsync(db, "EngineSettings"))
         {
@@ -70,12 +91,14 @@ public static class DependencyInjection
 
         if (!await db.EngineSettings.AnyAsync())
         {
+            logger?.LogInformation("Seeding default engine settings");
             db.EngineSettings.Add(new Entities.EngineSettingsEntity());
             await db.SaveChangesAsync();
         }
 
         if (!await db.PaperAccounts.AnyAsync())
         {
+            logger?.LogInformation("Seeding default paper account");
             var defaultAccount = new Entities.PaperAccountEntity
             {
                 Name = "Default paper",
@@ -198,6 +221,64 @@ public static class DependencyInjection
             """
             INSERT OR IGNORE INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
             VALUES ('20260520160624_EngineStakePending', '10.0.8');
+            """);
+    }
+
+    private static async Task EnsureEngineAutoRedeemEnabledColumnAsync(
+        PolyTraderDbContext db,
+        ILogger<PolyTraderDbContext>? logger)
+    {
+        if (!await SchemaTableExistsAsync(db, "EngineSettings"))
+        {
+            return;
+        }
+
+        if (await ColumnExistsAsync(db, "EngineSettings", "AutoRedeemEnabled"))
+        {
+            return;
+        }
+
+        logger?.LogWarning(
+            "EngineSettings is missing AutoRedeemEnabled column; applying schema repair.");
+
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "EngineSettings" ADD COLUMN "AutoRedeemEnabled" INTEGER NOT NULL DEFAULT 1;
+            """);
+
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            INSERT OR IGNORE INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+            VALUES ('20260522120000_EngineAutoRedeemEnabled', '10.0.8');
+            """);
+    }
+
+    private static async Task EnsureTradeRequestedStakeUsdColumnAsync(
+        PolyTraderDbContext db,
+        ILogger<PolyTraderDbContext>? logger)
+    {
+        if (!await SchemaTableExistsAsync(db, "Trades"))
+        {
+            return;
+        }
+
+        if (await ColumnExistsAsync(db, "Trades", "RequestedStakeUsd"))
+        {
+            return;
+        }
+
+        logger?.LogWarning(
+            "Trades is missing RequestedStakeUsd column; applying schema repair.");
+
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "Trades" ADD COLUMN "RequestedStakeUsd" REAL NULL;
+            """);
+
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            INSERT OR IGNORE INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+            VALUES ('20260521152022_TradeRequestedStakeUsd', '10.0.8');
             """);
     }
 

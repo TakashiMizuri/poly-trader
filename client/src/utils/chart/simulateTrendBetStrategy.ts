@@ -3,7 +3,7 @@ import type { ChartCandle } from '@/types/candle'
 import type { TrendBetStrategyParams } from '@/types/trendBetStrategy'
 import { DEFAULT_TREND_BET_STRATEGY_PARAMS } from '@/types/trendBetStrategy'
 import type { MarketTrend } from '@/utils/chart/detectBreakOfStructure'
-import { generateBosFlowSignals } from '@/utils/chart/bosFlowSignals'
+import { generateBlendFade2Signals } from '@/utils/chart/blendFade2Signals'
 import {
   resolveBetAtOpen,
   resolveBetForUpcomingBar,
@@ -205,7 +205,7 @@ function computeBalanceAtBarOpen(
   barIndex: number,
   params: TrendBetStrategyParams,
 ): number {
-  const signals = generateBosFlowSignals(candles, params.bosFlow)
+  const signals = generateBlendFade2Signals(candles, params.blendFade2)
   let balance = params.startBalance
   for (let i = 0; i < barIndex; i++) {
     if (!signals.entryBar[i] || signals.side[i] === null) continue
@@ -222,7 +222,7 @@ function computeBalanceAtBarOpen(
 }
 
 /**
- * Backtest on closed candles: bet only when bos_flow signals at bar open.
+ * Backtest on closed candles: bet only when blend_fade2 signals at bar open.
  */
 export function simulateTrendBetStrategy(
   candles: ChartCandle[],
@@ -232,7 +232,7 @@ export function simulateTrendBetStrategy(
 ): TrendBetSimulation | null {
   if (candles.length === 0) return null
 
-  const signals = generateBosFlowSignals(candles, params.bosFlow)
+  const signals = generateBlendFade2Signals(candles, params.blendFade2)
   const { startBalance, commissionPercent } = params
   const bets: TrendBet[] = []
   const equityCurve: Array<{ time: number; value: number }> = []

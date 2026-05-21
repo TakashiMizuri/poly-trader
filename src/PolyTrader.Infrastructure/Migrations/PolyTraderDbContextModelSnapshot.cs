@@ -23,6 +23,9 @@ namespace PolyTrader.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<long?>("CandleTime")
+                        .HasColumnType("INTEGER");
+
                     b.Property<double>("CashBalance")
                         .HasColumnType("REAL");
 
@@ -40,6 +43,8 @@ namespace PolyTrader.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PaperAccountId", "CandleTime");
 
                     b.ToTable("BalanceSnapshots");
                 });
@@ -77,6 +82,9 @@ namespace PolyTrader.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("ActivePaperAccountId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("AutoRedeemEnabled")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("BetStakeMode")
@@ -305,6 +313,12 @@ namespace PolyTrader.Infrastructure.Migrations
 
                     b.Property<string>("PolymarketOrderId")
                         .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("RedeemedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("RequestedStakeUsd")
+                        .HasColumnType("REAL");
 
                     b.Property<string>("Side")
                         .IsRequired()

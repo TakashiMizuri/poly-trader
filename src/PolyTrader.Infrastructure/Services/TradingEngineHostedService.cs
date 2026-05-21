@@ -44,7 +44,9 @@ public sealed class TradingEngineHostedService : BackgroundService
 
     private readonly IPolymarketClobService _clob;
 
-    private readonly IPolymarketDataApiService _dataApi;
+    private readonly ILiveTradeSettlementService _liveSettlement;
+
+    private readonly IPolymarketRedeemService _redeem;
 
     private readonly ITradingEventPublisher _publisher;
 
@@ -55,6 +57,19 @@ public sealed class TradingEngineHostedService : BackgroundService
     private MarketEntity? _activeMarket;
 
     private long? _lastSeenLatestCandleTime;
+
+    /// <summary>
+    /// Closed candle times for which strategy evaluation already ran (kline_close or backup).
+    /// Prevents duplicate live orders when both paths race before the first trade is saved.
+    /// </summary>
+    private readonly HashSet<long> _evaluatedCloseTimes = [];
+
+    /// <summary>
+    /// Entry target candle times for which an open is in progress or completed this session.
+    /// </summary>
+    private readonly HashSet<long> _claimedEntryTargets = [];
+
+    private readonly object _entryDedupLock = new();
 
 
 
@@ -70,7 +85,9 @@ public sealed class TradingEngineHostedService : BackgroundService
 
         IPolymarketClobService clob,
 
-        IPolymarketDataApiService dataApi,
+        ILiveTradeSettlementService liveSettlement,
+
+        IPolymarketRedeemService redeem,
 
         ITradingEventPublisher publisher,
 
@@ -90,7 +107,9 @@ public sealed class TradingEngineHostedService : BackgroundService
 
         _clob = clob;
 
-        _dataApi = dataApi;
+        _liveSettlement = liveSettlement;
+
+        _redeem = redeem;
 
         _publisher = publisher;
 
@@ -106,6 +125,11 @@ public sealed class TradingEngineHostedService : BackgroundService
 
     {
 
+        _logger.LogInformation(
+            "Trading engine starting (symbol={Symbol}, interval={Interval})",
+            _options.BinanceSymbol,
+            _options.BinanceInterval);
+
         _binance.KlineClosed += OnKlineClosed;
         _binance.CandlesUpdated += OnCandlesUpdated;
 
@@ -119,7 +143,7 @@ public sealed class TradingEngineHostedService : BackgroundService
 
         await RecoverOnStartupAsync(stoppingToken);
 
-
+        _logger.LogInformation("Trading engine ready; market refresh every 2 minutes");
 
         while (!stoppingToken.IsCancellationRequested)
 
@@ -271,7 +295,8 @@ public sealed class TradingEngineHostedService : BackgroundService
 
         if (settings.TradingMode == TradingMode.Paper && paperAccount == null) return;
 
-        var strategyParams = settings.ToStrategyParams(paperAccount?.Balance ?? 0);
+        var workingBalance = await GetWorkingBalanceAsync(settings, paperAccount, CancellationToken.None);
+        var strategyParams = settings.ToStrategyParams(workingBalance);
 
         var nextBar = candles.FirstOrDefault(c => c.Time == latest.Time);
 
@@ -289,6 +314,14 @@ public sealed class TradingEngineHostedService : BackgroundService
 
         if (actions == null) return;
 
+        if (!TryClaimCloseEvaluation(closedCandle.Time))
+        {
+            _logger.LogDebug(
+                "bar_open_backup skipped: close {ClosedTime} already evaluated",
+                closedCandle.Time);
+            return;
+        }
+
         LogCandleDecision("bar_open_backup", closedCandle.Time, latest.Time, actions);
 
         var tradesToPublish = await ApplyStrategyActionsAsync(
@@ -298,23 +331,12 @@ public sealed class TradingEngineHostedService : BackgroundService
             paperAccount,
             closedCandle,
             intervalSeconds,
-            actions);
+            actions,
+            workingBalance);
 
         await db.SaveChangesAsync();
 
-        foreach (var trade in tradesToPublish)
-        {
-            await db.Entry(trade).Reference(t => t.Market).LoadAsync();
-            await _publisher.PublishTradePlacedAsync(ToTradeEventDto(trade), CancellationToken.None);
-        }
-
-        if (paperAccount != null && tradesToPublish.Exists(t => t.Won != null))
-        {
-            await _publisher.PublishBalanceUpdatedAsync(
-                paperAccount.Balance,
-                paperAccount.Id,
-                CancellationToken.None);
-        }
+        await PublishTradesAndBalanceAsync(db, tradesToPublish, paperAccount, CancellationToken.None);
     }
 
 
@@ -329,6 +351,16 @@ public sealed class TradingEngineHostedService : BackgroundService
 
         var settings = await db.EngineSettings.FirstOrDefaultAsync() ?? new EngineSettingsEntity();
 
+        _logger.LogDebug(
+            "Kline closed {CandleTime} O={Open} H={High} L={Low} C={Close} running={Running} mode={Mode}",
+            e.Candle.Time,
+            e.Candle.Open,
+            e.Candle.High,
+            e.Candle.Low,
+            e.Candle.Close,
+            settings.IsRunning,
+            settings.TradingMode);
+
         var isPaper = settings.TradingMode == TradingMode.Paper;
         var tradeContextId = 0;
         if (isPaper)
@@ -336,6 +368,14 @@ public sealed class TradingEngineHostedService : BackgroundService
             if (settings.ActivePaperAccountId is not int paperId)
             {
                 await TryRecordSkipAsync(db, settings, e.Candle.Time, null, "engine_stopped", marketId: null);
+                var liveBal = await _clob.GetCollateralBalanceAsync(CancellationToken.None);
+                await BalanceSnapshotRecorder.RecordAsync(
+                    db,
+                    0,
+                    e.Candle.Time,
+                    liveBal ?? 0,
+                    "Live",
+                    CancellationToken.None);
                 await db.SaveChangesAsync();
                 return;
             }
@@ -351,6 +391,23 @@ public sealed class TradingEngineHostedService : BackgroundService
                 tradeContextId == 0 ? null : tradeContextId,
                 "engine_stopped",
                 marketId: null);
+
+            PaperAccountEntity? stoppedPaper = null;
+            if (isPaper)
+            {
+                stoppedPaper = await db.PaperAccounts.FirstOrDefaultAsync(
+                    a => a.Id == tradeContextId && !a.IsArchived);
+            }
+
+            var stoppedBalance = await GetWorkingBalanceAsync(settings, stoppedPaper, CancellationToken.None);
+            await RecordCandleBalanceSnapshotAsync(
+                db,
+                settings,
+                stoppedPaper,
+                tradeContextId,
+                e.Candle.Time,
+                stoppedBalance,
+                CancellationToken.None);
             await db.SaveChangesAsync();
             return;
         }
@@ -370,7 +427,7 @@ public sealed class TradingEngineHostedService : BackgroundService
 
 
 
-        var workingBalance = paperAccount?.Balance ?? 0;
+        var workingBalance = await GetWorkingBalanceAsync(settings, paperAccount, CancellationToken.None);
 
         var snap = await db.CandleSnapshots.FindAsync(e.Candle.Time);
 
@@ -475,6 +532,15 @@ public sealed class TradingEngineHostedService : BackgroundService
 
         }
 
+        if (!TryClaimCloseEvaluation(e.Candle.Time))
+        {
+            _logger.LogDebug(
+                "kline_closed skipped: close {ClosedTime} already evaluated",
+                e.Candle.Time);
+            await db.SaveChangesAsync();
+            return;
+        }
+
         LogCandleDecision("kline_closed", e.Candle.Time, nextOpenTime, actions);
 
         var tradesToPublish = await ApplyStrategyActionsAsync(
@@ -484,22 +550,56 @@ public sealed class TradingEngineHostedService : BackgroundService
             paperAccount,
             e.Candle,
             intervalSeconds,
-            actions);
+            actions,
+            workingBalance);
 
         await db.SaveChangesAsync();
 
-        foreach (var trade in tradesToPublish)
+        await PublishTradesAndBalanceAsync(db, tradesToPublish, paperAccount, CancellationToken.None);
+    }
+
+    private async Task PublishTradesAndBalanceAsync(
+        PolyTraderDbContext db,
+        List<TradeEntity> trades,
+        PaperAccountEntity? paperAccount,
+        CancellationToken ct)
+    {
+        if (trades.Count == 0)
         {
-            await db.Entry(trade).Reference(t => t.Market).LoadAsync();
-            await _publisher.PublishTradePlacedAsync(ToTradeEventDto(trade), CancellationToken.None);
+            return;
         }
 
-        if (paperAccount != null && tradesToPublish.Exists(t => t.Won != null))
+        _logger.LogInformation(
+            "Publishing {Count} trade event(s) to clients",
+            trades.Count);
+
+        foreach (var trade in trades)
         {
+            await db.Entry(trade).Reference(t => t.Market).LoadAsync(ct);
+            await _publisher.PublishTradePlacedAsync(ToTradeEventDto(trade), ct);
+        }
+
+        if (paperAccount != null && trades.Exists(t => t.Won != null))
+        {
+            _logger.LogInformation(
+                "Publishing paper balance update account={AccountId} balance=${Balance:F2}",
+                paperAccount.Id,
+                paperAccount.Balance);
             await _publisher.PublishBalanceUpdatedAsync(
                 paperAccount.Balance,
                 paperAccount.Id,
-                CancellationToken.None);
+                ct);
+        }
+        else if (trades.Exists(t => t.Mode == TradingMode.Live))
+        {
+            var liveBal = await _clob.GetCollateralBalanceAsync(ct);
+            if (liveBal is > 0)
+            {
+                _logger.LogInformation(
+                    "Publishing live balance update balance=${Balance:F2}",
+                    liveBal.Value);
+                await _publisher.PublishBalanceUpdatedAsync(liveBal.Value, 0, ct);
+            }
         }
     }
 
@@ -511,9 +611,11 @@ public sealed class TradingEngineHostedService : BackgroundService
         ChartCandle closedCandle,
         long intervalSeconds,
         CandleCloseStrategyResult actions,
+        double workingBalance,
         CancellationToken ct = default)
     {
         var isPaper = settings.TradingMode == TradingMode.Paper;
+        var isLive = settings.TradingMode == TradingMode.Live;
         var tradesToPublish = new List<TradeEntity>();
         var balanceChanged = false;
 
@@ -528,33 +630,95 @@ public sealed class TradingEngineHostedService : BackgroundService
 
             if (openTrade != null)
             {
-                openTrade.Won = actions.Settlement.Won;
-                var (pnl, _) = TrendBetStrategySimulator.ComputeBetPnl(
-                    actions.Settlement.Won,
-                    openTrade.StakeUsd,
-                    settings.CommissionPercent,
-                    openTrade.EntryPrice);
-                openTrade.PnlUsd = pnl;
-
-                if (isPaper && paperAccount != null)
+                bool won;
+                if (isLive)
                 {
-                    paperAccount.Balance += pnl;
-                    paperAccount.UpdatedAt = DateTime.UtcNow;
-                    balanceChanged = true;
-                }
+                    if (openTrade.Market == null && openTrade.MarketId is > 0)
+                    {
+                        await db.Entry(openTrade).Reference(t => t.Market).LoadAsync(ct);
+                    }
 
-                db.Trades.Update(openTrade);
-                tradesToPublish.Add(openTrade);
+                    var liveWon = await _liveSettlement.TryResolveOutcomeAsync(openTrade, closedCandle, ct);
+                    if (liveWon == null)
+                    {
+                        _logger.LogWarning(
+                            "Live settlement deferred for trade {TradeId} candle {CandleTime}",
+                            openTrade.Id,
+                            openTrade.CandleTime);
+                    }
+                    else
+                    {
+                        won = liveWon.Value;
+                        openTrade.Won = won;
+                        var (pnl, _) = TrendBetStrategySimulator.ComputeBetPnl(
+                            won,
+                            openTrade.StakeUsd,
+                            settings.CommissionPercent,
+                            openTrade.EntryPrice);
+                        openTrade.PnlUsd = pnl;
+                        db.Trades.Update(openTrade);
+                        tradesToPublish.Add(openTrade);
+                        LogTradeClosed(openTrade, won, pnl, paperAccount?.Balance);
+
+                        if (won
+                            && settings.AutoRedeemEnabled
+                            && !string.IsNullOrWhiteSpace(openTrade.Market?.ConditionId))
+                        {
+                            _ = TriggerRedeemForConditionAsync(
+                                openTrade.Market.ConditionId,
+                                openTrade.CandleTime);
+                        }
+                    }
+                }
+                else
+                {
+                    won = actions.Settlement.Won;
+                    openTrade.Won = won;
+                    var (pnl, _) = TrendBetStrategySimulator.ComputeBetPnl(
+                        won,
+                        openTrade.StakeUsd,
+                        settings.CommissionPercent,
+                        openTrade.EntryPrice);
+                    openTrade.PnlUsd = pnl;
+
+                    if (isPaper && paperAccount != null)
+                    {
+                        paperAccount.Balance += pnl;
+                        paperAccount.UpdatedAt = DateTime.UtcNow;
+                        balanceChanged = true;
+                    }
+
+                    db.Trades.Update(openTrade);
+                    tradesToPublish.Add(openTrade);
+                    LogTradeClosed(openTrade, won, pnl, paperAccount?.Balance);
+                }
             }
         }
 
         if (actions.Entry != null)
         {
+            var targetCandleTime = actions.Entry.TargetCandleTime;
+
+            if (!TryClaimEntryTarget(targetCandleTime))
+            {
+                _logger.LogWarning(
+                    "Duplicate entry suppressed for candle {CandleTime} mode={Mode} account={AccountId}",
+                    targetCandleTime,
+                    settings.TradingMode,
+                    tradeContextId);
+            }
+            else
+            {
             var entryExists = await db.Trades.AnyAsync(t =>
-                    t.CandleTime == actions.Entry.TargetCandleTime
+                    t.CandleTime == targetCandleTime
                     && t.Mode == settings.TradingMode
                     && t.PaperAccountId == tradeContextId,
                 ct);
+
+            if (entryExists)
+            {
+                ReleaseEntryTargetClaim(targetCandleTime);
+            }
 
             if (!entryExists)
             {
@@ -565,6 +729,7 @@ public sealed class TradingEngineHostedService : BackgroundService
 
                 if (entryMarket == null)
                 {
+                    ReleaseEntryTargetClaim(targetCandleTime);
                     _logger.LogWarning(
                         "No Polymarket market for candle {CandleTime}; recording skip",
                         actions.Entry.TargetCandleTime);
@@ -576,7 +741,8 @@ public sealed class TradingEngineHostedService : BackgroundService
                         tradeContextId,
                         "no_market",
                         marketId: null,
-                        ct);
+                        detail: "No Polymarket BTC 5m market resolved for entry candle",
+                        ct: ct);
                 }
                 else
                 {
@@ -593,60 +759,167 @@ public sealed class TradingEngineHostedService : BackgroundService
                         ct);
 
                     string? orderId = null;
-                    var balanceAtOpen = paperAccount?.Balance ?? 0;
+                    var balanceUnavailable = false;
+                    double balanceAtOpen = 0;
+                    if (isPaper)
+                    {
+                        balanceAtOpen = paperAccount?.Balance ?? 0;
+                    }
+                    else
+                    {
+                        var liveBalance = await _clob.GetCollateralBalanceAsync(ct);
+                        if (liveBalance is null)
+                        {
+                            balanceUnavailable = true;
+                            ReleaseEntryTargetClaim(targetCandleTime);
+                            _logger.LogWarning(
+                                "Live entry skipped for candle {CandleTime}: CLOB balance unavailable (check connectivity / Polymarket API)",
+                                actions.Entry.TargetCandleTime);
+                            await TryRecordSkipAsync(
+                                db,
+                                settings,
+                                actions.Entry.TargetCandleTime,
+                                tradeContextId,
+                                "balance_unavailable",
+                                entryMarket.Id,
+                                "Could not read live USDC balance from Polymarket CLOB (timeout or network error)",
+                                ct);
+                        }
+                        else
+                        {
+                            balanceAtOpen = liveBalance.Value;
+                        }
+                    }
+
+                    if (balanceUnavailable)
+                    {
+                        // skip entry; balance_unavailable already recorded
+                    }
+                    else
+                    {
                     var stakeParams = settings.ToStrategyParams(balanceAtOpen);
                     var stake = BetStakeResolver.ResolveForBalance(balanceAtOpen, stakeParams)
                         ?? (settings.BetStakeMode == BetStakeMode.Fixed
                             ? settings.BetStakeUsd
                             : BetStakeResolver.RequestedStake(balanceAtOpen, stakeParams));
 
-                    if (settings.TradingMode == TradingMode.Live)
+                    if (isLive && (stake < SafeBetStake.MinBetStake || balanceAtOpen < SafeBetStake.MinBetStake))
                     {
-                        orderId = await _clob.PlaceMarketOrderAsync(tokenId, stake);
-                        if (orderId == null)
-                        {
-                            _logger.LogWarning("Live order failed; trade not recorded");
-                        }
+                        ReleaseEntryTargetClaim(targetCandleTime);
+                        _logger.LogWarning(
+                            "Live entry skipped for candle {CandleTime}: insufficient balance ${Balance:F2}",
+                            actions.Entry.TargetCandleTime,
+                            balanceAtOpen);
+                        await TryRecordSkipAsync(
+                            db,
+                            settings,
+                            actions.Entry.TargetCandleTime,
+                            tradeContextId,
+                            "insufficient_balance",
+                            entryMarket.Id,
+                            $"Live balance ${balanceAtOpen:F2} below minimum stake (requested ${stake:F2}, min ${SafeBetStake.MinBetStake:F2})",
+                            ct);
                     }
                     else
                     {
-                        orderId = $"paper-{Guid.NewGuid():N}";
-                        _logger.LogInformation(
-                            "Paper fill @ {Price:F4} on token {TokenId} (simulated order {OrderId})",
-                            entryPrice,
-                            tokenId,
-                            orderId);
-                    }
-
-                    if (settings.TradingMode != TradingMode.Live || orderId != null)
-                    {
-                        var trade = new TradeEntity
+                        LiveMarketBuyOutcome? liveOutcome = null;
+                        if (isLive)
                         {
-                            CandleTime = actions.Entry.TargetCandleTime,
-                            Side = side,
-                            Trend = actions.Entry.Trend,
-                            Mode = settings.TradingMode,
-                            PaperAccountId = tradeContextId,
-                            StakeUsd = stake,
-                            EntryPrice = entryPrice,
-                            Won = null,
-                            PnlUsd = null,
-                            PolymarketOrderId = orderId,
-                            MarketId = entryMarket.Id,
-                        };
+                            liveOutcome = await _clob.PlaceMarketOrderAsync(
+                                tokenId,
+                                stake,
+                                entryPrice,
+                                new LiveEntryOrderKey(actions.Entry.TargetCandleTime, tokenId),
+                                ct);
+                            if (!liveOutcome.IsSuccess)
+                            {
+                                ReleaseEntryTargetClaim(targetCandleTime);
+                                _logger.LogWarning(
+                                    "Live entry failed candle {CandleTime} side {Side} trend {Trend} stake ${Stake:F2} token {TokenId} market {MarketId}: {Reason}",
+                                    targetCandleTime,
+                                    side,
+                                    actions.Entry.Trend,
+                                    stake,
+                                    tokenId,
+                                    entryMarket.Id,
+                                    liveOutcome.FailureReason ?? "unknown");
+                                await TryRecordSkipAsync(
+                                    db,
+                                    settings,
+                                    targetCandleTime,
+                                    tradeContextId,
+                                    "order_failed",
+                                    entryMarket.Id,
+                                    liveOutcome.FailureReason,
+                                    ct);
+                            }
+                            else
+                            {
+                                var liveBuy = liveOutcome.Result!;
+                                orderId = liveBuy.OrderId;
+                                stake = liveBuy.FilledStakeUsd;
+                                if (liveBuy.AveragePrice is > 0)
+                                {
+                                    entryPrice = liveBuy.AveragePrice.Value;
+                                }
+                                else if (liveBuy.MatchedShares > 0 && stake > 0)
+                                {
+                                    entryPrice = stake / liveBuy.MatchedShares;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            orderId = $"paper-{Guid.NewGuid():N}";
+                            _logger.LogInformation(
+                                "Paper fill @ {Price:F4} on token {TokenId} (simulated order {OrderId})",
+                                entryPrice,
+                                tokenId,
+                                orderId);
+                        }
 
-                        db.Trades.Add(trade);
-                        tradesToPublish.Add(trade);
+                        if (!isLive || liveOutcome is { IsSuccess: true })
+                        {
+                            double? requestedStakeUsd = null;
+                            if (isLive && liveOutcome?.Result is { IsPartialFill: true } partial)
+                            {
+                                requestedStakeUsd = partial.RequestedStakeUsd;
+                            }
 
-                        _logger.LogInformation(
-                            "Opened {Mode} trade for candle {CandleTime} trend {Trend} @ {Price:F4} stake ${Stake:F2}",
-                            settings.TradingMode,
-                            actions.Entry.TargetCandleTime,
-                            actions.Entry.Trend,
-                            entryPrice,
-                            stake);
+                            var trade = new TradeEntity
+                            {
+                                CandleTime = actions.Entry.TargetCandleTime,
+                                Side = side,
+                                Trend = actions.Entry.Trend,
+                                Mode = settings.TradingMode,
+                                PaperAccountId = tradeContextId,
+                                StakeUsd = stake,
+                                RequestedStakeUsd = requestedStakeUsd,
+                                EntryPrice = entryPrice,
+                                Won = null,
+                                PnlUsd = null,
+                                PolymarketOrderId = orderId,
+                                MarketId = entryMarket.Id,
+                            };
+
+                            db.Trades.Add(trade);
+                            tradesToPublish.Add(trade);
+
+                            _logger.LogInformation(
+                                "Opened {Mode} trade candle {CandleTime} side {Side} trend {Trend} @ {Price:F4} stake ${Stake:F2} order={OrderId} market={MarketId}",
+                                settings.TradingMode,
+                                actions.Entry.TargetCandleTime,
+                                side,
+                                actions.Entry.Trend,
+                                entryPrice,
+                                stake,
+                                orderId,
+                                entryMarket.Id);
+                        }
+                    }
                     }
                 }
+            }
             }
         }
         else if (intervalSeconds > 0)
@@ -659,7 +932,7 @@ public sealed class TradingEngineHostedService : BackgroundService
                 tradeContextId,
                 "no_signal",
                 marketId: null,
-                ct);
+                ct: ct);
 
             _logger.LogInformation(
                 "No BoS flow entry for next candle {NextCandleTime} (closed {ClosedCandleTime}); skipRecorded={SkipRecorded}",
@@ -671,16 +944,138 @@ public sealed class TradingEngineHostedService : BackgroundService
         if (balanceChanged && paperAccount != null)
         {
             db.PaperAccounts.Update(paperAccount);
-            db.BalanceSnapshots.Add(new BalanceSnapshotEntity
-            {
-                CashBalance = paperAccount.Balance,
-                Equity = paperAccount.Balance,
-                Source = "Paper",
-                PaperAccountId = paperAccount.Id,
-            });
         }
 
+        await RecordCandleBalanceSnapshotAsync(
+            db,
+            settings,
+            paperAccount,
+            tradeContextId,
+            closedCandle.Time,
+            workingBalance,
+            ct);
+
         return tradesToPublish;
+    }
+
+    private async Task<double> GetWorkingBalanceAsync(
+        EngineSettingsEntity settings,
+        PaperAccountEntity? paperAccount,
+        CancellationToken ct)
+    {
+        if (settings.TradingMode == TradingMode.Paper)
+        {
+            return paperAccount?.Balance ?? 0;
+        }
+
+        return await _clob.GetCollateralBalanceAsync(ct) ?? 0;
+    }
+
+    private void LogTradeClosed(
+        TradeEntity trade,
+        bool won,
+        double pnl,
+        double? balanceAfter)
+    {
+        _logger.LogInformation(
+            "Closed {Mode} trade id={TradeId} candle {CandleTime} side {Side} → {Outcome} PnL ${Pnl:F2} stake ${Stake:F2} entry={Entry:F4} balanceAfter={Balance}",
+            trade.Mode,
+            trade.Id,
+            trade.CandleTime,
+            trade.Side,
+            won ? "won" : "lost",
+            pnl,
+            trade.StakeUsd,
+            trade.EntryPrice,
+            balanceAfter?.ToString("F2") ?? "n/a");
+    }
+
+    private async Task TriggerRedeemForConditionAsync(string conditionId, long candleTime)
+    {
+        try
+        {
+            await using (var scope = _scopeFactory.CreateAsyncScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<PolyTraderDbContext>();
+                var autoRedeemEnabled = await db.EngineSettings
+                    .AsNoTracking()
+                    .Select(s => s.AutoRedeemEnabled)
+                    .FirstAsync();
+                if (!autoRedeemEnabled)
+                {
+                    _logger.LogDebug(
+                        "Post-settlement redeem skipped (auto-redeem disabled) candle {CandleTime} condition {ConditionId}",
+                        candleTime,
+                        conditionId);
+                    return;
+                }
+            }
+
+            _logger.LogInformation(
+                "Scheduling post-settlement redeem for candle {CandleTime} condition {ConditionId} (delay 15s)",
+                candleTime,
+                conditionId);
+
+            await Task.Delay(TimeSpan.FromSeconds(15));
+            _logger.LogInformation(
+                "Executing post-settlement redeem for candle {CandleTime} condition {ConditionId}",
+                candleTime,
+                conditionId);
+            var result = await _redeem.TryRedeemConditionAsync(conditionId);
+            if (result.Success)
+            {
+                await using (var scope = _scopeFactory.CreateAsyncScope())
+                {
+                    var db = scope.ServiceProvider.GetRequiredService<PolyTraderDbContext>();
+                    await TradeRedeemRecorder.MarkConditionRedeemedAsync(db, conditionId);
+                }
+
+                _logger.LogInformation(
+                    "Post-settlement redeem succeeded candle {CandleTime} condition {ConditionId} tx {TxHash}",
+                    candleTime,
+                    conditionId,
+                    result.TransactionHash);
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Post-settlement redeem returned failure candle {CandleTime} condition {ConditionId} error={Error}",
+                    candleTime,
+                    conditionId,
+                    result.Error ?? "unknown");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex,
+                "Post-settlement redeem failed for candle {CandleTime} condition {ConditionId}",
+                candleTime,
+                conditionId);
+        }
+    }
+
+    private async Task RecordCandleBalanceSnapshotAsync(
+        PolyTraderDbContext db,
+        EngineSettingsEntity settings,
+        PaperAccountEntity? paperAccount,
+        int tradeContextId,
+        long closedCandleTimeMs,
+        double workingBalanceFallback,
+        CancellationToken ct)
+    {
+        var contextId = settings.TradingMode == TradingMode.Paper ? tradeContextId : 0;
+        var balance = settings.TradingMode == TradingMode.Paper
+            ? paperAccount?.Balance ?? 0
+            : await _clob.GetCollateralBalanceAsync(ct) ?? workingBalanceFallback;
+
+        await BalanceSnapshotRecorder.RecordAsync(
+            db,
+            contextId,
+            closedCandleTimeMs,
+            balance,
+            settings.TradingMode == TradingMode.Paper ? "Paper" : "Live",
+            ct);
     }
 
     private static object ToTradeEventDto(TradeEntity t) => new
@@ -841,6 +1236,9 @@ public sealed class TradingEngineHostedService : BackgroundService
         return buffer.Take(closedIndex + 1).ToList();
     }
 
+    private static bool IsEntryErrorSkipReason(string skipReason) =>
+        skipReason is "order_failed" or "insufficient_balance" or "balance_unavailable" or "no_market";
+
     private async Task<bool> TryRecordSkipAsync(
         PolyTraderDbContext db,
         EngineSettingsEntity settings,
@@ -848,6 +1246,7 @@ public sealed class TradingEngineHostedService : BackgroundService
         int? paperAccountId,
         string skipReason,
         int? marketId,
+        string? detail = null,
         CancellationToken ct = default)
     {
         var contextId = paperAccountId ?? 0;
@@ -918,7 +1317,54 @@ public sealed class TradingEngineHostedService : BackgroundService
             PaperAccountId = contextId,
             SkipReason = skipReason,
         });
+
+        if (IsEntryErrorSkipReason(skipReason))
+        {
+            _logger.LogWarning(
+                "Recorded entry error candle {CandleTime} reason={Reason} detail={Detail} mode={Mode} account={AccountId} market={MarketId}",
+                candleTime,
+                skipReason,
+                detail ?? "(none)",
+                settings.TradingMode,
+                contextId,
+                resolvedMarketId.Value);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "Recorded skip candle {CandleTime} reason={Reason} mode={Mode} account={AccountId} market={MarketId}",
+                candleTime,
+                skipReason,
+                settings.TradingMode,
+                contextId,
+                resolvedMarketId.Value);
+        }
+
         return true;
+    }
+
+    private bool TryClaimCloseEvaluation(long closedCandleTime)
+    {
+        lock (_entryDedupLock)
+        {
+            return _evaluatedCloseTimes.Add(closedCandleTime);
+        }
+    }
+
+    private bool TryClaimEntryTarget(long targetCandleTime)
+    {
+        lock (_entryDedupLock)
+        {
+            return _claimedEntryTargets.Add(targetCandleTime);
+        }
+    }
+
+    private void ReleaseEntryTargetClaim(long targetCandleTime)
+    {
+        lock (_entryDedupLock)
+        {
+            _claimedEntryTargets.Remove(targetCandleTime);
+        }
     }
 
     private void LogCandleDecision(
@@ -966,13 +1412,20 @@ public sealed class TradingEngineHostedService : BackgroundService
         var tradesToPublish = new List<TradeEntity>();
         var balanceUpdates = new HashSet<int>();
 
-        await TryRecordMidCandleStartupSkipAsync(db, settings, latest.Time, ct);
+        var inProgressSkips = scope.ServiceProvider.GetRequiredService<InProgressWindowSkipService>();
+        await inProgressSkips.TryRecordEngineStoppedForInProgressWindowAsync(settings, ct);
 
         var openTrades = await db.Trades
             .Include(t => t.Market)
             .Where(t => t.Won == null)
             .OrderBy(t => t.CandleTime)
             .ToListAsync(ct);
+
+        _logger.LogInformation(
+            "Startup recovery: {OpenCount} open trade(s), engine running={Running} mode={Mode}",
+            openTrades.Count,
+            settings.IsRunning,
+            settings.TradingMode);
 
         foreach (var trade in openTrades)
         {
@@ -1006,15 +1459,7 @@ public sealed class TradingEngineHostedService : BackgroundService
             await db.SaveChangesAsync(ct);
         }
 
-        foreach (var trade in tradesToPublish)
-        {
-            if (trade.Market == null)
-            {
-                await db.Entry(trade).Reference(t => t.Market).LoadAsync(ct);
-            }
-
-            await _publisher.PublishTradePlacedAsync(ToTradeEventDto(trade), ct);
-        }
+        await PublishTradesAndBalanceAsync(db, tradesToPublish, null, ct);
 
         foreach (var paperId in balanceUpdates)
         {
@@ -1023,42 +1468,6 @@ public sealed class TradingEngineHostedService : BackgroundService
             {
                 await _publisher.PublishBalanceUpdatedAsync(account.Balance, account.Id, ct);
             }
-        }
-    }
-
-    private async Task TryRecordMidCandleStartupSkipAsync(
-        PolyTraderDbContext db,
-        EngineSettingsEntity settings,
-        long currentCandleTime,
-        CancellationToken ct)
-    {
-        var isPaper = settings.TradingMode == TradingMode.Paper;
-        int? paperAccountId = null;
-        if (isPaper)
-        {
-            if (settings.ActivePaperAccountId is not int id)
-            {
-                return;
-            }
-
-            paperAccountId = id;
-        }
-
-        var recorded = await TryRecordSkipAsync(
-            db,
-            settings,
-            currentCandleTime,
-            paperAccountId,
-            "engine_stopped",
-            marketId: null,
-            ct);
-
-        if (recorded)
-        {
-            await db.SaveChangesAsync(ct);
-            _logger.LogInformation(
-                "Startup: recorded engine_stopped skip for in-progress candle {CandleTime}",
-                currentCandleTime);
         }
     }
 
@@ -1144,68 +1553,39 @@ public sealed class TradingEngineHostedService : BackgroundService
             paperAccount.Balance += pnl;
             paperAccount.UpdatedAt = DateTime.UtcNow;
             db.PaperAccounts.Update(paperAccount);
-            db.BalanceSnapshots.Add(new BalanceSnapshotEntity
-            {
-                CashBalance = paperAccount.Balance,
-                Equity = paperAccount.Balance,
-                Source = "Paper",
-                PaperAccountId = paperAccount.Id,
-            });
+            await BalanceSnapshotRecorder.RecordAsync(
+                db,
+                paperAccount.Id,
+                trade.CandleTime,
+                paperAccount.Balance,
+                "Paper",
+                ct);
         }
 
         db.Trades.Update(trade);
+        LogTradeClosed(trade, won.Value, pnl, paperAccount?.Balance);
         _logger.LogInformation(
-            "Startup: settled {Mode} trade {TradeId} candle {CandleTime} → {Outcome}",
+            "Startup: settled {Mode} trade {TradeId} candle {CandleTime}",
             trade.Mode,
             trade.Id,
-            trade.CandleTime,
-            won.Value ? "won" : "lost");
+            trade.CandleTime);
+
+        if (trade.Mode == TradingMode.Live
+            && won.Value
+            && settings.AutoRedeemEnabled
+            && !string.IsNullOrWhiteSpace(trade.Market?.ConditionId))
+        {
+            _ = TriggerRedeemForConditionAsync(trade.Market.ConditionId, trade.CandleTime);
+        }
 
         return true;
     }
 
-    private async Task<bool?> TryResolveLiveTradeOutcomeAsync(
+    private Task<bool?> TryResolveLiveTradeOutcomeAsync(
         TradeEntity trade,
         ChartCandle? closedCandle,
-        CancellationToken ct)
-    {
-        var conditionId = trade.Market?.ConditionId;
-        if (!string.IsNullOrWhiteSpace(conditionId))
-        {
-            var winningSide = await _gamma.TryGetResolvedWinningSideAsync(conditionId, ct);
-            if (winningSide != null)
-            {
-                return trade.Side == winningSide.Value;
-            }
-        }
-
-        var wallet = _dataApi.ResolveWalletAddress();
-        if (!string.IsNullOrWhiteSpace(wallet) && trade.Market != null)
-        {
-            var tokenId = trade.Side == TradeSide.Up
-                ? trade.Market.YesTokenId
-                : trade.Market.NoTokenId;
-            if (!string.IsNullOrWhiteSpace(tokenId))
-            {
-                var fromPosition = await _dataApi.TryInferOutcomeFromPositionAsync(wallet, tokenId, ct);
-                if (fromPosition != null)
-                {
-                    return fromPosition.Value;
-                }
-            }
-        }
-
-        if (closedCandle != null)
-        {
-            _logger.LogWarning(
-                "Live trade {TradeId} candle {CandleTime}: Polymarket resolution unavailable; using Binance OHLC",
-                trade.Id,
-                trade.CandleTime);
-            return TrendBetStrategySimulator.IsBetWon(trade.Trend, closedCandle);
-        }
-
-        return null;
-    }
+        CancellationToken ct) =>
+        _liveSettlement.TryResolveOutcomeAsync(trade, closedCandle, ct);
 
     private static async Task<ChartCandle?> ResolveClosedCandleForTradeAsync(
         PolyTraderDbContext db,
@@ -1248,7 +1628,11 @@ public sealed class TradingEngineHostedService : BackgroundService
 
         var discovered = await _gamma.DiscoverActiveBtc5mMarketAsync(ct);
 
-        if (discovered == null) return;
+        if (discovered == null)
+        {
+            _logger.LogDebug("Market refresh: no active BTC 5m market from Gamma");
+            return;
+        }
 
 
 
@@ -1310,6 +1694,13 @@ public sealed class TradingEngineHostedService : BackgroundService
 
         await _marketWs.SubscribeAsync(discovered.YesTokenId, discovered.NoTokenId, ct);
 
+        _logger.LogInformation(
+            "Active market updated condition={ConditionId} slug={Slug} window={Start}–{End}",
+            discovered.ConditionId,
+            discovered.Slug,
+            discovered.WindowStartUtc,
+            discovered.WindowEndUtc);
+
         await _publisher.PublishMarketWindowUpdatedAsync(_activeMarket);
 
     }
@@ -1319,6 +1710,7 @@ public sealed class TradingEngineHostedService : BackgroundService
     public override async Task StopAsync(CancellationToken cancellationToken)
 
     {
+        _logger.LogInformation("Trading engine stopping");
 
         _binance.KlineClosed -= OnKlineClosed;
         _binance.CandlesUpdated -= OnCandlesUpdated;

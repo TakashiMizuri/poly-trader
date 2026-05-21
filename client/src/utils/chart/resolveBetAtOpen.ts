@@ -1,11 +1,11 @@
 import type { ChartCandle } from '@/types/candle'
 import type { TrendBetStrategyParams } from '@/types/trendBetStrategy'
 import type { MarketTrend } from '@/utils/chart/detectBreakOfStructure'
-import { resolveBosFlowAtOpen } from '@/utils/chart/bosFlowSignals'
+import { resolveBlendFade2AtOpen } from '@/utils/chart/blendFade2Signals'
 
 /**
  * Bet side at bar open (long = expect close > open). Null = no bet this bar.
- * BoS flow: decision at open[i] using only bars [0..i-1] (+ session on open time).
+ * blend_fade2: decision at open[i] using only bars [0..i-1] (+ session on open time).
  */
 export function resolveBetAtOpen(
   index: number,
@@ -13,7 +13,7 @@ export function resolveBetAtOpen(
   _trendAtOpen: MarketTrend[],
   params: TrendBetStrategyParams,
 ): MarketTrend | null {
-  return resolveBosFlowAtOpen(index, candles, params.bosFlow)
+  return resolveBlendFade2AtOpen(index, candles, params.blendFade2)
 }
 
 /** After bar `candles.length - 1` closes: signal for the next bar open (live engine). */
@@ -24,10 +24,10 @@ export function resolveBetForUpcomingBar(
   params: TrendBetStrategyParams,
   nextBarOpenTimeMs: number,
 ): MarketTrend | null {
-  return resolveBosFlowAtOpen(
+  return resolveBlendFade2AtOpen(
     candles.length,
     candles,
-    params.bosFlow,
+    params.blendFade2,
     nextBarOpenTimeMs,
   )
 }

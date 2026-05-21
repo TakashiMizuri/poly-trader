@@ -64,6 +64,16 @@ public sealed class PaperAccountsController : ControllerBase
         _db.PaperAccounts.Add(account);
         await _db.SaveChangesAsync(ct);
 
+        _db.BalanceSnapshots.Add(new BalanceSnapshotEntity
+        {
+            PaperAccountId = account.Id,
+            CashBalance = account.Balance,
+            Equity = account.Balance,
+            Source = "PaperStart",
+            Timestamp = account.CreatedAt,
+        });
+        await _db.SaveChangesAsync(ct);
+
         var settings = await _db.EngineSettings.FirstAsync(ct);
         if (settings.ActivePaperAccountId == null)
         {
@@ -126,7 +136,8 @@ public sealed class PaperAccountsController : ControllerBase
             CashBalance = account.Balance,
             Equity = account.Balance,
             Source = "PaperReset",
-            PaperAccountId = account.Id
+            PaperAccountId = account.Id,
+            Timestamp = account.UpdatedAt,
         });
 
         await _db.SaveChangesAsync(ct);

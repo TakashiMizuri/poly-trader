@@ -10,59 +10,56 @@ namespace PolyTrader.Infrastructure.Polymarket;
 public interface IPolymarketClobService
 {
     bool IsConfigured { get; }
-    Task<double?> GetCollateralBalanceAsync(CancellationToken ct = default);
+    Task<double?> GetCollateralBalanceAsync(
+        CancellationToken ct = default,
+        int maxAttempts = 5);
     /// <summary>Best ask (market buy) from CLOB REST.</summary>
     Task<double?> TryGetBuyPriceAsync(string tokenId, CancellationToken ct = default);
     /// <summary>Midpoint from CLOB REST.</summary>
     Task<double?> TryGetMidPriceAsync(string tokenId, CancellationToken ct = default);
-    Task<string?> PlaceMarketOrderAsync(string tokenId, double sizeUsd, CancellationToken ct = default);
+    Task<LiveMarketBuyOutcome> PlaceMarketOrderAsync(
+        string tokenId,
+        double sizeUsd,
+        double? entryPriceHint = null,
+        LiveEntryOrderKey? entryKey = null,
+        CancellationToken ct = default);
 }
 
 /// <summary>
-/// Simplified CLOB REST client. Live orders require API credentials from env.
+/// Polymarket CLOB: authenticated trading via Polymarket.Net; public prices via REST fallback.
 /// </summary>
 public sealed class PolymarketClobService : IPolymarketClobService
 {
     private const string ClobHost = "https://clob.polymarket.com";
+
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly PolyTraderOptions _options;
+    private readonly IPolymarketRestTradingClient _trading;
+    private readonly IPolymarketWalletResolver _wallet;
     private readonly ILogger<PolymarketClobService> _logger;
 
     public PolymarketClobService(
         IHttpClientFactory httpClientFactory,
-        IOptions<PolyTraderOptions> options,
+        IPolymarketRestTradingClient trading,
+        IPolymarketWalletResolver wallet,
         ILogger<PolymarketClobService> logger)
     {
         _httpClientFactory = httpClientFactory;
-        _options = options.Value;
+        _trading = trading;
+        _wallet = wallet;
         _logger = logger;
     }
 
-    public bool IsConfigured =>
-        !string.IsNullOrWhiteSpace(_options.PolymarketPrivateKey)
-        && _options.PolymarketPrivateKey.StartsWith("0x", StringComparison.OrdinalIgnoreCase);
+    public bool IsConfigured => _trading.IsConfigured;
 
-    public async Task<double?> GetCollateralBalanceAsync(CancellationToken ct = default)
-    {
-        if (!IsConfigured) return null;
+    public Task<double?> GetCollateralBalanceAsync(
+        CancellationToken ct = default,
+        int maxAttempts = 5) =>
+        _trading.GetCollateralBalanceUsdAsync(ct, maxAttempts);
 
-        try
-        {
-            // Balance requires authenticated L2 headers; return null if not fully wired.
-            _logger.LogDebug("CLOB balance fetch requires derived API key (configure POLYMARKET_PRIVATE_KEY)");
-            return null;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to fetch CLOB balance");
-            return null;
-        }
-    }
-
-    public async Task<double?> TryGetBuyPriceAsync(string tokenId, CancellationToken ct = default) =>
+    public async Task<double?> TryGetBuyPriceAsync(string tokenId, CancellationToken ct) =>
         await TryGetClobPriceAsync(tokenId, "BUY", ct);
 
-    public async Task<double?> TryGetMidPriceAsync(string tokenId, CancellationToken ct = default)
+    public async Task<double?> TryGetMidPriceAsync(string tokenId, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(tokenId))
         {
@@ -140,20 +137,26 @@ public sealed class PolymarketClobService : IPolymarketClobService
             _ => null,
         };
 
-    public async Task<string?> PlaceMarketOrderAsync(string tokenId, double sizeUsd, CancellationToken ct = default)
+    public async Task<LiveMarketBuyOutcome> PlaceMarketOrderAsync(
+        string tokenId,
+        double sizeUsd,
+        double? entryPriceHint = null,
+        LiveEntryOrderKey? entryKey = null,
+        CancellationToken ct = default)
     {
         if (!IsConfigured)
         {
-            _logger.LogWarning("Live order skipped: POLYMARKET_PRIVATE_KEY not configured");
-            return null;
+            const string reason = "POLYMARKET_PRIVATE_KEY not configured";
+            _logger.LogWarning("Live order skipped: {Reason}", reason);
+            return LiveMarketBuyOutcome.Fail(reason);
         }
 
         _logger.LogInformation(
-            "Live order placeholder for token {TokenId} size ${Size}. Wire Nethereum + CLOB L2 signing for production.",
+            "Placing live market buy token {TokenId} notional ${Size:F2} wallet {Wallet}",
             tokenId,
-            sizeUsd);
+            sizeUsd,
+            _wallet.ResolveWalletAddress() ?? "unknown");
 
-        await Task.CompletedTask;
-        return $"paper-live-{Guid.NewGuid():N}";
+        return await _trading.PlaceMarketBuyUsdAsync(tokenId, sizeUsd, entryPriceHint, entryKey, ct);
     }
 }

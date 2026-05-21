@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { readPollCache, writePollCache } from '@/api/poll-cache'
 
 export type PollOptions = {
@@ -21,19 +21,38 @@ export function usePoll<T>(
   )
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(() => !hasCached<T>(cacheKey))
+  const requestIdRef = useRef(0)
 
   const refresh = useCallback(async () => {
+    const requestId = ++requestIdRef.current
     try {
       const next = await fetcher()
+      if (requestId !== requestIdRef.current) return
       setData(next)
       setError(null)
       if (cacheKey) writePollCache(cacheKey, next)
     } catch (e) {
+      if (requestId !== requestIdRef.current) return
       setError(e instanceof Error ? e.message : 'Request failed')
     } finally {
-      setLoading(false)
+      if (requestId === requestIdRef.current) {
+        setLoading(false)
+      }
     }
   }, [fetcher, cacheKey])
+
+  const patchData = useCallback(
+    (updater: (prev: T | null) => T | null) => {
+      ++requestIdRef.current
+      setData((prev) => {
+        const next = updater(prev)
+        if (cacheKey && next != null) writePollCache(cacheKey, next)
+        return next
+      })
+      setLoading(false)
+    },
+    [cacheKey],
+  )
 
   useEffect(() => {
     if (!cacheKey) return
@@ -53,5 +72,5 @@ export function usePoll<T>(
     return () => globalThis.clearInterval(id)
   }, [refresh, intervalMs])
 
-  return { data, error, loading, refresh }
+  return { data, error, loading, refresh, patchData }
 }

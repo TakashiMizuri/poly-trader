@@ -101,7 +101,7 @@ public static class TrendBetStrategySimulator
     }
 
     /// <summary>
-    /// Backtest: bet only when bos_flow signals at bar open (Polymarket 1:1 model).
+    /// Backtest: bet only when blend_fade2 signals at bar open (Polymarket 1:1 model).
     /// </summary>
     public static TrendBetSimulation? Simulate(
         IReadOnlyList<ChartCandle> candles,
@@ -113,7 +113,7 @@ public static class TrendBetStrategySimulator
         }
 
         var p = parameters ?? TrendBetStrategyParams.Default;
-        var signals = BosFlowSignals.Generate(candles, p.BosFlow);
+        var signals = BlendFade2Signals.Generate(candles, p.BlendFade2);
         var bets = new List<TrendBet>();
         var equityCurve = new List<EquityPoint>();
 
@@ -252,7 +252,7 @@ public static class TrendBetStrategySimulator
         }
 
         TrendBetSettlement? settlement = null;
-        var betAtOpen = BetResolver.ResolveAtOpen(closedIndex, window, p.BosFlow);
+        var betAtOpen = BetResolver.ResolveAtOpen(closedIndex, window, p.BlendFade2);
 
         if (betAtOpen != null)
         {
@@ -301,7 +301,7 @@ public static class TrendBetStrategySimulator
                 });
             }
 
-            var signals = BosFlowSignals.Generate(extended, p.BosFlow);
+            var signals = BlendFade2Signals.Generate(extended, p.BlendFade2);
             if (nextIndex < signals.EntryBar.Count
                 && signals.EntryBar[nextIndex]
                 && signals.Side[nextIndex] is { } side)
@@ -356,7 +356,7 @@ public static class TrendBetStrategySimulator
         int barIndex,
         TrendBetStrategyParams parameters)
     {
-        var signals = BosFlowSignals.Generate(candles, parameters.BosFlow);
+        var signals = BlendFade2Signals.Generate(candles, parameters.BlendFade2);
         var balance = parameters.StartBalance;
         for (var i = 0; i < barIndex; i++)
         {

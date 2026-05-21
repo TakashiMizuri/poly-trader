@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Logging;
 using PolyTrader.Core.Abstractions;
 using PolyTrader.Core.Strategy;
 using PolyTrader.Api.Hubs;
@@ -9,23 +10,48 @@ namespace PolyTrader.Api.Services;
 public sealed class SignalRTradingEventPublisher : ITradingEventPublisher
 {
     private readonly IHubContext<TradingHub> _hub;
+    private readonly ILogger<SignalRTradingEventPublisher> _logger;
 
-    public SignalRTradingEventPublisher(IHubContext<TradingHub> hub) => _hub = hub;
+    public SignalRTradingEventPublisher(
+        IHubContext<TradingHub> hub,
+        ILogger<SignalRTradingEventPublisher> logger)
+    {
+        _hub = hub;
+        _logger = logger;
+    }
 
-    public Task PublishEngineStatusAsync(bool isRunning, string mode, CancellationToken ct = default) =>
-        _hub.Clients.All.SendAsync("EngineStatus", new { isRunning, mode }, ct);
+    public Task PublishEngineStatusAsync(bool isRunning, string mode, CancellationToken ct = default)
+    {
+        _logger.LogInformation("SignalR EngineStatus running={Running} mode={Mode}", isRunning, mode);
+        return _hub.Clients.All.SendAsync("EngineStatus", new { isRunning, mode }, ct);
+    }
 
-    public Task PublishTradePlacedAsync(object trade, CancellationToken ct = default) =>
-        _hub.Clients.All.SendAsync("TradePlaced", trade, ct);
+    public Task PublishTradePlacedAsync(object trade, CancellationToken ct = default)
+    {
+        _logger.LogInformation("SignalR TradePlaced payload={Payload}", trade);
+        return _hub.Clients.All.SendAsync("TradePlaced", trade, ct);
+    }
 
-    public Task PublishBalanceUpdatedAsync(double balance, int paperAccountId = 0, CancellationToken ct = default) =>
-        _hub.Clients.All.SendAsync("BalanceUpdated", new { balance, paperAccountId }, ct);
+    public Task PublishBalanceUpdatedAsync(double balance, int paperAccountId = 0, CancellationToken ct = default)
+    {
+        _logger.LogInformation(
+            "SignalR BalanceUpdated account={AccountId} balance=${Balance:F2}",
+            paperAccountId,
+            balance);
+        return _hub.Clients.All.SendAsync("BalanceUpdated", new { balance, paperAccountId }, ct);
+    }
 
-    public Task PublishMarketWindowUpdatedAsync(object? market, CancellationToken ct = default) =>
-        _hub.Clients.All.SendAsync("MarketWindowUpdated", market, ct);
+    public Task PublishMarketWindowUpdatedAsync(object? market, CancellationToken ct = default)
+    {
+        _logger.LogInformation("SignalR MarketWindowUpdated");
+        return _hub.Clients.All.SendAsync("MarketWindowUpdated", market, ct);
+    }
 
-    public Task PublishCandleClosedAsync(long candleTime, CancellationToken ct = default) =>
-        _hub.Clients.All.SendAsync("CandleClosed", new { candleTime }, ct);
+    public Task PublishCandleClosedAsync(long candleTime, CancellationToken ct = default)
+    {
+        _logger.LogDebug("SignalR CandleClosed time={CandleTime}", candleTime);
+        return _hub.Clients.All.SendAsync("CandleClosed", new { candleTime }, ct);
+    }
 }
 
 public static class TradeMapper
@@ -38,6 +64,9 @@ public static class TradeMapper
         trend = t.Trend.ToString(),
         mode = t.Mode.ToString(),
         t.StakeUsd,
+        t.RequestedStakeUsd,
+        isPartialFill = t.RequestedStakeUsd is > 0
+            && t.RequestedStakeUsd.Value > t.StakeUsd + 0.01,
         t.EntryPrice,
         entryShares = TrendBetStrategySimulator.ComputeEntryShares(t.StakeUsd, t.EntryPrice),
         t.Won,

@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client'
 import './fonts.css'
 import './index.css'
 import App from './App.tsx'
+import { PaperTradingProvider } from '@/context/PaperTradingContext'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { TimeFormatProvider } from '@/context/TimeFormatContext'
 import { applyThemeToDocument, getStoredTheme } from '@/lib/theme'
@@ -31,7 +32,9 @@ async function mountApp() {
   createRoot(rootEl).render(
     <ThemeProvider>
       <TimeFormatProvider>
-        <App />
+        <PaperTradingProvider>
+          <App />
+        </PaperTradingProvider>
       </TimeFormatProvider>
     </ThemeProvider>,
   )

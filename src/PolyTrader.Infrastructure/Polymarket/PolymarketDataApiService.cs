@@ -1,9 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using PolyTrader.Core.Models;
-using PolyTrader.Infrastructure.Options;
 
 namespace PolyTrader.Infrastructure.Polymarket;
 
@@ -28,29 +26,20 @@ public sealed class PolymarketDataApiService : IPolymarketDataApiService
     private const string DataApiBase = "https://data-api.polymarket.com";
 
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly PolyTraderOptions _options;
+    private readonly IPolymarketWalletResolver _wallet;
     private readonly ILogger<PolymarketDataApiService> _logger;
 
     public PolymarketDataApiService(
         IHttpClientFactory httpClientFactory,
-        IOptions<PolyTraderOptions> options,
+        IPolymarketWalletResolver wallet,
         ILogger<PolymarketDataApiService> logger)
     {
         _httpClientFactory = httpClientFactory;
-        _options = options.Value;
+        _wallet = wallet;
         _logger = logger;
     }
 
-    public string? ResolveWalletAddress()
-    {
-        var funder = _options.PolymarketFunderAddress?.Trim();
-        if (!string.IsNullOrEmpty(funder) && funder.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
-        {
-            return funder;
-        }
-
-        return null;
-    }
+    public string? ResolveWalletAddress() => _wallet.ResolveWalletAddress();
 
     public async Task<bool?> TryInferOutcomeFromPositionAsync(
         string userAddress,

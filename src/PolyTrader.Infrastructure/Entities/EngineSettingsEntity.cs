@@ -24,6 +24,8 @@ public sealed class EngineSettingsEntity
     public double PendingBetStakeUsd { get; set; } = 1;
     public double PendingBetStakePercent { get; set; } = 3;
     public double? PendingMaxBetStakeUsd { get; set; } = 500;
-    public double CommissionPercent { get; set; } = 1.8;
+    public double CommissionPercent { get; set; } = 3.5;
+    /// <summary>When false, background and post-win CTF redeems are skipped.</summary>
+    public bool AutoRedeemEnabled { get; set; } = true;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

@@ -1,6 +1,6 @@
 # Poly Trader
 
-Automated BTC 5-minute Polymarket trading dashboard with **BoS flow** strategy (`flow_active` preset from [trading-cursor-models](docs/bos_flow/STRATEGY.md)), Binance 5m data, and paper/live modes.
+Automated BTC 5-minute Polymarket trading dashboard with **blend fade 2** strategy (`blend2_pnl_max` preset from [trading-cursor-models](docs/blend_fade2/STRATEGY.md)), Binance 5m data, and paper/live modes.
 
 ## Stack
 
@@ -20,7 +20,19 @@ Automated BTC 5-minute Polymarket trading dashboard with **BoS flow** strategy (
    cp .env.example .env
    ```
 
-2. Optional: set `POLYMARKET_PRIVATE_KEY` for live CLOB orders (paper mode works without it).
+2. Optional: set `WEB_API_TOKEN` (API auth) and the same value in `VITE_API_TOKEN` only for local dev convenience. On first visit the UI prompts for the token when the API requires it. See [RUN_OPERATOR.md](RUN_OPERATOR.md).
+
+3. For **Live** trading: set `POLYMARKET_PRIVATE_KEY`, `POLYMARKET_FUNDER_ADDRESS` (if using proxy/email wallet), and `POLYMARKET_SIGNATURE_TYPE`. See [RUN_OPERATOR.md](RUN_OPERATOR.md).
+
+4. Optional **Telegram** operator bot: `TELEGRAM_BOT_TOKEN` + `TELEGRAM_ADMIN_CHAT_IDS` — engine control, balance chart, trade alerts. See [RUN_OPERATOR.md](RUN_OPERATOR.md#telegram-bot).
+
+## Logging (Serilog)
+
+The API writes one **daily rolling** log file under `logs/` (override with `POLYTRADER_LOG_DIR` or `Serilog:LogDirectory`):
+
+- `polytrader-YYYYMMDD.log` — all backend logs (trades, redeem, CLOB, API, engine, etc.)
+
+Set `POLYTRADER_LOG_LEVEL=Debug` for more detail (e.g. CLOB price fetches, redeem polls).
 
 ## Run
 
@@ -41,34 +53,49 @@ npm run dev
 
 Open http://localhost:5173
 
+## Docker
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+API on port **5088**, UI on **8080** (nginx proxies `/api` and `/hubs`). Details: [RUN_OPERATOR.md](RUN_OPERATOR.md).
+
 ## API
 
 | Endpoint | Description |
 |----------|-------------|
 | `GET /api/engine` | Engine settings (mode, active paper account) |
 | `PUT /api/engine` | Update mode, active paper account, stake, running |
+| `GET /api/engine/live-status` | Live CLOB configured, USDC balance, can trade |
 | `GET /api/paper-accounts` | List paper accounts |
 | `POST /api/paper-accounts` | Create paper account |
 | `POST /api/paper-accounts/{id}/reset` | Reset account balance |
 | `GET /api/balance` | Active paper + live balance |
-| `GET /api/balance/history` | Balance snapshots (per paper account) |
+| `GET /api/balance/history` | Balance growth: `actual` (snapshots) + `expected` (strategy replay on 5m candles) |
 | `GET /api/trades` | Trade history (filter by mode / paper account) |
 | `GET /api/market/active` | Current 5m window + progress |
 | `GET /api/health/connectivity` | Binance / Polymarket status |
-| `WS /hubs/trading` | SignalR: trades, balance, market window |
+| `WS /hubs/trading` | SignalR: trades, balance, market window (Bearer or `?access_token=` if `WEB_API_TOKEN` set) |
+| Telegram bot | Engine start/stop, `/chart`, trade open/close alerts (see [RUN_OPERATOR.md](RUN_OPERATOR.md#telegram-bot)) |
+
+## Live trading
+
+Live mode uses **Polymarket.Net** for USDC balance and IOC market buys (partial fills are recorded), and **automatic CTF redeem** for winning positions (no manual cash-out in the Polymarket UI). Settlement prefers Polymarket Gamma/Data API resolution; Binance OHLC is fallback only. Start with paper, then follow the phased rollout in [RUN_OPERATOR.md](RUN_OPERATOR.md).
 
 ## Strategy
 
-Backend runs **bos_flow** via `BosFlowSignals` + `BetResolver` (same logic as `client/src/utils/chart/bosFlowSignals.ts`). On each closed Binance 5m candle the engine: (1) settles the bet signaled at that bar’s open, (2) opens a new bet for the **next** candle when bos_flow signals.
+Backend runs **blend_fade2** via `BlendFade2Signals` + `BetResolver` (same logic as `client/src/utils/chart/blendFade2Signals.ts`). On each closed Binance 5m candle the engine: (1) settles the bet signaled at that bar’s open, (2) opens a new bet for the **next** candle when blend_fade2 signals.
 
-Defaults: `flow_active` preset, 1% compound stake capped at $500, 1.8% entry fee. See [docs/bos_flow/STRATEGY.md](docs/bos_flow/STRATEGY.md).
+Defaults: `blend2_pnl_max` preset, 3% compound stake capped at $500, 3.5% entry fee (Polymarket). See [docs/blend_fade2/STRATEGY.md](docs/blend_fade2/STRATEGY.md).
 
 ## Project layout
 
 ```
 src/PolyTrader.Api/          REST + SignalR
-src/PolyTrader.Core/         Bos flow strategy + domain
-docs/bos_flow/               Strategy spec (ported)
+src/PolyTrader.Core/         Blend fade 2 strategy + domain
+docs/blend_fade2/            Strategy spec (ported)
 src/PolyTrader.Infrastructure/ EF, Binance WS, Polymarket
 client/                      React UI
 tests/PolyTrader.Core.Tests/ Strategy golden tests

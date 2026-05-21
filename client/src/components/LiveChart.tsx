@@ -29,7 +29,6 @@ import { useTheme } from '@/context/ThemeContext'
 import { ChartContextMenu, type ChartContextMenuAnchor } from '@/components/ChartContextMenu'
 import { ChartSettingsDialog } from '@/components/ChartSettingsDialog'
 import {
-  DEFAULT_CHART_DISPLAY_PREFS,
   loadChartDisplayPrefs,
   saveChartDisplayPrefs,
   type ChartDisplayPrefs,
@@ -145,7 +144,6 @@ export function LiveChart({
 
   useEffect(() => {
     const onGlobalReset = () => {
-      setDisplayPrefs({ ...DEFAULT_CHART_DISPLAY_PREFS })
       setContextMenu(null)
       setSettingsOpen(false)
     }

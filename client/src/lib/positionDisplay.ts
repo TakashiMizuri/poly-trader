@@ -7,6 +7,9 @@ export interface PositionFeedFill {
   timeMs: number
   side?: string | null
   stakeUsd?: number | null
+  /** Requested notional when live fill was partial. */
+  requestedStakeUsd?: number | null
+  isPartialFill?: boolean
   entryPrice?: number | null
   entryShares?: number | null
   mode?: string | null
@@ -15,6 +18,8 @@ export interface PositionFeedFill {
   won?: boolean | null
   pnlUsd?: number | null
   polymarketOrderId?: string | null
+  /** Live win awaiting on-chain CTF redeem. */
+  awaitingRedeem?: boolean
 }
 
 /** Polymarket BTC 5m event length. */
@@ -146,6 +151,20 @@ const SKIP_LABELS: Record<string, string> = {
   engine_stopped: 'Engine stopped',
   no_signal: 'No signal',
   no_market: 'No active market',
+  order_failed: 'Live order failed',
+  insufficient_balance: 'Insufficient balance',
+  balance_unavailable: 'CLOB balance unavailable',
+}
+
+const ENTRY_ERROR_SKIP_REASONS = new Set([
+  'order_failed',
+  'insufficient_balance',
+  'balance_unavailable',
+  'no_market',
+])
+
+export function isEntryErrorFill(fill: PositionFeedFill): boolean {
+  return fill.result === 'Error' || ENTRY_ERROR_SKIP_REASONS.has(fill.skipReason ?? '')
 }
 
 export function skipLabel(reason: string | null | undefined): string | null {
@@ -245,7 +264,7 @@ export function liveOpenFill(
   return group.fills.find((f) => f.result === 'Open') ?? null
 }
 
-function openFillOverlapsWindow(
+function fillOverlapsWindow(
   fill: PositionFeedFill,
   windowStartMs: number,
   windowEndMs: number,
@@ -266,7 +285,11 @@ function groupsShareLiveWindow(
     return true
   }
   const open = b.fills.find((f) => f.result === 'Open')
-  return open != null && openFillOverlapsWindow(open, a.windowStartMs, a.windowEndMs)
+  return open != null && fillOverlapsWindow(open, a.windowStartMs, a.windowEndMs)
+}
+
+function isStrategySkipFill(fill: PositionFeedFill): boolean {
+  return fill.result === 'Skipped' && !isEntryErrorFill(fill)
 }
 
 /**
@@ -290,15 +313,50 @@ export function resolveDisplayedOpenFill(
   return null
 }
 
-/** Fills to render for a card (may borrow a single open fill from a sibling group). */
+/**
+ * Strategy skip (e.g. no_signal) for the live window, including fills grouped under
+ * a sibling key when candle time and Polymarket window start differ.
+ */
+export function resolveDisplayedSkipFill(
+  group: PositionFeedGroup,
+  allGroups: PositionFeedGroup[],
+  nowMs: number = Date.now(),
+): PositionFeedFill | null {
+  if (group.completed) return null
+  const { windowStartMs, windowEndMs } = group
+  if (windowEndMs <= windowStartMs || windowStartMs > nowMs || nowMs >= windowEndMs) {
+    return null
+  }
+
+  const local = group.fills.find(isStrategySkipFill)
+  if (local) return local
+
+  for (const other of allGroups) {
+    if (other.key === group.key) continue
+    const fill = other.fills.find(isStrategySkipFill)
+    if (fill == null) continue
+    if (
+      fillOverlapsWindow(fill, windowStartMs, windowEndMs)
+      || groupsShareLiveWindow(group, other)
+    ) {
+      return fill
+    }
+  }
+
+  return null
+}
+
+/** Fills to render for a card (may borrow open/skip fills from a sibling group). */
 export function resolveDisplayedFills(
   group: PositionFeedGroup,
   allGroups: PositionFeedGroup[],
   nowMs: number = Date.now(),
 ): PositionFeedFill[] {
   if (group.fills.length > 0) return group.fills
-  const borrowed = resolveDisplayedOpenFill(group, allGroups, nowMs)
-  return borrowed ? [borrowed] : []
+  const borrowedOpen = resolveDisplayedOpenFill(group, allGroups, nowMs)
+  if (borrowedOpen) return [borrowedOpen]
+  const borrowedSkip = resolveDisplayedSkipFill(group, allGroups, nowMs)
+  return borrowedSkip ? [borrowedSkip] : []
 }
 
 export function formatGroupTimeRange(
@@ -331,6 +389,8 @@ export function formatGroupSides(fills: PositionFeedFill[]): string {
     parts.push(`${n}× ${side}`)
   }
   if (parts.length) return parts.join(', ')
+  const errors = fills.filter((f) => isEntryErrorFill(f)).length
+  if (errors > 0) return `${errors}× error`
   const skipped = fills.filter((f) => f.result === 'Skipped').length
   if (skipped > 0) return `${skipped}× skipped`
   return `${fills.length} event${fills.length === 1 ? '' : 's'}`
@@ -349,6 +409,8 @@ export function modeTone(mode: string | null | undefined): StatusBadgeTone {
 }
 
 export function resultTone(fill: PositionFeedFill): StatusBadgeTone {
+  if (isAwaitingRedeem(fill)) return 'warn'
+  if (isEntryErrorFill(fill)) return 'neutral'
   if (fill.result === 'Skipped') {
     return fill.skipReason === 'engine_stopped' ? 'neutral' : 'shadow'
   }
@@ -359,15 +421,31 @@ export function resultTone(fill: PositionFeedFill): StatusBadgeTone {
 }
 
 export function resultLabel(fill: PositionFeedFill): string {
+  if (isAwaitingRedeem(fill)) return 'Redeem'
+  if (isEntryErrorFill(fill)) return 'Error'
   if (fill.result === 'Skipped') {
     return skipLabel(fill.skipReason) ?? 'Skipped'
   }
   if (fill.result === 'Open' && fill.mode === 'Paper') return 'Paper (open)'
+  if (fill.result === 'Open' && fill.mode === 'Live' && isPartialFill(fill)) return 'Partial'
   if (fill.result === 'Open' && fill.mode === 'Live') return 'Live (open)'
   return fill.result
 }
 
 export function resultTitle(fill: PositionFeedFill): string | undefined {
+  if (isPartialFill(fill)) {
+    const requested = fill.requestedStakeUsd
+    if (requested != null && fill.stakeUsd != null) {
+      return `Partial fill: $${fill.stakeUsd.toFixed(2)} of $${requested.toFixed(2)} requested`
+    }
+    return 'Partial fill: notional below requested size'
+  }
+  if (isAwaitingRedeem(fill)) {
+    return 'Awaiting on-chain redeem of winning outcome tokens'
+  }
+  if (isEntryErrorFill(fill)) {
+    return skipLabel(fill.skipReason) ?? 'Entry failed — bet was not opened'
+  }
   if (fill.result === 'Skipped') {
     const label = skipLabel(fill.skipReason)
     if (fill.skipReason === 'engine_stopped') {
@@ -391,9 +469,26 @@ export function resultTitle(fill: PositionFeedFill): string | undefined {
   return undefined
 }
 
+export function isPartialFill(fill: PositionFeedFill): boolean {
+  if (fill.isPartialFill === true) return true
+  const requested = fill.requestedStakeUsd
+  const filled = fill.stakeUsd
+  return (
+    requested != null &&
+    filled != null &&
+    requested > filled + 0.01
+  )
+}
+
 export function formatStake(fill: PositionFeedFill): string {
   if (fill.stakeUsd == null) return '—'
-  return `$${fill.stakeUsd.toFixed(2)}`
+  const filled = `$${fill.stakeUsd.toFixed(2)}`
+  if (!isPartialFill(fill)) return filled
+  const requested = fill.requestedStakeUsd
+  if (requested != null && requested > 0) {
+    return `${filled} / $${requested.toFixed(2)}`
+  }
+  return `${filled} (partial)`
 }
 
 export function formatEntry(fill: PositionFeedFill): string {
@@ -432,6 +527,10 @@ export function formatFillEconomics(fill: PositionFeedFill): string {
   return fillEconomicsSegments(fill)
     .map((s) => s.text)
     .join(' · ')
+}
+
+export function isAwaitingRedeem(fill: PositionFeedFill): boolean {
+  return fill.awaitingRedeem === true
 }
 
 export function isSettledFill(fill: PositionFeedFill): boolean {

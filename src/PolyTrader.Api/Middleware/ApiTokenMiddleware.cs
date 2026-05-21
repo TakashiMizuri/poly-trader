@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PolyTrader.Infrastructure.Options;
 
@@ -7,31 +8,60 @@ public sealed class ApiTokenMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly string? _token;
+    private readonly ILogger<ApiTokenMiddleware> _logger;
 
-    public ApiTokenMiddleware(RequestDelegate next, IOptions<PolyTraderOptions> options)
+    public ApiTokenMiddleware(
+        RequestDelegate next,
+        IOptions<PolyTraderOptions> options,
+        ILogger<ApiTokenMiddleware> logger)
     {
         _next = next;
         _token = options.Value.WebApiToken;
+        _logger = logger;
     }
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (string.IsNullOrWhiteSpace(_token)
-            || context.Request.Path.StartsWithSegments("/health")
-            || context.Request.Path.StartsWithSegments("/hubs"))
+        if (string.IsNullOrWhiteSpace(_token))
         {
             await _next(context);
             return;
         }
 
+        if (context.Request.Path.StartsWithSegments("/health"))
+        {
+            await _next(context);
+            return;
+        }
+
+        if (IsAuthorized(context, _token))
+        {
+            await _next(context);
+            return;
+        }
+
+        _logger.LogWarning(
+            "Unauthorized API request {Method} {Path}",
+            context.Request.Method,
+            context.Request.Path);
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+    }
+
+    private static bool IsAuthorized(HttpContext context, string expectedToken)
+    {
         var auth = context.Request.Headers.Authorization.ToString();
         if (auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
-            && auth["Bearer ".Length..].Trim() == _token)
+            && auth["Bearer ".Length..].Trim() == expectedToken)
         {
-            await _next(context);
-            return;
+            return true;
         }
 
-        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        var queryToken = context.Request.Query["access_token"].ToString();
+        if (!string.IsNullOrEmpty(queryToken) && queryToken == expectedToken)
+        {
+            return true;
+        }
+
+        return false;
     }
 }

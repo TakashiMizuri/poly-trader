@@ -21,12 +21,14 @@ import {
   formatPositionMarketTitle,
   formatPnl,
   formatStake,
+  isAwaitingRedeem,
   isSettledFill,
   formatWindowProgressLabel,
   groupHasOpenBet,
   modeTone,
   resolveDisplayedFills,
   resolveDisplayedOpenFill,
+  resolveDisplayedSkipFill,
   type PositionFeedFill,
   type PositionFeedGroup,
   sortPositionFeedGroups,
@@ -82,6 +84,7 @@ interface Props {
   refreshKey?: number
   paperAccountId?: number | null
   tradingMode?: string
+  engineRunning?: boolean
   className?: string
 }
 
@@ -140,7 +143,7 @@ function PositionFillRow({
           </span>
         </span>
       </div>
-      {isSettledFill(fill) && pnlLabel != null ? (
+      {isSettledFill(fill) && !isAwaitingRedeem(fill) && pnlLabel != null ? (
         <StatusBadge
           tone={pnlBadgeTone(fill)}
           title={resultTitle(fill)}
@@ -218,9 +221,11 @@ function shouldPlayPositionEnterAnim(groupKey: string): boolean {
 function PositionBlock({
   group,
   allGroups,
+  engineRunning = false,
 }: {
   group: PositionFeedGroup
   allGroups: PositionFeedGroup[]
+  engineRunning?: boolean
 }) {
   const { timeFormat } = useTimeFormat()
   const eventWindow =
@@ -241,8 +246,11 @@ function PositionBlock({
   const isCompact = phase === 'scheduled' && !showCompleted
   const showLiveChrome = isLiveCard
   const openFill = resolveDisplayedOpenFill(group, allGroups)
+  const skipFill = resolveDisplayedSkipFill(group, allGroups)
   const displayedFills = resolveDisplayedFills(group, allGroups)
   const hasOpenBet = openFill != null || groupHasOpenBet(group)
+  const awaitingEntry =
+    engineRunning && isLiveCard && openFill == null && skipFill == null
   const progressLabel =
     eventWindow != null
       ? formatWindowProgressLabel(progressPct, remainingMs, phase)
@@ -453,11 +461,13 @@ function PositionBlock({
                   positionDimStateClass(showCompleted),
                 )}
               >
-                {isLiveCard
+                {awaitingEntry
                   ? 'Awaiting entry (decision at bar open)…'
-                  : isCompact
-                    ? 'Up next — entry when window opens'
-                    : 'No activity recorded'}
+                  : !engineRunning && isLiveCard && openFill == null && skipFill == null
+                    ? 'Engine stopped'
+                    : isCompact
+                      ? 'Up next — entry when window opens'
+                      : 'No activity recorded'}
               </p>
             ) : (
               displayedFills.map((fill, index) => (
@@ -492,6 +502,7 @@ export function PositionsPanel({
   refreshKey = 0,
   paperAccountId,
   tradingMode,
+  engineRunning = false,
   className,
 }: Props) {
   const feedParams = useMemo(
@@ -557,7 +568,12 @@ export function PositionsPanel({
         ) : (
           <div className="space-y-1.5 px-2.5 py-2">
             {groups.map((group) => (
-              <PositionBlock key={group.key} group={group} allGroups={groups} />
+              <PositionBlock
+                key={group.key}
+                group={group}
+                allGroups={groups}
+                engineRunning={engineRunning}
+              />
             ))}
           </div>
         )}

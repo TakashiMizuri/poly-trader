@@ -58,6 +58,12 @@ public sealed class PolyTraderDbContext(DbContextOptions<PolyTraderDbContext> op
             e.Property(x => x.Mode).HasConversion<string>();
         });
 
+        modelBuilder.Entity<BalanceSnapshotEntity>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => new { x.PaperAccountId, x.CandleTime });
+        });
+
         modelBuilder.Entity<CandleSnapshotEntity>(e =>
         {
             e.HasKey(x => x.Time);

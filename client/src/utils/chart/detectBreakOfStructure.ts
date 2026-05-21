@@ -226,7 +226,7 @@ export function getBosFlipBarTimes(lines: BosLine[]): ReadonlySet<number> {
 	return new Set(lines.map((line) => line.toTime));
 }
 
-/** @deprecated Chart overlay only; bos_flow uses separate signal path. */
+/** @deprecated Chart overlay only; blend_fade2 uses separate signal path. */
 export function bosOptionsFromTrendBetParams(
 	params?: Partial<{
 		structureLookback: number

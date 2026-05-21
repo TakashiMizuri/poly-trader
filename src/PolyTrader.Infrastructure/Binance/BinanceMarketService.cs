@@ -78,9 +78,14 @@ public sealed class BinanceMarketService : IBinanceMarketService, IAsyncDisposab
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
         await StopAsync();
+        _logger.LogInformation(
+            "Binance market service starting symbol={Symbol} interval={Interval}",
+            _options.BinanceSymbol,
+            _options.BinanceInterval);
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         Status = BinanceConnectionStatus.Loading;
         await LoadHistoryAsync(_cts.Token);
+        _logger.LogInformation("Binance history loaded: {Count} candles", Candles.Count);
         _ = RunWebSocketLoopAsync(_cts.Token);
     }
 
@@ -101,6 +106,7 @@ public sealed class BinanceMarketService : IBinanceMarketService, IAsyncDisposab
         }
 
         Status = BinanceConnectionStatus.Disconnected;
+        _logger.LogInformation("Binance market service stopped");
     }
 
     private async Task LoadHistoryAsync(CancellationToken ct)
@@ -193,6 +199,7 @@ public sealed class BinanceMarketService : IBinanceMarketService, IAsyncDisposab
         var uri = new Uri($"{WsSingle}/{stream}");
         await _ws.ConnectAsync(uri, ct);
         Status = BinanceConnectionStatus.Connected;
+        _logger.LogInformation("Binance WebSocket connected stream={Stream}", stream);
 
         var buffer = new byte[8192];
         while (_ws.State == WebSocketState.Open && !ct.IsCancellationRequested)
@@ -242,6 +249,13 @@ public sealed class BinanceMarketService : IBinanceMarketService, IAsyncDisposab
 
         if (isClosed)
         {
+            _logger.LogInformation(
+                "Binance kline closed {Time} O={Open} H={High} L={Low} C={Close}",
+                candle.Time,
+                candle.Open,
+                candle.High,
+                candle.Low,
+                candle.Close);
             KlineClosed?.Invoke(this, new BinanceKlineClosedEventArgs
             {
                 Candle = candle,

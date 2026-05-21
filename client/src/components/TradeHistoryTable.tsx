@@ -3,6 +3,7 @@ import { api } from '@/api/client'
 import { Card } from '@/components/ui/card'
 import { formatDisplayDateTime } from '@/lib/displayLocale'
 import { useTimeFormat } from '@/context/TimeFormatContext'
+import { formatStake, isPartialFill, type PositionFeedFill } from '@/lib/positionDisplay'
 import { cn } from '@/lib/utils'
 
 interface TradeRow {
@@ -12,6 +13,8 @@ interface TradeRow {
   trend: string
   mode: string
   stakeUsd: number
+  requestedStakeUsd?: number | null
+  isPartialFill?: boolean
   entryPrice: number
   entryShares?: number
   won?: boolean | null
@@ -72,7 +75,14 @@ export function TradeHistoryTable({
                   : (t.stakeUsd / t.entryPrice).toFixed(2)
               }
             />
-            <TradeField label="Stake" value={`$${t.stakeUsd.toFixed(2)}`} />
+            <TradeField
+              label="Stake"
+              value={formatStake(t as PositionFeedFill)}
+              valueClassName={isPartialFill(t as PositionFeedFill) ? 'text-amber-600 dark:text-amber-400' : undefined}
+            />
+            {isPartialFill(t as PositionFeedFill) ? (
+              <TradeField label="Fill" value="Partial" valueClassName="text-amber-600 dark:text-amber-400" />
+            ) : null}
             <TradeField
               label="Won"
               value={t.won == null ? '—' : t.won ? 'Yes' : 'No'}

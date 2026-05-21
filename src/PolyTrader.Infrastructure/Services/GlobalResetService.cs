@@ -1,14 +1,23 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using PolyTrader.Core.Abstractions;
 using PolyTrader.Core.Models;
 using PolyTrader.Infrastructure.Data;
 using PolyTrader.Infrastructure.Entities;
 
 namespace PolyTrader.Infrastructure.Services;
 
-public sealed class GlobalResetService(PolyTraderDbContext db)
+public sealed class GlobalResetService(
+    PolyTraderDbContext db,
+    InProgressWindowSkipService inProgressSkips,
+    ILogFileClearService logFiles,
+    ILogger<GlobalResetService> logger)
 {
     public async Task<GlobalResetResult> ResetAsync(CancellationToken ct = default)
     {
+        logger.LogWarning(
+            "Global reset requested: wiping trades, markets, paper accounts, snapshots, and log files");
+
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         try
         {
@@ -41,11 +50,22 @@ public sealed class GlobalResetService(PolyTraderDbContext db)
             settings.BetStakePercent = 3;
             settings.MaxBetStakeUsd = 500;
             EngineStakeSettings.SyncPendingFromActive(settings);
-            settings.CommissionPercent = 1.8;
+            settings.CommissionPercent = 3.5;
             settings.UpdatedAt = DateTime.UtcNow;
             await db.SaveChangesAsync(ct);
 
             await tx.CommitAsync(ct);
+
+            await inProgressSkips.TryRecordEngineStoppedForInProgressWindowAsync(settings, ct);
+
+            var logsDeleted = logFiles.ClearLogFiles();
+
+            logger.LogWarning(
+                "Global reset completed: paper account {AccountId} ({Name}) balance=${Balance:F2} engine stopped; deleted {LogFileCount} log file(s)",
+                defaultAccount.Id,
+                defaultAccount.Name,
+                defaultAccount.Balance,
+                logsDeleted);
 
             return new GlobalResetResult(
                 settings.TradingMode.ToString(),
@@ -54,8 +74,9 @@ public sealed class GlobalResetService(PolyTraderDbContext db)
                 defaultAccount.Name,
                 defaultAccount.Balance);
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Global reset failed; transaction rolled back");
             await tx.RollbackAsync(ct);
             throw;
         }

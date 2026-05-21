@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\PolyTrader.Core\PolyTrader.Core.csproj" />
+    <ProjectReference Include="..\..\src\PolyTrader.Infrastructure\PolyTrader.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

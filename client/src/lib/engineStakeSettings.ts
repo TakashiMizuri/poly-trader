@@ -61,13 +61,19 @@ function formatCap(max: number | null): string {
   return max != null && max > 0 ? `$${max}` : 'No cap'
 }
 
-export function formatStakeSnapshot(snapshot: StakeSnapshot): string {
-  const mode = formatMode(snapshot.mode)
+/** Single-line stake summary for metric hints (mode · amount · cap). */
+export function formatStakeSnapshotInline(snapshot: StakeSnapshot): string {
+  const modeLabel =
+    snapshot.mode === 'percent' ? '% of balance' : 'Fixed USD'
   const sizing =
     snapshot.mode === 'percent'
       ? `${snapshot.betStakePercent}%`
       : `$${snapshot.betStakeUsd.toFixed(2)}`
-  return `${mode} · ${sizing} · cap ${formatCap(snapshot.maxBetStakeUsd)}`
+  return `${modeLabel} · ${sizing} · cap ${formatCap(snapshot.maxBetStakeUsd)}`
+}
+
+export function formatStakeSnapshot(snapshot: StakeSnapshot): string {
+  return formatStakeSnapshotInline(snapshot)
 }
 
 export type StakeSettingChange = {

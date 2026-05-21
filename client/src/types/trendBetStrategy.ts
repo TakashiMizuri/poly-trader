@@ -1,7 +1,7 @@
 import {
-  BOS_FLOW_PRESET_ACTIVE,
-  type BosFlowConfig,
-} from '@/types/bosFlowConfig'
+  BLEND_FADE2_PRESET_PNL_MAX,
+  type BlendFade2Config,
+} from '@/types/blendFade2Config'
 
 export type BetStakeMode = 'fixed' | 'percent'
 
@@ -12,12 +12,12 @@ export interface TrendBetStrategyParams {
   betStakeMode: BetStakeMode
   /** % of current balance per bet when {@link betStakeMode} is `percent` (3 = 3% per STRATEGY.md). */
   betStakePercent: number
-  /** Entry fee as % of stake (1.8 = 1.8% Polymarket entry fee). */
+  /** Entry fee as % of stake (3.5 = Polymarket crypto taker fee on premium). */
   commissionPercent: number
-  /** Cap stake in USD (500 = bos_flow backtest default). */
+  /** Cap stake in USD (500 = blend_fade2 backtest default). */
   maxBetStakeUsd: number | null
-  /** BoS flow signal parameters (flow_active preset). */
-  bosFlow: BosFlowConfig
+  /** Blend fade 2 signal parameters (blend2_pnl_max preset). */
+  blendFade2: BlendFade2Config
 }
 
 export const DEFAULT_TREND_BET_STRATEGY_PARAMS: TrendBetStrategyParams = {
@@ -25,7 +25,7 @@ export const DEFAULT_TREND_BET_STRATEGY_PARAMS: TrendBetStrategyParams = {
   betStake: 1,
   betStakeMode: 'percent',
   betStakePercent: 3,
-  commissionPercent: 1.8,
+  commissionPercent: 3.5,
   maxBetStakeUsd: 500,
-  bosFlow: BOS_FLOW_PRESET_ACTIVE,
+  blendFade2: BLEND_FADE2_PRESET_PNL_MAX,
 }

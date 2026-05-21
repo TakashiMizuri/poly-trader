@@ -8,6 +8,14 @@ namespace PolyTrader.Api.Services;
 
 public static class TradeFeedBuilder
 {
+    private static readonly HashSet<string> EntryErrorSkipReasons = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "order_failed",
+        "insufficient_balance",
+        "balance_unavailable",
+        "no_market",
+    };
+
     public static async Task<IReadOnlyList<object>> BuildAsync(
         PolyTraderDbContext db,
         EngineSettingsEntity settings,
@@ -83,7 +91,8 @@ public static class TradeFeedBuilder
         {
             var liveGroup = GetOrCreate(liveStartMs.Value, liveMarket);
             liveGroup.IsPrimary = true;
-            AttachOpenTradesToLiveWindow(liveGroup, openTrades, settings.CommissionPercent);
+            AttachTradesToLiveWindow(liveGroup, trades, openTrades, settings.CommissionPercent);
+            AttachSkipsToLiveWindow(liveGroup, skips);
             EnsureEngineStoppedFillForInProgressWindow(liveGroup, settings);
         }
 
@@ -123,26 +132,22 @@ public static class TradeFeedBuilder
     }
 
     /// <summary>
-    /// Copy open fills onto the live primary card when they belong to this window but were
+    /// Copy fills onto the live primary card when they belong to this window but were
     /// grouped under a different key (candle vs Gamma window start mismatch).
     /// </summary>
-    private static void AttachOpenTradesToLiveWindow(
+    private static void AttachTradesToLiveWindow(
         FeedGroupBuilder liveGroup,
+        IReadOnlyList<TradeEntity> recentTrades,
         IReadOnlyList<TradeEntity> openTrades,
         double commissionPercent)
     {
-        if (HasActualBet(liveGroup))
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var existing in liveGroup.Fills)
         {
-            return;
+            seen.Add(existing.Id);
         }
 
-        var nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        if (nowMs < liveGroup.WindowStartMs || nowMs >= liveGroup.WindowEndMs)
-        {
-            return;
-        }
-
-        foreach (var trade in openTrades)
+        foreach (var trade in recentTrades.Concat(openTrades))
         {
             if (!TradeBelongsToLiveWindow(trade, liveGroup))
             {
@@ -150,7 +155,43 @@ public static class TradeFeedBuilder
             }
 
             var fill = ToTradeFill(trade, commissionPercent);
-            if (liveGroup.Fills.Any(f => f.Id == fill.Id))
+            if (!seen.Add(fill.Id))
+            {
+                continue;
+            }
+
+            liveGroup.Fills.Add(fill);
+        }
+
+        if (HasActualBet(liveGroup))
+        {
+            liveGroup.Fills.RemoveAll(f =>
+                f.Result == "Skipped" && f.SkipReason == "no_signal");
+        }
+    }
+
+    /// <summary>
+    /// Copy skip fills onto the live primary card when candle time and Gamma window diverge.
+    /// </summary>
+    private static void AttachSkipsToLiveWindow(
+        FeedGroupBuilder liveGroup,
+        IReadOnlyList<SkippedBetEntity> skips)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var existing in liveGroup.Fills)
+        {
+            seen.Add(existing.Id);
+        }
+
+        foreach (var skip in skips)
+        {
+            if (skip.Market == null || !SkipBelongsToLiveWindow(skip, liveGroup))
+            {
+                continue;
+            }
+
+            var fill = ToSkipFill(skip);
+            if (!seen.Add(fill.Id))
             {
                 continue;
             }
@@ -176,6 +217,27 @@ public static class TradeFeedBuilder
         return trade.Market != null
             && string.Equals(
                 trade.Market.ConditionId,
+                liveGroup.Market.ConditionId,
+                StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool SkipBelongsToLiveWindow(SkippedBetEntity skip, FeedGroupBuilder liveGroup)
+    {
+        var skipStartMs = skip.CandleTime * 1000L;
+        if (skipStartMs >= liveGroup.WindowStartMs && skipStartMs < liveGroup.WindowEndMs)
+        {
+            return true;
+        }
+
+        var marketStartMs = ToMs(skip.Market?.WindowStartUtc);
+        if (marketStartMs == liveGroup.WindowStartMs)
+        {
+            return true;
+        }
+
+        return skip.Market != null
+            && string.Equals(
+                skip.Market.ConditionId,
                 liveGroup.Market.ConditionId,
                 StringComparison.OrdinalIgnoreCase);
     }
@@ -277,12 +339,17 @@ public static class TradeFeedBuilder
                 t.EntryPrice).Pnl;
         }
 
+        var awaitingRedeem = t.Mode == TradingMode.Live
+            && t.Won == true
+            && t.RedeemedAt == null;
+
         return new FeedFill
         {
             Id = $"trade-{t.Id}",
             TimeMs = t.CandleTime * 1000L,
             Side = t.Side.ToString(),
             StakeUsd = t.StakeUsd,
+            RequestedStakeUsd = t.RequestedStakeUsd,
             EntryPrice = t.EntryPrice,
             EntryShares = TrendBetStrategySimulator.ComputeEntryShares(t.StakeUsd, t.EntryPrice),
             Mode = t.Mode.ToString(),
@@ -290,6 +357,7 @@ public static class TradeFeedBuilder
             Won = t.Won,
             PnlUsd = pnlUsd,
             PolymarketOrderId = t.PolymarketOrderId,
+            AwaitingRedeem = awaitingRedeem,
         };
     }
 
@@ -297,7 +365,7 @@ public static class TradeFeedBuilder
     {
         Id = $"skip-{s.Id}",
         TimeMs = s.CandleTime * 1000L,
-        Result = "Skipped",
+        Result = EntryErrorSkipReasons.Contains(s.SkipReason) ? "Error" : "Skipped",
         SkipReason = s.SkipReason,
     };
 
@@ -376,6 +444,9 @@ public static class TradeFeedBuilder
                     timeMs = f.TimeMs,
                     f.Side,
                     f.StakeUsd,
+                    f.RequestedStakeUsd,
+                    isPartialFill = f.RequestedStakeUsd is > 0
+                        && f.RequestedStakeUsd > f.StakeUsd + 0.01,
                     f.EntryPrice,
                     entryShares = f.EntryShares,
                     f.Mode,
@@ -384,6 +455,7 @@ public static class TradeFeedBuilder
                     f.Won,
                     f.PnlUsd,
                     f.PolymarketOrderId,
+                    awaitingRedeem = f.AwaitingRedeem,
                 }),
             };
         }
@@ -395,6 +467,7 @@ public static class TradeFeedBuilder
         public long TimeMs { get; init; }
         public string? Side { get; init; }
         public double? StakeUsd { get; init; }
+        public double? RequestedStakeUsd { get; init; }
         public double? EntryPrice { get; init; }
         public double? EntryShares { get; init; }
         public string? Mode { get; init; }
@@ -403,5 +476,6 @@ public static class TradeFeedBuilder
         public bool? Won { get; init; }
         public double? PnlUsd { get; init; }
         public string? PolymarketOrderId { get; init; }
+        public bool AwaitingRedeem { get; init; }
     }
 }

@@ -9,17 +9,17 @@ namespace PolyTrader.Core.Tests;
 public class StrategyGoldenTests
 {
     [Fact]
-    public void BosFlow_PresetActive_HasFlowActiveParameters()
+    public void BlendFade2_PresetPnlMax_HasTunedParameters()
     {
-        var cfg = BosFlowConfig.PresetActive();
-        Assert.Equal(2, cfg.SwingLeft);
-        Assert.Equal(2, cfg.SwingRight);
-        Assert.Equal(0.0001, cfg.MinBreakPct);
-        Assert.Equal(50, cfg.EmaPeriod);
-        Assert.Equal(18, cfg.MaxBiasBars);
-        Assert.Equal(0.05, cfg.MinBodyRatio);
-        Assert.True(cfg.FadeBos);
-        Assert.False(cfg.UseRsiGate);
+        var cfg = BlendFade2Config.PresetPnlMax();
+        Assert.Equal(48, cfg.Lookback);
+        Assert.Equal(18, cfg.LookbackFast);
+        Assert.Equal(1.08, cfg.ZThreshold);
+        Assert.Equal(0.0026, cfg.MinRangePct);
+        Assert.Equal(0.60, cfg.ZFastMin);
+        Assert.False(cfg.ZReversal);
+        Assert.Equal(0, cfg.RankConfirm);
+        Assert.Equal(0, cfg.ZMax);
     }
 
     [Fact]
@@ -31,7 +31,7 @@ public class StrategyGoldenTests
     }
 
     [Fact]
-    public void Simulate_BosFlow_SkipsBarsWithoutSignal()
+    public void Simulate_BlendFade2_SkipsBarsWithoutSignal()
     {
         var candles = new List<ChartCandle>
         {
@@ -163,7 +163,7 @@ public class StrategyGoldenTests
             if (result!.Entry != null)
             {
                 entries++;
-                var signals = BosFlowSignals.Generate(candles, BosFlowConfig.PresetActive());
+                var signals = BlendFade2Signals.Generate(candles, BlendFade2Config.PresetPnlMax());
                 var nextIndex = i + 1;
                 Assert.True(signals.EntryBar[nextIndex]);
                 Assert.Equal(signals.Side[nextIndex], result.Entry.Trend);

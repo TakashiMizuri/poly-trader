@@ -7,12 +7,14 @@ import {
 import { usePoll } from '@/api/hooks'
 import { useTradingLiveEvent } from '@/api/tradingLive'
 import { PageCard } from '@/components/app-ui'
+import { DashboardBalanceChart } from '@/components/DashboardBalanceChart'
 import { DashboardBalancePanel } from '@/components/DashboardBalancePanel'
 import { DashboardEnginePanel } from '@/components/DashboardEnginePanel'
 import { LiveChart } from '@/components/LiveChart'
 import { PositionsPanel } from '@/components/PositionsPanel'
 import { useBinanceLiveCandles } from '@/hooks/useBinanceLiveCandles'
-import { clearPollCache } from '@/api/poll-cache'
+import { clearPollCache, writePollCache } from '@/api/poll-cache'
+import { usePaperTrading } from '@/context/PaperTradingContext'
 import { GLOBAL_RESET_EVENT } from '@/lib/appReset'
 
 type AccountSnapshot = {
@@ -31,18 +33,22 @@ async function fetchAccount(): Promise<AccountSnapshot> {
 }
 
 export function DashboardPage() {
+  const { paperTradingEnabled } = usePaperTrading()
   const [tradeRefreshKey, setTradeRefreshKey] = useState(0)
 
-  const accountPoll = usePoll(useCallback(() => fetchAccount(), []), false, {
+  const accountPoll = usePoll(useCallback(() => fetchAccount(), []), 25_000, {
     cacheKey: 'api/account',
   })
 
   const settings = accountPoll.data?.settings ?? null
   const balance = accountPoll.data?.balance ?? null
 
-  const paperAccountId =
-    balance?.paperAccountId ?? settings?.activePaperAccountId
-  const tradingMode = balance?.mode ?? settings?.tradingMode
+  const paperAccountId = paperTradingEnabled
+    ? (balance?.paperAccountId ?? settings?.activePaperAccountId)
+    : null
+  const tradingMode = paperTradingEnabled
+    ? (balance?.mode ?? settings?.tradingMode)
+    : 'Live'
 
   const markersCacheKey = useMemo(
     () => `api/trades/chart-markers:${paperAccountId ?? 'all'}`,
@@ -62,8 +68,39 @@ export function DashboardPage() {
   })
   const markers = markersPoll.data ?? []
 
-  const refreshAccount = accountPoll.refresh
+  const refreshAccount = useCallback(async () => {
+    clearPollCache('api/account')
+    await accountPoll.refresh()
+  }, [accountPoll.refresh])
+
+  const applyAccountSettings = useCallback(
+    (settings: EngineSettings) => {
+      clearPollCache('api/account')
+      accountPoll.patchData((prev) => {
+        if (prev == null) return prev
+        const next = { ...prev, settings }
+        writePollCache('api/account', next)
+        return next
+      })
+    },
+    [accountPoll.patchData],
+  )
+
   const loadMarkers = markersPoll.refresh
+
+  useEffect(() => {
+    if (paperTradingEnabled || settings?.tradingMode !== 'Paper') return
+    let cancelled = false
+    void api<EngineSettings>('/api/engine', {
+      method: 'PUT',
+      body: JSON.stringify({ tradingMode: 'Live', isRunning: false }),
+    }).then(() => {
+      if (!cancelled) void refreshAccount()
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [paperTradingEnabled, settings?.tradingMode, settings?.updatedAt, refreshAccount])
 
   const { candles, status: candleStatus } = useBinanceLiveCandles({
     symbol: 'BTCUSDT',
@@ -114,24 +151,27 @@ export function DashboardPage() {
 
   return (
     <div className="flex h-full min-h-0 w-full flex-col gap-3 p-3 md:gap-4 md:p-4">
-      <div className="flex min-h-[7.25rem] shrink-0 flex-col gap-3 sm:flex-row sm:items-stretch">
+      <header className="grid shrink-0 gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-stretch">
         <DashboardBalancePanel
           settings={settings}
           balance={balance}
           tradingMode={tradingMode}
           onUpdated={refreshAccount}
+          className="min-w-0"
         />
         <DashboardEnginePanel
           settings={settings}
+          onSettingsSaved={applyAccountSettings}
           onUpdated={refreshAccount}
+          className="min-w-0 lg:w-max lg:max-w-full"
         />
-      </div>
+      </header>
 
-      <section className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1.7fr)_minmax(280px,1fr)]">
+      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(440px,600px)] xl:grid-cols-[minmax(0,1.05fr)_minmax(480px,680px)] 2xl:grid-cols-[minmax(0,1fr)_minmax(520px,720px)] lg:grid-rows-1">
         <PageCard
           title="BTC / USDT"
           fill
-          className="min-h-[min(52vh,480px)] lg:min-h-0"
+          className="min-h-[min(48vh,440px)] lg:min-h-0"
           contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
           action={
             <span className="font-mono text-xs tabular-nums text-muted-foreground">
@@ -148,13 +188,23 @@ export function DashboardPage() {
           />
         </PageCard>
 
-        <PositionsPanel
-          refreshKey={tradeRefreshKey}
-          paperAccountId={paperAccountId}
-          tradingMode={tradingMode}
-          className="min-h-[min(40vh,360px)] lg:min-h-0"
-        />
-      </section>
+        <aside className="flex min-h-0 flex-col gap-3 lg:min-h-0">
+          <DashboardBalanceChart
+            paperAccountId={paperAccountId}
+            tradingMode={tradingMode}
+            liveBalance={balance?.liveBalance}
+            clobConfigured={balance?.clobConfigured}
+            className="h-[min(28vh,240px)] shrink-0 lg:h-[220px]"
+          />
+          <PositionsPanel
+            refreshKey={tradeRefreshKey}
+            paperAccountId={paperAccountId}
+            tradingMode={tradingMode}
+            engineRunning={settings?.isRunning ?? false}
+            className="min-h-[min(36vh,320px)] flex-1 lg:min-h-0"
+          />
+        </aside>
+      </div>
     </div>
   )
 }

@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import type { EngineSettings } from '@/api/client'
 import { api } from '@/api/client'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogBody,
@@ -11,6 +13,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { usePaperTrading } from '@/context/PaperTradingContext'
 import { useTheme } from '@/context/ThemeContext'
 import { useTimeFormat } from '@/context/TimeFormatContext'
 import { formatDisplayDateTime } from '@/lib/displayLocale'
@@ -47,16 +51,88 @@ interface SettingsDialogProps {
 export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const { theme, setTheme } = useTheme()
   const { timeFormat, setTimeFormat } = useTimeFormat()
+  const { paperTradingEnabled, setPaperTradingEnabled } = usePaperTrading()
   const [resetBusy, setResetBusy] = useState(false)
   const [resetError, setResetError] = useState<string | null>(null)
+  const [paperModeError, setPaperModeError] = useState<string | null>(null)
+  const [autoRedeemEnabled, setAutoRedeemEnabled] = useState(true)
+  const [autoRedeemLoading, setAutoRedeemLoading] = useState(false)
+  const [autoRedeemError, setAutoRedeemError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    setAutoRedeemLoading(true)
+    setAutoRedeemError(null)
+    void api<EngineSettings>('/api/engine')
+      .then((settings) => {
+        if (!cancelled) setAutoRedeemEnabled(settings.autoRedeemEnabled)
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setAutoRedeemError(
+            e instanceof Error ? e.message : 'Could not load engine settings',
+          )
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setAutoRedeemLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [open])
+
+  async function handleAutoRedeemToggle(enabled: boolean) {
+    setAutoRedeemError(null)
+    const previous = autoRedeemEnabled
+    setAutoRedeemEnabled(enabled)
+    try {
+      const settings = await api<EngineSettings>('/api/engine', {
+        method: 'PUT',
+        body: JSON.stringify({ autoRedeemEnabled: enabled }),
+      })
+      setAutoRedeemEnabled(settings.autoRedeemEnabled)
+    } catch (e) {
+      setAutoRedeemEnabled(previous)
+      setAutoRedeemError(
+        e instanceof Error ? e.message : 'Could not update auto-redeem setting',
+      )
+    }
+  }
+
+  async function handlePaperTradingToggle(enabled: boolean) {
+    setPaperModeError(null)
+    if (!enabled) {
+      try {
+        await api('/api/engine', {
+          method: 'PUT',
+          body: JSON.stringify({ tradingMode: 'Live', isRunning: false }),
+        })
+        setPaperTradingEnabled(false)
+      } catch (e) {
+        setPaperModeError(
+          e instanceof Error ? e.message : 'Could not switch engine to Live mode',
+        )
+      }
+      return
+    }
+    setPaperTradingEnabled(true)
+  }
 
   async function handleGlobalReset() {
     const confirmed = confirm(
-      'Reset all application data?\n\n' +
-        'This will delete trade history, open positions, paper accounts, balance snapshots, ' +
-        'and candle snapshots. The engine will stop and a fresh default paper account ($100) will be created.\n\n' +
-        'Chart display preferences and legacy browser storage will also be cleared.\n\n' +
-        'This cannot be undone.',
+      paperTradingEnabled
+        ? 'Reset all application data?\n\n' +
+            'This will delete trade history, open positions, paper accounts, balance snapshots, ' +
+            'candle snapshots, and backend log files. The engine will stop and a fresh default paper account ($100) will be created.\n\n' +
+            'Chart settings (overlays) are kept.\n\n' +
+            'This cannot be undone.'
+        : 'Reset all application data?\n\n' +
+            'This will delete trade history, open positions, balance snapshots, candle snapshots, ' +
+            'and backend log files. The engine will stop.\n\n' +
+            'Chart settings (overlays) are kept.\n\n' +
+            'This cannot be undone.',
     )
     if (!confirmed) return
 
@@ -168,12 +244,79 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             </div>
           </section>
 
+          <section>
+            <h3 className="text-sm font-medium text-foreground">Trading</h3>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Paper mode simulates fills at live Polymarket prices without spending
+              USDC.
+            </p>
+
+            <Label
+              className={cn(
+                'mt-3 cursor-pointer items-start gap-3 rounded-lg border border-border bg-background px-4 py-3 transition-colors hover:border-muted-foreground/40',
+              )}
+            >
+              <Checkbox
+                className="mt-0.5"
+                checked={paperTradingEnabled}
+                onCheckedChange={(checked) =>
+                  void handlePaperTradingToggle(checked === true)
+                }
+              />
+              <span>
+                <span className="block text-sm font-medium text-foreground">
+                  Включить paper-торговлю
+                </span>
+                <span className="mt-0.5 block text-sm font-normal text-muted-foreground">
+                  When off, paper balance, accounts, and Paper engine mode are hidden.
+                </span>
+              </span>
+            </Label>
+            {paperModeError ? (
+              <p className="mt-2 text-sm text-destructive" role="alert">
+                {paperModeError}
+              </p>
+            ) : null}
+
+            <Label
+              className={cn(
+                'mt-3 cursor-pointer items-start gap-3 rounded-lg border border-border bg-background px-4 py-3 transition-colors hover:border-muted-foreground/40',
+                autoRedeemLoading && 'pointer-events-none opacity-60',
+              )}
+            >
+              <Checkbox
+                className="mt-0.5"
+                checked={autoRedeemEnabled}
+                disabled={autoRedeemLoading}
+                onCheckedChange={(checked) =>
+                  void handleAutoRedeemToggle(checked === true)
+                }
+              />
+              <span>
+                <span className="block text-sm font-medium text-foreground">
+                  Auto-redeem winning positions
+                </span>
+                <span className="mt-0.5 block text-sm font-normal text-muted-foreground">
+                  When on, redeems resolved live winners on-chain (background poll
+                  every 2 minutes and ~15s after each win). Turn off to redeem manually
+                  in the Polymarket UI.
+                </span>
+              </span>
+            </Label>
+            {autoRedeemError ? (
+              <p className="mt-2 text-sm text-destructive" role="alert">
+                {autoRedeemError}
+              </p>
+            ) : null}
+          </section>
+
           <Alert variant="destructive" className="flex flex-col gap-3">
             <div className="space-y-1">
               <AlertTitle>Data</AlertTitle>
               <AlertDescription>
-                Erase trading history, demo paper accounts, positions, and related server
-                data. Creates a single new default paper account and stops the engine.
+                {paperTradingEnabled
+                  ? 'Erase trading history, demo paper accounts, positions, and related server data. Creates a single new default paper account and stops the engine.'
+                  : 'Erase trading history, positions, and related server data. Stops the engine.'}
               </AlertDescription>
             </div>
             {resetError ? (
