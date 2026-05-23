@@ -72,6 +72,7 @@ public static class DependencyInjection
         services.AddScoped<InProgressWindowSkipService>();
         services.AddScoped<BalanceHistoryService>();
         services.AddScoped<IEngineSettingsService, EngineSettingsService>();
+        services.AddScoped<LimitEntryPreviewService>();
         services.AddSingleton<ITelegramNotifier, TelegramNotifier>();
         services.AddSingleton<BalanceChartImageBuilder>();
         services.AddHostedService<TradingEngineHostedService>();

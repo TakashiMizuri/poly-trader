@@ -3,6 +3,7 @@ using PolyTrader.Core.Abstractions;
 using PolyTrader.Core.Models;
 using PolyTrader.Core.Strategy;
 using PolyTrader.Infrastructure.Polymarket;
+using PolyTrader.Infrastructure.Services;
 
 namespace PolyTrader.Api.Controllers;
 
@@ -12,11 +13,16 @@ public sealed class EngineController : ControllerBase
 {
     private readonly IEngineSettingsService _engine;
     private readonly IPolymarketClobService _clob;
+    private readonly LimitEntryPreviewService _limitPreview;
 
-    public EngineController(IEngineSettingsService engine, IPolymarketClobService clob)
+    public EngineController(
+        IEngineSettingsService engine,
+        IPolymarketClobService clob,
+        LimitEntryPreviewService limitPreview)
     {
         _engine = engine;
         _clob = clob;
+        _limitPreview = limitPreview;
     }
 
     [HttpGet("live-status")]
@@ -30,6 +36,45 @@ public sealed class EngineController : ControllerBase
             _clob.IsConfigured,
             balance,
             balance is >= SafeBetStake.MinBetStake));
+    }
+
+    [HttpGet("limit-entry-preview")]
+    public async Task<ActionResult<LimitEntryPreviewDto>> LimitEntryPreview(
+        [FromQuery] string? tradingMode,
+        [FromQuery] int? paperAccountId,
+        [FromQuery] string? betStakeMode,
+        [FromQuery] double? betStakeUsd,
+        [FromQuery] double? betStakePercent,
+        [FromQuery] double? maxBetStakeUsd,
+        [FromQuery] bool clearMaxBetStakeUsd,
+        CancellationToken ct)
+    {
+        TradingMode? mode = null;
+        if (!string.IsNullOrWhiteSpace(tradingMode)
+            && Enum.TryParse<TradingMode>(tradingMode, true, out var parsedMode))
+        {
+            mode = parsedMode;
+        }
+
+        BetStakeMode? stakeMode = null;
+        if (!string.IsNullOrWhiteSpace(betStakeMode)
+            && Enum.TryParse<BetStakeMode>(betStakeMode, true, out var parsedStake))
+        {
+            stakeMode = parsedStake;
+        }
+
+        var preview = await _limitPreview.BuildAsync(
+            new LimitEntryPreviewRequest(
+                mode,
+                paperAccountId,
+                stakeMode,
+                betStakeUsd,
+                betStakePercent,
+                maxBetStakeUsd,
+                clearMaxBetStakeUsd),
+            ct);
+
+        return Ok(MapPreviewDto(preview));
     }
 
     [HttpGet]
@@ -66,6 +111,23 @@ public sealed class EngineController : ControllerBase
             req.CommissionPercent,
             req.AutoRedeemEnabled,
             req.LiveEntryOrderMode);
+
+    private static LimitEntryPreviewDto MapPreviewDto(LimitEntryPreview p) =>
+        new(
+            p.TradingMode,
+            p.BalanceUsd,
+            p.ReferenceBid,
+            p.BidUnavailableReason,
+            p.MinOrderShares,
+            p.ClobMinStakeUsd,
+            p.RequestedStakeUsd,
+            p.EffectiveStakeUsd,
+            p.CanTrade,
+            p.WillBump,
+            p.BlockReason,
+            p.MinBalanceNoBumpUsd,
+            p.StakePercent,
+            p.MaxBetStakeUsd);
 
     private static EngineSettingsDto MapDto(EngineSettingsSnapshot s) =>
         new(
@@ -125,4 +187,20 @@ public sealed class EngineController : ControllerBase
         bool ClobConfigured,
         double? LiveBalanceUsd,
         bool CanTrade);
+
+    public sealed record LimitEntryPreviewDto(
+        string TradingMode,
+        double? BalanceUsd,
+        double? ReferenceBid,
+        string? BidUnavailableReason,
+        decimal MinOrderShares,
+        double? ClobMinStakeUsd,
+        double RequestedStakeUsd,
+        double EffectiveStakeUsd,
+        bool CanTrade,
+        bool WillBump,
+        string? BlockReason,
+        double? MinBalanceNoBumpUsd,
+        double? StakePercent,
+        double? MaxBetStakeUsd);
 }

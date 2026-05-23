@@ -79,6 +79,23 @@ export function normalizeLiveEntryOrderMode(mode: string): LiveEntryOrderMode {
   return String(mode).toLowerCase() === 'market' ? 'Market' : 'Limit'
 }
 
+export interface LimitEntryPreview {
+  tradingMode: string
+  balanceUsd: number | null
+  referenceBid: number | null
+  bidUnavailableReason: string | null
+  minOrderShares: number
+  clobMinStakeUsd: number | null
+  requestedStakeUsd: number
+  effectiveStakeUsd: number
+  canTrade: boolean
+  willBump: boolean
+  blockReason: string | null
+  minBalanceNoBumpUsd: number | null
+  stakePercent: number | null
+  maxBetStakeUsd: number | null
+}
+
 export function normalizeBetStakeMode(mode: BetStakeMode): 'percent' | 'fixed' {
   return String(mode).toLowerCase() === 'fixed' ? 'fixed' : 'percent'
 }

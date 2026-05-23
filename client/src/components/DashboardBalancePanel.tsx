@@ -171,6 +171,19 @@ export function DashboardBalancePanel({
           onClose={() => setStakeSettingsOpen(false)}
           settings={settings}
           onUpdated={onUpdated}
+          tradingMode={
+            stakeOnPaperMetric ? 'Paper' : (tradingMode ?? 'Live')
+          }
+          balanceUsd={
+            stakeOnPaperMetric
+              ? displayBalance
+              : (balance?.liveBalance ?? null)
+          }
+          paperAccountId={
+            stakeOnPaperMetric
+              ? (balance?.paperAccountId ?? settings.activePaperAccountId)
+              : null
+          }
         />
       ) : null}
     </AccountMetricsBar>

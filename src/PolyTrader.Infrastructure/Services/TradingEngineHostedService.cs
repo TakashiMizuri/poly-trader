@@ -797,14 +797,15 @@ public sealed class TradingEngineHostedService : BackgroundService
                         entryMarket.NoTokenId,
                         tokenId,
                         ct);
-                    var bidPrice = isLive
+                    var useLimitEntry = !LiveEntryOrderModes.IsMarket(settings.LiveEntryOrderMode);
+                    var bidPrice = useLimitEntry
                         ? await ResolveMakerBidPriceAsync(
                             entryMarket.YesTokenId,
                             entryMarket.NoTokenId,
                             tokenId,
                             ct)
                         : askPrice;
-                    var entryPrice = isLive ? bidPrice : askPrice;
+                    var entryPrice = useLimitEntry ? bidPrice : askPrice;
 
                     string? orderId = null;
                     var balanceUnavailable = false;
@@ -854,62 +855,51 @@ public sealed class TradingEngineHostedService : BackgroundService
                             ? settings.BetStakeUsd
                             : BetStakeResolver.RequestedStake(balanceAtOpen, stakeParams));
 
-                    if (isLive)
+                    if (useLimitEntry)
                     {
-                        var clobMinStake = PolymarketClobLimits.MinStakeUsd(bidPrice);
-                        if (stake + 0.001 < clobMinStake)
+                        var limitPlan = LimitEntryRules.Plan(
+                            balanceAtOpen,
+                            stake,
+                            stakeParams.MaxBetStakeUsd,
+                            bidPrice);
+                        if (limitPlan.WillBump)
                         {
-                            var maxAffordable = balanceAtOpen - SafeBetStake.BalanceFloor;
-                            if (maxAffordable + 0.001 >= clobMinStake)
-                            {
-                                var bumped = Math.Min(clobMinStake, maxAffordable);
-                                if (stakeParams.MaxBetStakeUsd is > 0)
-                                {
-                                    bumped = Math.Min(bumped, stakeParams.MaxBetStakeUsd.Value);
-                                }
+                            _logger.LogInformation(
+                                "Bumping {Mode} stake ${Old:F2} → ${New:F2} for Polymarket min order ({MinShares} shares @ bid {Bid:F4})",
+                                settings.TradingMode,
+                                stake,
+                                limitPlan.EffectiveStakeUsd,
+                                LimitEntryRules.MinOrderShares,
+                                bidPrice);
+                        }
 
-                                if (bumped + 0.001 >= clobMinStake)
-                                {
-                                    _logger.LogInformation(
-                                        "Bumping live stake ${Old:F2} → ${New:F2} for Polymarket min order ({MinShares} shares @ bid {Bid:F4})",
-                                        stake,
-                                        bumped,
-                                        PolymarketClobLimits.MinOrderShares,
-                                        bidPrice);
-                                    stake = bumped;
-                                }
-                                else
-                                {
-                                    maxAffordable = 0;
-                                }
-                            }
-
-                            if (maxAffordable + 0.001 < clobMinStake)
-                            {
-                                ReleaseEntryTargetClaim(targetCandleTime);
-                                _logger.LogWarning(
-                                    "Live entry skipped for candle {CandleTime}: stake ${Stake:F2} needs ≥ ${Min:F2} for {MinShares} shares @ {Bid:F4} (balance ${Balance:F2})",
-                                    actions.Entry.TargetCandleTime,
-                                    stake,
-                                    clobMinStake,
-                                    PolymarketClobLimits.MinOrderShares,
-                                    bidPrice,
-                                    balanceAtOpen);
-                                await TryRecordSkipAsync(
-                                    db,
-                                    settings,
-                                    actions.Entry.TargetCandleTime,
-                                    tradeContextId,
-                                    "clob_min_order_size",
-                                    entryMarket.Id,
-                                    $"Need ≥ ${clobMinStake:F2} for Polymarket min {PolymarketClobLimits.MinOrderShares} shares at bid {bidPrice:F4}; balance ${balanceAtOpen:F2}",
-                                    side: side.ToString(),
-                                    trend: actions.Entry.Trend.ToString(),
-                                    stakeUsd: stake,
-                                    entryFailedToPublish: entryFailedToPublish,
-                                    ct: ct);
-                                stake = 0;
-                            }
+                        if (!limitPlan.CanTrade)
+                        {
+                            ReleaseEntryTargetClaim(targetCandleTime);
+                            _logger.LogWarning(
+                                "{Mode} limit entry skipped for candle {CandleTime}: {Reason}",
+                                settings.TradingMode,
+                                actions.Entry.TargetCandleTime,
+                                limitPlan.BlockReason);
+                            await TryRecordSkipAsync(
+                                db,
+                                settings,
+                                actions.Entry.TargetCandleTime,
+                                tradeContextId,
+                                "clob_min_order_size",
+                                entryMarket.Id,
+                                limitPlan.BlockReason
+                                    ?? $"Need ≥ ${limitPlan.ClobMinStakeUsd:F2} for {LimitEntryRules.MinOrderShares} shares at bid {bidPrice:F4}",
+                                side: side.ToString(),
+                                trend: actions.Entry.Trend.ToString(),
+                                stakeUsd: stake,
+                                entryFailedToPublish: entryFailedToPublish,
+                                ct: ct);
+                            stake = 0;
+                        }
+                        else
+                        {
+                            stake = limitPlan.EffectiveStakeUsd;
                         }
                     }
 
