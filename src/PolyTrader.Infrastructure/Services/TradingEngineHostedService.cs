@@ -33,6 +33,8 @@ namespace PolyTrader.Infrastructure.Services;
 public sealed class TradingEngineHostedService : BackgroundService
 
 {
+    /// <summary>Live entries use post-only maker limits — Polymarket charges 0% maker fee.</summary>
+    private const double LiveTradeCommissionPercent = 0;
 
     private readonly IServiceScopeFactory _scopeFactory;
 
@@ -247,6 +249,20 @@ public sealed class TradingEngineHostedService : BackgroundService
 
         if (closedCandle == null) return;
 
+        try
+        {
+            // WS gaps leave provisional closes in RAM; REST is authoritative before entry/settlement.
+            await _binance.RefreshRecentCandlesAsync(limit: 100, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "bar_open_backup: failed to refresh recent Binance klines; using in-memory buffer");
+        }
+
+        candles = _binance.Candles;
+        closedCandle = candles.FirstOrDefault(c => c.Time == previousOpenTime);
+        if (closedCandle == null) return;
+
         var closedBuffer = TrimBufferThroughClosedCandle(candles, closedCandle.Time);
 
         if (closedBuffer.Count == 0) return;
@@ -324,6 +340,7 @@ public sealed class TradingEngineHostedService : BackgroundService
 
         LogCandleDecision("bar_open_backup", closedCandle.Time, latest.Time, actions);
 
+        var entryFailedToPublish = new List<EntryFailedEvent>();
         var tradesToPublish = await ApplyStrategyActionsAsync(
             db,
             settings,
@@ -332,11 +349,13 @@ public sealed class TradingEngineHostedService : BackgroundService
             closedCandle,
             intervalSeconds,
             actions,
-            workingBalance);
+            workingBalance,
+            entryFailedToPublish);
 
         await db.SaveChangesAsync();
 
         await PublishTradesAndBalanceAsync(db, tradesToPublish, paperAccount, CancellationToken.None);
+        await PublishEntryFailedEventsAsync(entryFailedToPublish, CancellationToken.None);
     }
 
 
@@ -543,6 +562,7 @@ public sealed class TradingEngineHostedService : BackgroundService
 
         LogCandleDecision("kline_closed", e.Candle.Time, nextOpenTime, actions);
 
+        var entryFailedToPublish = new List<EntryFailedEvent>();
         var tradesToPublish = await ApplyStrategyActionsAsync(
             db,
             settings,
@@ -551,11 +571,28 @@ public sealed class TradingEngineHostedService : BackgroundService
             e.Candle,
             intervalSeconds,
             actions,
-            workingBalance);
+            workingBalance,
+            entryFailedToPublish);
 
         await db.SaveChangesAsync();
 
         await PublishTradesAndBalanceAsync(db, tradesToPublish, paperAccount, CancellationToken.None);
+        await PublishEntryFailedEventsAsync(entryFailedToPublish, CancellationToken.None);
+    }
+
+    private async Task PublishEntryFailedEventsAsync(
+        IReadOnlyList<EntryFailedEvent> events,
+        CancellationToken ct)
+    {
+        if (events.Count == 0)
+        {
+            return;
+        }
+
+        foreach (var entryFailed in events)
+        {
+            await _publisher.PublishEntryFailedAsync(entryFailed, ct);
+        }
     }
 
     private async Task PublishTradesAndBalanceAsync(
@@ -612,6 +649,7 @@ public sealed class TradingEngineHostedService : BackgroundService
         long intervalSeconds,
         CandleCloseStrategyResult actions,
         double workingBalance,
+        List<EntryFailedEvent> entryFailedToPublish,
         CancellationToken ct = default)
     {
         var isPaper = settings.TradingMode == TradingMode.Paper;
@@ -653,7 +691,7 @@ public sealed class TradingEngineHostedService : BackgroundService
                         var (pnl, _) = TrendBetStrategySimulator.ComputeBetPnl(
                             won,
                             openTrade.StakeUsd,
-                            settings.CommissionPercent,
+                            LiveTradeCommissionPercent,
                             openTrade.EntryPrice);
                         openTrade.PnlUsd = pnl;
                         db.Trades.Update(openTrade);
@@ -742,6 +780,8 @@ public sealed class TradingEngineHostedService : BackgroundService
                         "no_market",
                         marketId: null,
                         detail: "No Polymarket BTC 5m market resolved for entry candle",
+                        trend: actions.Entry.Trend.ToString(),
+                        entryFailedToPublish: entryFailedToPublish,
                         ct: ct);
                 }
                 else
@@ -752,11 +792,19 @@ public sealed class TradingEngineHostedService : BackgroundService
                     var tokenId = side == TradeSide.Up
                         ? entryMarket.YesTokenId
                         : entryMarket.NoTokenId;
-                    var entryPrice = await ResolveEntryPriceAsync(
+                    var askPrice = await ResolveAskPriceAsync(
                         entryMarket.YesTokenId,
                         entryMarket.NoTokenId,
                         tokenId,
                         ct);
+                    var bidPrice = isLive
+                        ? await ResolveMakerBidPriceAsync(
+                            entryMarket.YesTokenId,
+                            entryMarket.NoTokenId,
+                            tokenId,
+                            ct)
+                        : askPrice;
+                    var entryPrice = isLive ? bidPrice : askPrice;
 
                     string? orderId = null;
                     var balanceUnavailable = false;
@@ -783,7 +831,10 @@ public sealed class TradingEngineHostedService : BackgroundService
                                 "balance_unavailable",
                                 entryMarket.Id,
                                 "Could not read live USDC balance from Polymarket CLOB (timeout or network error)",
-                                ct);
+                                side: side.ToString(),
+                                trend: actions.Entry.Trend.ToString(),
+                                entryFailedToPublish: entryFailedToPublish,
+                                ct: ct);
                         }
                         else
                         {
@@ -803,7 +854,70 @@ public sealed class TradingEngineHostedService : BackgroundService
                             ? settings.BetStakeUsd
                             : BetStakeResolver.RequestedStake(balanceAtOpen, stakeParams));
 
-                    if (isLive && (stake < SafeBetStake.MinBetStake || balanceAtOpen < SafeBetStake.MinBetStake))
+                    if (isLive)
+                    {
+                        var clobMinStake = PolymarketClobLimits.MinStakeUsd(bidPrice);
+                        if (stake + 0.001 < clobMinStake)
+                        {
+                            var maxAffordable = balanceAtOpen - SafeBetStake.BalanceFloor;
+                            if (maxAffordable + 0.001 >= clobMinStake)
+                            {
+                                var bumped = Math.Min(clobMinStake, maxAffordable);
+                                if (stakeParams.MaxBetStakeUsd is > 0)
+                                {
+                                    bumped = Math.Min(bumped, stakeParams.MaxBetStakeUsd.Value);
+                                }
+
+                                if (bumped + 0.001 >= clobMinStake)
+                                {
+                                    _logger.LogInformation(
+                                        "Bumping live stake ${Old:F2} → ${New:F2} for Polymarket min order ({MinShares} shares @ bid {Bid:F4})",
+                                        stake,
+                                        bumped,
+                                        PolymarketClobLimits.MinOrderShares,
+                                        bidPrice);
+                                    stake = bumped;
+                                }
+                                else
+                                {
+                                    maxAffordable = 0;
+                                }
+                            }
+
+                            if (maxAffordable + 0.001 < clobMinStake)
+                            {
+                                ReleaseEntryTargetClaim(targetCandleTime);
+                                _logger.LogWarning(
+                                    "Live entry skipped for candle {CandleTime}: stake ${Stake:F2} needs ≥ ${Min:F2} for {MinShares} shares @ {Bid:F4} (balance ${Balance:F2})",
+                                    actions.Entry.TargetCandleTime,
+                                    stake,
+                                    clobMinStake,
+                                    PolymarketClobLimits.MinOrderShares,
+                                    bidPrice,
+                                    balanceAtOpen);
+                                await TryRecordSkipAsync(
+                                    db,
+                                    settings,
+                                    actions.Entry.TargetCandleTime,
+                                    tradeContextId,
+                                    "clob_min_order_size",
+                                    entryMarket.Id,
+                                    $"Need ≥ ${clobMinStake:F2} for Polymarket min {PolymarketClobLimits.MinOrderShares} shares at bid {bidPrice:F4}; balance ${balanceAtOpen:F2}",
+                                    side: side.ToString(),
+                                    trend: actions.Entry.Trend.ToString(),
+                                    stakeUsd: stake,
+                                    entryFailedToPublish: entryFailedToPublish,
+                                    ct: ct);
+                                stake = 0;
+                            }
+                        }
+                    }
+
+                    if (stake <= 0)
+                    {
+                        // clob_min_order_size skip already recorded
+                    }
+                    else if (isLive && (stake < SafeBetStake.MinBetStake || balanceAtOpen < SafeBetStake.MinBetStake))
                     {
                         ReleaseEntryTargetClaim(targetCandleTime);
                         _logger.LogWarning(
@@ -818,17 +932,22 @@ public sealed class TradingEngineHostedService : BackgroundService
                             "insufficient_balance",
                             entryMarket.Id,
                             $"Live balance ${balanceAtOpen:F2} below minimum stake (requested ${stake:F2}, min ${SafeBetStake.MinBetStake:F2})",
-                            ct);
+                            side: side.ToString(),
+                            trend: actions.Entry.Trend.ToString(),
+                            stakeUsd: stake,
+                            entryFailedToPublish: entryFailedToPublish,
+                            ct: ct);
                     }
                     else
                     {
                         LiveMarketBuyOutcome? liveOutcome = null;
                         if (isLive)
                         {
-                            liveOutcome = await _clob.PlaceMarketOrderAsync(
+                            liveOutcome = await _clob.PlaceEntryOrderAsync(
                                 tokenId,
                                 stake,
-                                entryPrice,
+                                bidPrice,
+                                askPrice,
                                 new LiveEntryOrderKey(actions.Entry.TargetCandleTime, tokenId),
                                 ct);
                             if (!liveOutcome.IsSuccess)
@@ -851,7 +970,11 @@ public sealed class TradingEngineHostedService : BackgroundService
                                     "order_failed",
                                     entryMarket.Id,
                                     liveOutcome.FailureReason,
-                                    ct);
+                                    side: side.ToString(),
+                                    trend: actions.Entry.Trend.ToString(),
+                                    stakeUsd: stake,
+                                    entryFailedToPublish: entryFailedToPublish,
+                                    ct: ct);
                             }
                             else
                             {
@@ -881,9 +1004,14 @@ public sealed class TradingEngineHostedService : BackgroundService
                         if (!isLive || liveOutcome is { IsSuccess: true })
                         {
                             double? requestedStakeUsd = null;
-                            if (isLive && liveOutcome?.Result is { IsPartialFill: true } partial)
+                            string? entryWavesJson = null;
+                            if (isLive && liveOutcome?.Result is { } liveResult)
                             {
-                                requestedStakeUsd = partial.RequestedStakeUsd;
+                                requestedStakeUsd = liveResult.RequestedStakeUsd;
+                                if (liveResult.EntryWaves is { Count: > 0 } waves)
+                                {
+                                    entryWavesJson = TradeEntryWavesJson.Serialize(waves);
+                                }
                             }
 
                             var trade = new TradeEntity
@@ -899,6 +1027,7 @@ public sealed class TradingEngineHostedService : BackgroundService
                                 Won = null,
                                 PnlUsd = null,
                                 PolymarketOrderId = orderId,
+                                EntryWavesJson = entryWavesJson,
                                 MarketId = entryMarket.Id,
                             };
 
@@ -1022,27 +1151,36 @@ public sealed class TradingEngineHostedService : BackgroundService
                 candleTime,
                 conditionId);
             var result = await _redeem.TryRedeemConditionAsync(conditionId);
-            if (result.Success)
+            await using (var scope = _scopeFactory.CreateAsyncScope())
             {
-                await using (var scope = _scopeFactory.CreateAsyncScope())
+                var db = scope.ServiceProvider.GetRequiredService<PolyTraderDbContext>();
+                var dataApi = scope.ServiceProvider.GetRequiredService<IPolymarketDataApiService>();
+                if (result.Success)
                 {
-                    var db = scope.ServiceProvider.GetRequiredService<PolyTraderDbContext>();
                     await TradeRedeemRecorder.MarkConditionRedeemedAsync(db, conditionId);
+                    _logger.LogInformation(
+                        "Post-settlement redeem succeeded candle {CandleTime} condition {ConditionId} tx {TxHash}",
+                        candleTime,
+                        conditionId,
+                        result.TransactionHash);
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "Post-settlement redeem returned failure candle {CandleTime} condition {ConditionId} error={Error}",
+                        candleTime,
+                        conditionId,
+                        result.Error ?? "unknown");
                 }
 
-                _logger.LogInformation(
-                    "Post-settlement redeem succeeded candle {CandleTime} condition {ConditionId} tx {TxHash}",
-                    candleTime,
-                    conditionId,
-                    result.TransactionHash);
-            }
-            else
-            {
-                _logger.LogWarning(
-                    "Post-settlement redeem returned failure candle {CandleTime} condition {ConditionId} error={Error}",
-                    candleTime,
-                    conditionId,
-                    result.Error ?? "unknown");
+                var synced = await TradeRedeemRecorder.SyncRedeemedWinsFromDataApiAsync(db, dataApi);
+                if (synced > 0)
+                {
+                    _logger.LogInformation(
+                        "Post-settlement: marked {Count} win(s) redeemed via Data API sync candle {CandleTime}",
+                        synced,
+                        candleTime);
+                }
             }
         }
         catch (Exception ex)
@@ -1103,7 +1241,7 @@ public sealed class TradingEngineHostedService : BackgroundService
         t.CreatedAt,
     };
 
-    private async Task<double> ResolveEntryPriceAsync(
+    private async Task<double> ResolveAskPriceAsync(
         string yesTokenId,
         string noTokenId,
         string outcomeTokenId,
@@ -1137,7 +1275,48 @@ public sealed class TradingEngineHostedService : BackgroundService
         }
 
         _logger.LogWarning(
-            "No Polymarket price for token {TokenId} (market {Yes}/{No}); using 0.5 fallback",
+            "No Polymarket ask for token {TokenId} (market {Yes}/{No}); using 0.5 fallback",
+            outcomeTokenId,
+            yesTokenId,
+            noTokenId);
+        return 0.5;
+    }
+
+    private async Task<double> ResolveMakerBidPriceAsync(
+        string yesTokenId,
+        string noTokenId,
+        string outcomeTokenId,
+        CancellationToken ct)
+    {
+        static bool IsValidPrice(double? p) => p is > 0 and <= 1;
+
+        var fromWs = _marketWs.Prices.GetOrCreate(outcomeTokenId).MakerBuyPrice
+            ?? _marketWs.Prices.GetMid(outcomeTokenId);
+        if (IsValidPrice(fromWs))
+        {
+            return fromWs!.Value;
+        }
+
+        var fromRest = await _clob.TryGetBidPriceAsync(outcomeTokenId, ct)
+            ?? await _clob.TryGetMidPriceAsync(outcomeTokenId, ct);
+        if (IsValidPrice(fromRest))
+        {
+            return fromRest!.Value;
+        }
+
+        for (var attempt = 0; attempt < 8; attempt++)
+        {
+            await Task.Delay(250, ct);
+            fromWs = _marketWs.Prices.GetOrCreate(outcomeTokenId).MakerBuyPrice
+                ?? _marketWs.Prices.GetMid(outcomeTokenId);
+            if (IsValidPrice(fromWs))
+            {
+                return fromWs!.Value;
+            }
+        }
+
+        _logger.LogWarning(
+            "No Polymarket bid for token {TokenId} (market {Yes}/{No}); using 0.5 fallback",
             outcomeTokenId,
             yesTokenId,
             noTokenId);
@@ -1237,7 +1416,7 @@ public sealed class TradingEngineHostedService : BackgroundService
     }
 
     private static bool IsEntryErrorSkipReason(string skipReason) =>
-        skipReason is "order_failed" or "insufficient_balance" or "balance_unavailable" or "no_market";
+        skipReason is "order_failed" or "insufficient_balance" or "balance_unavailable" or "no_market" or "clob_min_order_size";
 
     private async Task<bool> TryRecordSkipAsync(
         PolyTraderDbContext db,
@@ -1247,6 +1426,10 @@ public sealed class TradingEngineHostedService : BackgroundService
         string skipReason,
         int? marketId,
         string? detail = null,
+        string? side = null,
+        string? trend = null,
+        double? stakeUsd = null,
+        List<EntryFailedEvent>? entryFailedToPublish = null,
         CancellationToken ct = default)
     {
         var contextId = paperAccountId ?? 0;
@@ -1328,6 +1511,22 @@ public sealed class TradingEngineHostedService : BackgroundService
                 settings.TradingMode,
                 contextId,
                 resolvedMarketId.Value);
+
+            var marketMeta = await db.Markets.AsNoTracking()
+                .Where(m => m.Id == resolvedMarketId.Value)
+                .Select(m => new { m.Title, m.Slug })
+                .FirstOrDefaultAsync(ct);
+
+            entryFailedToPublish?.Add(new EntryFailedEvent(
+                candleTime,
+                settings.TradingMode.ToString(),
+                skipReason,
+                detail,
+                marketMeta?.Title,
+                marketMeta?.Slug,
+                side,
+                trend,
+                stakeUsd));
         }
         else
         {
@@ -1539,7 +1738,9 @@ public sealed class TradingEngineHostedService : BackgroundService
             }
         }
 
-        var commission = settings.CommissionPercent;
+        var commission = trade.Mode == TradingMode.Live
+            ? LiveTradeCommissionPercent
+            : settings.CommissionPercent;
         trade.Won = won.Value;
         var (pnl, _) = TrendBetStrategySimulator.ComputeBetPnl(
             won.Value,

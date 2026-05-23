@@ -18,6 +18,8 @@ public sealed class TradeEntity
     public bool? Won { get; set; }
     public double? PnlUsd { get; set; }
     public string? PolymarketOrderId { get; set; }
+    /// <summary>JSON array of maker entry waves (attempt 1 / remainder attempt 2).</summary>
+    public string? EntryWavesJson { get; set; }
     /// <summary>When winning live outcome tokens were redeemed on-chain (CTF).</summary>
     public DateTime? RedeemedAt { get; set; }
     public int? MarketId { get; set; }

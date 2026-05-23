@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.SignalR;
 using PolyTrader.Api.Hubs;
 using PolyTrader.Api.Logging;
 using PolyTrader.Api.Middleware;
@@ -13,7 +14,7 @@ using Serilog;
 EnvFileLoader.LoadFromAncestors(Directory.GetCurrentDirectory());
 
 var builder = WebApplication.CreateBuilder(args);
-SerilogBootstrap.Configure(builder);
+var liveLogBroadcaster = SerilogBootstrap.Configure(builder);
 
 builder.Services.AddControllers()
     .AddJsonOptions(o =>
@@ -109,8 +110,15 @@ try
 
     app.UseCors("ReactApp");
     app.UseMiddleware<ApiTokenMiddleware>();
+    app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
     app.MapControllers();
     app.MapHub<TradingHub>(TradingHub.HubPath);
+
+    var liveLogs = app.Services.GetRequiredService<LiveLogBroadcaster>();
+    liveLogs.Attach(
+        app.Services.GetRequiredService<IHubContext<TradingHub>>(),
+        app.Lifetime.ApplicationStopping);
+    app.Lifetime.ApplicationStopped.Register(() => _ = liveLogs.DisposeAsync());
 
     Log.Information("PolyTrader API listening");
     app.Run();

@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { NumberInput } from '@/components/ui/number-input'
+import { DraftNumberInput } from '@/components/ui/draft-number-input'
 import {
   hasPendingStakeChanges,
   stakeSnapshotFromSettings,
@@ -33,14 +33,6 @@ const fieldLabelClass =
 
 function draftFromSettings(settings: EngineSettings): StakeDraft {
   return stakeSnapshotFromSettings(settings, 'pending')
-}
-
-function parseMaxCap(raw: string): number | null {
-  const trimmed = raw.trim()
-  if (trimmed === '') return null
-  const n = Number(trimmed)
-  if (!Number.isFinite(n) || n <= 0) return null
-  return n
 }
 
 function draftsEqual(a: StakeDraft, b: StakeDraft): boolean {
@@ -174,33 +166,26 @@ export function StakeSettingsDialog({
                 {isPercentStake ? 'Percent' : 'Amount'}
               </p>
               {isPercentStake ? (
-                <NumberInput
-                  min={0.01}
-                  max={100}
-                  step={0.5}
+                <DraftNumberInput
+                  key="percent"
                   suffix="%"
                   value={draft.betStakePercent}
-                  onChange={(e) => {
-                    const n = Number(e.target.value)
-                    if (Number.isFinite(n)) {
-                      setDraft((d) => ({ ...d, betStakePercent: n }))
-                    }
+                  onCommit={(next) => {
+                    if (next == null) return
+                    setDraft((d) => ({ ...d, betStakePercent: next }))
                   }}
                   disabled={busy}
                   groupClassName="w-full"
                   aria-label="Stake percent of balance"
                 />
               ) : (
-                <NumberInput
-                  min={0.01}
-                  step={0.1}
+                <DraftNumberInput
+                  key="fixed"
                   prefix="$"
                   value={draft.betStakeUsd}
-                  onChange={(e) => {
-                    const n = Number(e.target.value)
-                    if (Number.isFinite(n)) {
-                      setDraft((d) => ({ ...d, betStakeUsd: n }))
-                    }
+                  onCommit={(next) => {
+                    if (next == null) return
+                    setDraft((d) => ({ ...d, betStakeUsd: next }))
                   }}
                   disabled={busy}
                   groupClassName="w-full"
@@ -214,20 +199,20 @@ export function StakeSettingsDialog({
 
             <div className="space-y-1.5">
               <p className={fieldLabelClass}>Cap</p>
-              <NumberInput
-                min={0.01}
-                step={1}
+              <DraftNumberInput
                 prefix="$"
                 placeholder="No cap"
+                allowEmpty
                 value={
                   draft.maxBetStakeUsd != null && draft.maxBetStakeUsd > 0
                     ? draft.maxBetStakeUsd
-                    : ''
+                    : null
                 }
-                onChange={(e) =>
+                onCommit={(next) =>
                   setDraft((d) => ({
                     ...d,
-                    maxBetStakeUsd: parseMaxCap(e.target.value),
+                    maxBetStakeUsd:
+                      next == null || next <= 0 ? null : next,
                   }))
                 }
                 disabled={busy}

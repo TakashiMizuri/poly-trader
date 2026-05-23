@@ -10,13 +10,17 @@ public static class SerilogBootstrap
     private const string OutputTemplate =
         "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}";
 
-    public static void Configure(WebApplicationBuilder builder)
+    public static LiveLogBroadcaster Configure(WebApplicationBuilder builder)
     {
-        ConfigureLogger(builder.Configuration);
+        var broadcaster = new LiveLogBroadcaster();
+        builder.Services.AddSingleton<ILiveLogBroadcaster>(broadcaster);
+        builder.Services.AddSingleton(broadcaster);
+        ConfigureLogger(builder.Configuration, broadcaster);
         builder.Host.UseSerilog();
+        return broadcaster;
     }
 
-    public static void ConfigureLogger(IConfiguration configuration)
+    public static void ConfigureLogger(IConfiguration configuration, ILiveLogBroadcaster? liveBroadcaster = null)
     {
         var logDirectory = ApplicationLogPaths.ResolveLogDirectory(configuration);
         Directory.CreateDirectory(logDirectory);
@@ -27,7 +31,12 @@ public static class SerilogBootstrap
             ?? Environment.GetEnvironmentVariable("POLYTRADER_LOG_LEVEL"),
             LogEventLevel.Information);
 
-        Log.Logger = new LoggerConfiguration()
+        var liveEnabled = configuration.GetValue("Serilog:LiveStream:Enabled", true);
+        var liveMinLevel = ParseLevel(
+            configuration["Serilog:LiveStream:MinimumLevel"],
+            LogEventLevel.Information);
+
+        var loggerConfig = new LoggerConfiguration()
             .MinimumLevel.Is(minLevel)
             .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
             .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
@@ -42,8 +51,15 @@ public static class SerilogBootstrap
                 rollingInterval: RollingInterval.Day,
                 retainedFileCountLimit: retained,
                 shared: true,
-                outputTemplate: OutputTemplate)
-            .CreateLogger();
+                outputTemplate: OutputTemplate);
+
+        if (liveEnabled && liveBroadcaster is not null)
+        {
+            loggerConfig = loggerConfig.WriteTo.Sink(
+                new SerilogLiveStreamSink(liveBroadcaster, liveMinLevel));
+        }
+
+        Log.Logger = loggerConfig.CreateLogger();
     }
 
     private static LogEventLevel ParseLevel(string? value, LogEventLevel fallback) =>

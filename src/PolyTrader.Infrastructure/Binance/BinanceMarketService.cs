@@ -26,6 +26,10 @@ public interface IBinanceMarketService
     event EventHandler? CandlesUpdated;
     Task StartAsync(CancellationToken cancellationToken = default);
     Task StopAsync();
+    /// <summary>
+    /// Overwrite recent bars in the in-memory buffer with Binance REST OHLC (authoritative closed values).
+    /// </summary>
+    Task RefreshRecentCandlesAsync(int limit = 100, CancellationToken cancellationToken = default);
 }
 
 public enum BinanceConnectionStatus
@@ -87,6 +91,45 @@ public sealed class BinanceMarketService : IBinanceMarketService, IAsyncDisposab
         await LoadHistoryAsync(_cts.Token);
         _logger.LogInformation("Binance history loaded: {Count} candles", Candles.Count);
         _ = RunWebSocketLoopAsync(_cts.Token);
+    }
+
+    public async Task RefreshRecentCandlesAsync(int limit = 100, CancellationToken cancellationToken = default)
+    {
+        limit = Math.Clamp(limit, 1, 1000);
+        var client = _httpClientFactory.CreateClient();
+        var symbol = _options.BinanceSymbol.ToUpperInvariant();
+        var url =
+            $"{RestBase}/api/v3/klines?symbol={symbol}&interval={_options.BinanceInterval}&limit={limit}";
+        var rows = await client.GetFromJsonAsync<JsonElement[]>(url, cancellationToken);
+        if (rows is not { Length: > 0 })
+        {
+            return;
+        }
+
+        var fresh = rows.Select(ParseKlineRow).ToList();
+        lock (_lock)
+        {
+            foreach (var candle in fresh)
+            {
+                var idx = _candles.FindIndex(c => c.Time == candle.Time);
+                if (idx >= 0)
+                {
+                    _candles[idx] = candle;
+                }
+                else
+                {
+                    _candles.Add(candle);
+                }
+            }
+
+            _candles.Sort((a, b) => a.Time.CompareTo(b.Time));
+            while (_candles.Count > _options.CandleHistoryLimit)
+            {
+                _candles.RemoveAt(0);
+            }
+        }
+
+        CandlesUpdated?.Invoke(this, EventArgs.Empty);
     }
 
     public async Task StopAsync()

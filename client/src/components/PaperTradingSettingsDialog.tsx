@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { NumberInput } from '@/components/ui/number-input'
+import { DraftNumberInput } from '@/components/ui/draft-number-input'
 import {
   Select,
   SelectContent,
@@ -47,8 +47,8 @@ export function PaperTradingSettingsDialog({
   const [accounts, setAccounts] = useState<PaperAccount[]>([])
   const [showCreate, setShowCreate] = useState(false)
   const [newName, setNewName] = useState('')
-  const [newBalance, setNewBalance] = useState('100')
-  const [resetBalance, setResetBalance] = useState('')
+  const [newBalance, setNewBalance] = useState(100)
+  const [resetBalance, setResetBalance] = useState<number | null>(null)
 
   const activeId = settings.activePaperAccountId
   const activeAccount = accounts.find((a) => a.id === activeId)
@@ -82,7 +82,7 @@ export function PaperTradingSettingsDialog({
 
   useEffect(() => {
     if (!open || activeAccount == null) return
-    setResetBalance(String(activeAccount.initialBalance))
+    setResetBalance(activeAccount.initialBalance)
   }, [open, activeAccount?.id, activeAccount?.initialBalance])
 
   async function update(patch: Record<string, unknown>) {
@@ -105,7 +105,7 @@ export function PaperTradingSettingsDialog({
         method: 'POST',
         body: JSON.stringify({
           name: newName.trim() || 'Paper account',
-          initialBalance: Number(newBalance) || 100,
+          initialBalance: newBalance > 0 ? newBalance : 100,
         }),
       })
       await update({
@@ -114,7 +114,7 @@ export function PaperTradingSettingsDialog({
       })
       setShowCreate(false)
       setNewName('')
-      setNewBalance('100')
+      setNewBalance(100)
       await loadAccounts()
     } finally {
       setBusy(false)
@@ -123,8 +123,8 @@ export function PaperTradingSettingsDialog({
 
   async function resetAccount() {
     if (activeId == null) return
-    const amount = Number(resetBalance)
-    if (!Number.isFinite(amount) || amount <= 0) return
+    const amount = resetBalance
+    if (amount == null || !Number.isFinite(amount) || amount <= 0) return
 
     const label =
       balance?.paperAccountName ??
@@ -256,13 +256,15 @@ export function PaperTradingSettingsDialog({
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="paper-new-balance">Starting balance</Label>
-                    <NumberInput
+                    <DraftNumberInput
                       id="paper-new-balance"
-                      min={1}
-                      step={1}
                       prefix="$"
+                      integer
                       value={newBalance}
-                      onChange={(e) => setNewBalance(e.target.value)}
+                      onCommit={(next) => {
+                        if (next == null) return
+                        setNewBalance(Math.max(1, next))
+                      }}
                       disabled={busy}
                     />
                   </div>
@@ -295,13 +297,15 @@ export function PaperTradingSettingsDialog({
             <div className="mt-3 space-y-2">
               <div className="space-y-1.5">
                 <Label htmlFor="paper-reset-balance">New starting balance</Label>
-                <NumberInput
+                <DraftNumberInput
                   id="paper-reset-balance"
-                  min={1}
-                  step={1}
                   prefix="$"
+                  integer
                   value={resetBalance}
-                  onChange={(e) => setResetBalance(e.target.value)}
+                  onCommit={(next) => {
+                    if (next == null) return
+                    setResetBalance(Math.max(1, next))
+                  }}
                   disabled={busy || !hasAccount}
                 />
               </div>

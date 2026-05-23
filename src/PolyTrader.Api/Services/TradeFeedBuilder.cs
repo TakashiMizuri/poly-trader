@@ -3,6 +3,7 @@ using PolyTrader.Core.Models;
 using PolyTrader.Core.Strategy;
 using PolyTrader.Infrastructure.Data;
 using PolyTrader.Infrastructure.Entities;
+using PolyTrader.Infrastructure.Polymarket;
 
 namespace PolyTrader.Api.Services;
 
@@ -14,6 +15,7 @@ public static class TradeFeedBuilder
         "insufficient_balance",
         "balance_unavailable",
         "no_market",
+        "clob_min_order_size",
     };
 
     public static async Task<IReadOnlyList<object>> BuildAsync(
@@ -358,6 +360,7 @@ public static class TradeFeedBuilder
             PnlUsd = pnlUsd,
             PolymarketOrderId = t.PolymarketOrderId,
             AwaitingRedeem = awaitingRedeem,
+            EntryWaves = TradeEntryWavesJson.Deserialize(t.EntryWavesJson),
         };
     }
 
@@ -456,6 +459,16 @@ public static class TradeFeedBuilder
                     f.PnlUsd,
                     f.PolymarketOrderId,
                     awaitingRedeem = f.AwaitingRedeem,
+                    entryWaves = f.EntryWaves?.Select(w => new
+                    {
+                        wave = w.Wave,
+                        label = w.Label,
+                        requestedUsd = w.RequestedUsd,
+                        filledUsd = w.FilledUsd,
+                        fillPercent = w.FillPercent,
+                        entryPrice = w.EntryPrice,
+                        orderId = w.OrderId,
+                    }),
                 }),
             };
         }
@@ -477,5 +490,6 @@ public static class TradeFeedBuilder
         public double? PnlUsd { get; init; }
         public string? PolymarketOrderId { get; init; }
         public bool AwaitingRedeem { get; init; }
+        public IReadOnlyList<TradeEntryWaveDto>? EntryWaves { get; init; }
     }
 }

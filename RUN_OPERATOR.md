@@ -83,6 +83,16 @@ docker compose up --build
 
 SQLite DB: Docker volume `polytrader-data` at `/app/data/polytrader.db`.
 
+## VPS production (Ubuntu 24.04)
+
+See **[DEPLOY.ru.md](DEPLOY.ru.md)** for the full Russian deployment guide.
+
+```bash
+sudo bash deploy/setup-server.sh
+cp .env.example .env
+bash deploy/update.sh   # docker-compose.prod.yml: API internal only, web on 127.0.0.1:8080
+```
+
 ## systemd example (API only)
 
 ```ini

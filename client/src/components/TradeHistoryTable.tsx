@@ -3,7 +3,13 @@ import { api } from '@/api/client'
 import { Card } from '@/components/ui/card'
 import { formatDisplayDateTime } from '@/lib/displayLocale'
 import { useTimeFormat } from '@/context/TimeFormatContext'
-import { formatStake, isPartialFill, type PositionFeedFill } from '@/lib/positionDisplay'
+import {
+  formatEntryWaveLine,
+  formatStake,
+  isPartialFill,
+  type PositionFeedFill,
+  type PositionEntryWave,
+} from '@/lib/positionDisplay'
 import { cn } from '@/lib/utils'
 
 interface TradeRow {
@@ -17,6 +23,7 @@ interface TradeRow {
   isPartialFill?: boolean
   entryPrice: number
   entryShares?: number
+  entryWaves?: PositionEntryWave[] | null
   won?: boolean | null
   pnlUsd?: number | null
   paperAccountId?: number
@@ -28,6 +35,18 @@ interface Props {
   paperAccountId?: number | null
   tradingMode?: string
   className?: string
+}
+
+function tradeAsFeedFill(t: TradeRow): PositionFeedFill {
+  return {
+    id: String(t.id),
+    timeMs: t.candleTime * 1000,
+    stakeUsd: t.stakeUsd,
+    requestedStakeUsd: t.requestedStakeUsd ?? null,
+    isPartialFill: t.isPartialFill,
+    entryWaves: t.entryWaves,
+    result: 'Open',
+  }
 }
 
 export function TradeHistoryTable({
@@ -77,11 +96,17 @@ export function TradeHistoryTable({
             />
             <TradeField
               label="Stake"
-              value={formatStake(t as PositionFeedFill)}
-              valueClassName={isPartialFill(t as PositionFeedFill) ? 'text-amber-600 dark:text-amber-400' : undefined}
+              value={formatStake(tradeAsFeedFill(t))}
+              valueClassName={isPartialFill(tradeAsFeedFill(t)) ? 'text-amber-600 dark:text-amber-400' : undefined}
             />
-            {isPartialFill(t as PositionFeedFill) ? (
+            {isPartialFill(tradeAsFeedFill(t)) ? (
               <TradeField label="Fill" value="Partial" valueClassName="text-amber-600 dark:text-amber-400" />
+            ) : null}
+            {(t.entryWaves?.length ?? 0) > 0 ? (
+              <TradeField
+                label="Entry"
+                value={t.entryWaves!.map((w) => formatEntryWaveLine(w)).join(' · ')}
+              />
             ) : null}
             <TradeField
               label="Won"

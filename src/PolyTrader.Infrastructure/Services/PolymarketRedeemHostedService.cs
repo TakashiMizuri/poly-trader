@@ -48,6 +48,7 @@ public sealed class PolymarketRedeemHostedService : BackgroundService
                         .Select(s => s.AutoRedeemEnabled)
                         .FirstAsync(stoppingToken);
 
+                    PolymarketRedeemBatchResult batch = new(0, 0, 0, [], []);
                     if (!autoRedeemEnabled)
                     {
                         _logger.LogDebug("Redeem poll skipped: auto-redeem disabled in settings");
@@ -55,7 +56,7 @@ public sealed class PolymarketRedeemHostedService : BackgroundService
                     else
                     {
                         _logger.LogDebug("Redeem poll: scanning redeemable positions");
-                        var batch = await _redeem.TryRedeemAllRedeemableAsync(stoppingToken);
+                        batch = await _redeem.TryRedeemAllRedeemableAsync(stoppingToken);
                         if (batch.RedeemableFound > 0 || batch.RedeemAttempted > 0)
                         {
                             _logger.LogInformation(
@@ -91,6 +92,18 @@ public sealed class PolymarketRedeemHostedService : BackgroundService
                                     usd.Value);
                             }
                         }
+                    }
+
+                    var dataApi = scope.ServiceProvider.GetRequiredService<IPolymarketDataApiService>();
+                    var synced = await TradeRedeemRecorder.SyncRedeemedWinsFromDataApiAsync(
+                        db,
+                        dataApi,
+                        stoppingToken);
+                    if (synced > 0)
+                    {
+                        _logger.LogInformation(
+                            "Marked {Count} live win(s) as redeemed (Data API sync)",
+                            synced);
                     }
                 }
                 else

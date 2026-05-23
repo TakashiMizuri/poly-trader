@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Settings } from 'lucide-react'
 import { Outlet } from 'react-router-dom'
 import { HeaderConnectivity } from '@/components/HeaderConnectivity'
+import { LiveLogsSidebar } from '@/components/LiveLogsSidebar'
 import { SettingsDialog } from '@/components/SettingsDialog'
 import { Button } from '@/components/ui/button'
 import { formatDisplayDate, formatDisplayTime } from '@/lib/displayLocale'
@@ -49,9 +50,12 @@ export function Layout() {
           </div>
         </div>
       </header>
-      <main className="min-h-0 min-w-0 flex-1 overflow-hidden">
-        <Outlet />
-      </main>
+      <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
+        <main className="min-h-0 min-w-0 flex-1 overflow-hidden">
+          <Outlet />
+        </main>
+        <LiveLogsSidebar />
+      </div>
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   )

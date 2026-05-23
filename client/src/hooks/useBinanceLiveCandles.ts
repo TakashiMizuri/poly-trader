@@ -108,13 +108,13 @@ export function useBinanceLiveCandles(
 	const applyKline = useCallback(
 		(candle: ChartCandle) => {
 			setCandles((prev) =>
-				lastMarketDataCandles(mergeKlineUpdate(prev, candle)),
+				lastMarketDataCandles(mergeKlineUpdate(prev, candle), historyLimit),
 			);
 			setLastPrice(candle.close);
 			setLastEventTime(Date.now());
 			latestTradePriceRef.current = candle.close;
 		},
-		[],
+		[historyLimit],
 	);
 
 	const applyTradePrice = useCallback((price: number) => {

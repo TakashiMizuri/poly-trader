@@ -298,6 +298,9 @@ namespace PolyTrader.Infrastructure.Migrations
                     b.Property<double>("EntryPrice")
                         .HasColumnType("REAL");
 
+                    b.Property<string>("EntryWavesJson")
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("MarketId")
                         .HasColumnType("INTEGER");
 

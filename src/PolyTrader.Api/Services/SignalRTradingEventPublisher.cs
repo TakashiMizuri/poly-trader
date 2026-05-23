@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using PolyTrader.Core.Abstractions;
+using PolyTrader.Core.Models;
 using PolyTrader.Core.Strategy;
 using PolyTrader.Api.Hubs;
 using PolyTrader.Infrastructure.Entities;
+using PolyTrader.Infrastructure.Polymarket;
 
 namespace PolyTrader.Api.Services;
 
@@ -31,6 +33,9 @@ public sealed class SignalRTradingEventPublisher : ITradingEventPublisher
         _logger.LogInformation("SignalR TradePlaced payload={Payload}", trade);
         return _hub.Clients.All.SendAsync("TradePlaced", trade, ct);
     }
+
+    public Task PublishEntryFailedAsync(EntryFailedEvent entryFailed, CancellationToken ct = default) =>
+        Task.CompletedTask;
 
     public Task PublishBalanceUpdatedAsync(double balance, int paperAccountId = 0, CancellationToken ct = default)
     {
@@ -73,6 +78,16 @@ public static class TradeMapper
         t.PnlUsd,
         t.PaperAccountId,
         t.PolymarketOrderId,
+        entryWaves = TradeEntryWavesJson.Deserialize(t.EntryWavesJson)?.Select(w => new
+        {
+            wave = w.Wave,
+            label = w.Label,
+            requestedUsd = w.RequestedUsd,
+            filledUsd = w.FilledUsd,
+            fillPercent = w.FillPercent,
+            entryPrice = w.EntryPrice,
+            orderId = w.OrderId,
+        }),
         market = t.Market == null
             ? null
             : new

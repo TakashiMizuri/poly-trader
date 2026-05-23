@@ -16,6 +16,16 @@ public interface IPolymarketDataApiService
         string userAddress,
         string assetTokenId,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Whether the wallet still holds redeemable outcome tokens for <paramref name="assetTokenId"/>.
+    /// <c>false</c> when the position row is gone or not redeemable (already redeemed).
+    /// <c>null</c> on API failure.
+    /// </summary>
+    Task<bool?> TryIsOutcomeTokenRedeemableAsync(
+        string userAddress,
+        string assetTokenId,
+        CancellationToken ct = default);
 }
 
 /// <summary>
@@ -41,10 +51,79 @@ public sealed class PolymarketDataApiService : IPolymarketDataApiService
 
     public string? ResolveWalletAddress() => _wallet.ResolveWalletAddress();
 
-    public async Task<bool?> TryInferOutcomeFromPositionAsync(
+    public Task<bool?> TryInferOutcomeFromPositionAsync(
         string userAddress,
         string assetTokenId,
-        CancellationToken ct = default)
+        CancellationToken ct = default) =>
+        QueryAssetPositionAsync(
+            userAddress,
+            assetTokenId,
+            InferOutcomeFromRow,
+            () =>
+            {
+                _logger.LogDebug("No Data API position row for token {TokenId}", assetTokenId);
+                return (bool?)null;
+            },
+            ex =>
+            {
+                _logger.LogWarning(ex, "Failed to fetch Polymarket positions for {User}", userAddress);
+                return (bool?)null;
+            },
+            ct);
+
+    public Task<bool?> TryIsOutcomeTokenRedeemableAsync(
+        string userAddress,
+        string assetTokenId,
+        CancellationToken ct = default) =>
+        QueryAssetPositionAsync(
+            userAddress,
+            assetTokenId,
+            row => row.TryGetProperty("redeemable", out var r) && r.ValueKind == JsonValueKind.True,
+            () => false,
+            ex =>
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Failed to check redeemable state for token {TokenId} user {User}",
+                    assetTokenId,
+                    userAddress);
+                return null;
+            },
+            ct);
+
+    private bool? InferOutcomeFromRow(JsonElement row)
+    {
+        var curPrice = ReadDouble(row, "curPrice");
+        if (curPrice >= 0.99)
+        {
+            return true;
+        }
+
+        if (curPrice <= 0.01)
+        {
+            return false;
+        }
+
+        if (row.TryGetProperty("redeemable", out var r) && r.ValueKind == JsonValueKind.True)
+        {
+            return true;
+        }
+
+        var asset = row.TryGetProperty("asset", out var a) ? a.GetString()?.Trim() : null;
+        _logger.LogDebug(
+            "Position for token {TokenId} not clearly resolved (curPrice={CurPrice})",
+            asset,
+            curPrice);
+        return null;
+    }
+
+    private async Task<bool?> QueryAssetPositionAsync(
+        string userAddress,
+        string assetTokenId,
+        Func<JsonElement, bool?> onMatch,
+        Func<bool?> onMissing,
+        Func<Exception, bool?> onError,
+        CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(userAddress) || string.IsNullOrWhiteSpace(assetTokenId))
         {
@@ -71,37 +150,14 @@ public sealed class PolymarketDataApiService : IPolymarketDataApiService
                     continue;
                 }
 
-                var curPrice = ReadDouble(row, "curPrice");
-                if (curPrice >= 0.99)
-                {
-                    return true;
-                }
-
-                if (curPrice <= 0.01)
-                {
-                    return false;
-                }
-
-                var redeemable = row.TryGetProperty("redeemable", out var r) && r.ValueKind == JsonValueKind.True;
-                if (redeemable)
-                {
-                    return true;
-                }
-
-                _logger.LogDebug(
-                    "Position for token {TokenId} not clearly resolved (curPrice={CurPrice})",
-                    assetTokenId,
-                    curPrice);
-                return null;
+                return onMatch(row);
             }
 
-            _logger.LogDebug("No Data API position row for token {TokenId}", assetTokenId);
-            return null;
+            return onMissing();
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to fetch Polymarket positions for {User}", userAddress);
-            return null;
+            return onError(ex);
         }
     }
 

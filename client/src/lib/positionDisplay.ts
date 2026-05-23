@@ -2,6 +2,17 @@ import type { StatusBadgeTone } from '@/components/app-ui'
 import { formatDisplayDateTime, formatDisplayMarketWindowSlot } from '@/lib/displayLocale'
 import type { TimeFormat } from '@/lib/timeFormat'
 
+/** One maker limit wave when opening a live position. */
+export interface PositionEntryWave {
+  wave: number
+  label?: string | null
+  requestedUsd: number
+  filledUsd: number
+  fillPercent: number
+  entryPrice?: number | null
+  orderId?: string | null
+}
+
 export interface PositionFeedFill {
   id: string
   timeMs: number
@@ -12,6 +23,8 @@ export interface PositionFeedFill {
   isPartialFill?: boolean
   entryPrice?: number | null
   entryShares?: number | null
+  /** Live maker entry breakdown (attempt 1 / remainder attempt 2). */
+  entryWaves?: PositionEntryWave[] | null
   mode?: string | null
   result: string
   skipReason?: string | null
@@ -154,6 +167,7 @@ const SKIP_LABELS: Record<string, string> = {
   order_failed: 'Live order failed',
   insufficient_balance: 'Insufficient balance',
   balance_unavailable: 'CLOB balance unavailable',
+  clob_min_order_size: 'Below Polymarket min order size (5 shares)',
 }
 
 const ENTRY_ERROR_SKIP_REASONS = new Set([
@@ -161,6 +175,7 @@ const ENTRY_ERROR_SKIP_REASONS = new Set([
   'insufficient_balance',
   'balance_unavailable',
   'no_market',
+  'clob_min_order_size',
 ])
 
 export function isEntryErrorFill(fill: PositionFeedFill): boolean {
@@ -421,7 +436,11 @@ export function resultTone(fill: PositionFeedFill): StatusBadgeTone {
 }
 
 export function resultLabel(fill: PositionFeedFill): string {
-  if (isAwaitingRedeem(fill)) return 'Redeem'
+  if (isAwaitingRedeem(fill)) {
+    const pnl = formatPnl(fill)
+    if (fill.result === 'Won' && pnl && pnl !== '—') return pnl
+    return 'Redeem'
+  }
   if (isEntryErrorFill(fill)) return 'Error'
   if (fill.result === 'Skipped') {
     return skipLabel(fill.skipReason) ?? 'Skipped'
@@ -433,6 +452,14 @@ export function resultLabel(fill: PositionFeedFill): string {
 }
 
 export function resultTitle(fill: PositionFeedFill): string | undefined {
+  if (hasEntryWaves(fill)) {
+    const lines = fill.entryWaves!.map((w) => formatEntryWaveLine(w)).join('; ')
+    const total =
+      fill.requestedStakeUsd != null && fill.stakeUsd != null
+        ? ` Total: $${fill.stakeUsd.toFixed(2)} of $${fill.requestedStakeUsd.toFixed(2)}.`
+        : ''
+    return `Maker entry: ${lines}.${total}`
+  }
   if (isPartialFill(fill)) {
     const requested = fill.requestedStakeUsd
     if (requested != null && fill.stakeUsd != null) {
@@ -441,6 +468,10 @@ export function resultTitle(fill: PositionFeedFill): string | undefined {
     return 'Partial fill: notional below requested size'
   }
   if (isAwaitingRedeem(fill)) {
+    const pnl = formatPnl(fill)
+    if (pnl && pnl !== '—') {
+      return `Won · ${pnl} · awaiting on-chain redeem`
+    }
     return 'Awaiting on-chain redeem of winning outcome tokens'
   }
   if (isEntryErrorFill(fill)) {
@@ -527,6 +558,32 @@ export function formatFillEconomics(fill: PositionFeedFill): string {
   return fillEconomicsSegments(fill)
     .map((s) => s.text)
     .join(' · ')
+}
+
+export function hasEntryWaves(fill: PositionFeedFill): boolean {
+  return (fill.entryWaves?.length ?? 0) > 0
+}
+
+export function formatEntryWaveLine(wave: PositionEntryWave): string {
+  const name = wave.label?.trim() || `Attempt ${wave.wave}`
+  const pct = Number.isFinite(wave.fillPercent)
+    ? Math.round(wave.fillPercent)
+    : wave.requestedUsd > 0
+      ? Math.round((wave.filledUsd / wave.requestedUsd) * 100)
+      : 0
+  return `${name} → ${pct}% ($${wave.filledUsd.toFixed(2)}/$${wave.requestedUsd.toFixed(2)})`
+}
+
+export function entryWaveTitle(wave: PositionEntryWave): string | undefined {
+  const price =
+    wave.entryPrice != null && wave.entryPrice > 0
+      ? wave.entryPrice.toFixed(4)
+      : null
+  const order = wave.orderId?.trim()
+  if (price && order) return `@ ${price} · order ${order}`
+  if (price) return `@ ${price}`
+  if (order) return `order ${order}`
+  return undefined
 }
 
 export function isAwaitingRedeem(fill: PositionFeedFill): boolean {

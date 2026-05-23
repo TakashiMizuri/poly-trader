@@ -2,14 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   CandlestickSeries,
   CrosshairMode,
+  LineSeries,
   createChart,
   type IChartApi,
   type ISeriesApi,
+  type Time,
 } from 'lightweight-charts'
 import type { ChartCandle } from '@/types/candle'
 import type { Timeframe } from '@/types/timeframe'
 import { lastMarketDataCandles } from '@/constants/marketData'
-import { DEFAULT_TREND_BET_STRATEGY_PARAMS } from '@/types/trendBetStrategy'
 import { analyzeTrendAndBos } from '@/utils/chart/detectBreakOfStructure'
 import { simulateTrendBetStrategy } from '@/utils/chart/simulateTrendBetStrategy'
 import {
@@ -29,15 +30,20 @@ import { useTheme } from '@/context/ThemeContext'
 import { ChartContextMenu, type ChartContextMenuAnchor } from '@/components/ChartContextMenu'
 import { ChartSettingsDialog } from '@/components/ChartSettingsDialog'
 import {
-  loadChartDisplayPrefs,
-  saveChartDisplayPrefs,
+  chartBacktestToStrategyParams,
+  DEFAULT_CHART_DISPLAY_PREFS,
   type ChartDisplayPrefs,
 } from '@/lib/chartDisplayPrefs'
+import { useChartDisplayPrefs } from '@/hooks/useChartDisplayPrefs'
 import { GLOBAL_RESET_EVENT } from '@/lib/appReset'
-import { getChartPalette } from '@/lib/chartTheme'
+import { chartEquityLineColor, getChartPalette } from '@/lib/chartTheme'
 import { cn } from '@/lib/utils'
 import { BetMarkersPrimitive } from '@/utils/chartPrimitives/BetMarkersPrimitive'
 import { BosOverlayPrimitive } from '@/utils/chartPrimitives/BosOverlayPrimitive'
+import {
+  BacktestStatsPanePrimitive,
+  type BacktestStatsData,
+} from '@/utils/chartPrimitives/BacktestStatsPanePrimitive'
 import {
   EngineMarkersPrimitive,
   type EngineChartMarker,
@@ -69,32 +75,44 @@ export function LiveChart({
     null,
   )
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [displayPrefs, setDisplayPrefs] = useState<ChartDisplayPrefs>(
-    loadChartDisplayPrefs,
-  )
+  const [displayPrefs, setDisplayPrefs] = useChartDisplayPrefs()
   const chartRef = useRef<IChartApi | null>(null)
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
+  const equitySeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
   const bosOverlayRef = useRef<BosOverlayPrimitive | null>(null)
   const betMarkersRef = useRef<BetMarkersPrimitive | null>(null)
   const engineMarkersRef = useRef<EngineMarkersPrimitive | null>(null)
+  const backtestStatsRef = useRef<BacktestStatsPanePrimitive | null>(null)
   const isInitializedRef = useRef(false)
   const prevCandleCountRef = useRef(0)
   const lastHorizScrollRef = useRef<number | null>(null)
   const [isLayoutReady, setIsLayoutReady] = useState(false)
 
   const chartCandles = useMemo(
-    () => lastMarketDataCandles(candles),
-    [candles],
+    () => lastMarketDataCandles(candles, displayPrefs.maxCandles),
+    [candles, displayPrefs.maxCandles],
+  )
+
+  const strategyParams = useMemo(
+    () => chartBacktestToStrategyParams(displayPrefs.backtest),
+    [displayPrefs.backtest],
   )
 
   const strategySimulation = useMemo(() => {
     if (chartCandles.length === 0) return null
-    return simulateTrendBetStrategy(
-      chartCandles,
-      undefined,
-      DEFAULT_TREND_BET_STRATEGY_PARAMS,
-    )
-  }, [chartCandles])
+    return simulateTrendBetStrategy(chartCandles, undefined, strategyParams)
+  }, [chartCandles, strategyParams])
+
+  const backtestStats = useMemo((): BacktestStatsData | null => {
+    if (!strategySimulation) return null
+    return {
+      maxDrawdown: strategySimulation.maxDrawdown,
+      maxDrawdownPct: strategySimulation.maxDrawdownPct,
+      winRate: strategySimulation.winRate,
+      netPnl: strategySimulation.netPnl,
+      totalBets: strategySimulation.totalBets,
+    }
+  }, [strategySimulation])
 
   const bosAnalysis = useMemo(
     () =>
@@ -119,10 +137,12 @@ export function LiveChart({
     [bosAnalysis, displayPrefs.showTrends, displayPrefs.showBosOverlay],
   )
 
-  const handleDisplayPrefsChange = useCallback((next: ChartDisplayPrefs) => {
-    setDisplayPrefs(next)
-    saveChartDisplayPrefs(next)
-  }, [])
+  const handleDisplayPrefsChange = useCallback(
+    (next: ChartDisplayPrefs) => {
+      setDisplayPrefs(next)
+    },
+    [setDisplayPrefs],
+  )
 
   const openContextMenu = useCallback((clientX: number, clientY: number) => {
     const surface = surfaceRef.current
@@ -144,12 +164,17 @@ export function LiveChart({
 
   useEffect(() => {
     const onGlobalReset = () => {
+      const defaults = {
+        ...DEFAULT_CHART_DISPLAY_PREFS,
+        backtest: { ...DEFAULT_CHART_DISPLAY_PREFS.backtest },
+      }
+      setDisplayPrefs(defaults)
       setContextMenu(null)
       setSettingsOpen(false)
     }
     window.addEventListener(GLOBAL_RESET_EVENT, onGlobalReset)
     return () => window.removeEventListener(GLOBAL_RESET_EVENT, onGlobalReset)
-  }, [])
+  }, [setDisplayPrefs])
 
   useEffect(() => {
     if (loading || chartCandles.length === 0) {
@@ -195,6 +220,27 @@ export function LiveChart({
     }
     chart.timeScale().subscribeVisibleLogicalRangeChange(onLogicalRangeChanged)
 
+    chart.priceScale('left').applyOptions({
+      visible: true,
+      borderColor: palette.border,
+      scaleMargins: { top: 0.08, bottom: 0.08 },
+    })
+
+    const equitySeries = chart.addSeries(LineSeries, {
+      priceScaleId: 'left',
+      color: chartEquityLineColor(palette.equity),
+      lineWidth: 1,
+      title: 'Backtest $',
+      lastValueVisible: true,
+      priceLineVisible: false,
+      crosshairMarkerVisible: false,
+      priceFormat: {
+        type: 'custom',
+        formatter: (price: number) => `$${price.toFixed(0)}`,
+      },
+    })
+    equitySeriesRef.current = equitySeries
+
     const series = chart.addSeries(CandlestickSeries, {
       upColor: palette.up,
       downColor: palette.down,
@@ -208,6 +254,13 @@ export function LiveChart({
       },
     })
     seriesRef.current = series
+
+    const mainPane = chart.panes()[0]
+    if (mainPane) {
+      const statsPrimitive = new BacktestStatsPanePrimitive()
+      mainPane.attachPrimitive(statsPrimitive)
+      backtestStatsRef.current = statsPrimitive
+    }
 
     const handleResize = () => {
       if (!containerRef.current || !chartRef.current) return
@@ -240,9 +293,15 @@ export function LiveChart({
         seriesRef.current.detachPrimitive(engineMarkersRef.current)
         engineMarkersRef.current = null
       }
+      if (backtestStatsRef.current) {
+        const pane = chart.panes()[0]
+        pane?.detachPrimitive(backtestStatsRef.current)
+        backtestStatsRef.current = null
+      }
       chart.remove()
       chartRef.current = null
       seriesRef.current = null
+      equitySeriesRef.current = null
       isInitializedRef.current = false
       prevCandleCountRef.current = 0
       lastHorizScrollRef.current = null
@@ -267,6 +326,10 @@ export function LiveChart({
       rightPriceScale: { borderColor: palette.border },
       timeScale: { borderColor: palette.border },
     })
+    chart.priceScale('left').applyOptions({ borderColor: palette.border })
+    equitySeriesRef.current?.applyOptions({
+      color: chartEquityLineColor(palette.equity),
+    })
     series.applyOptions({
       upColor: palette.up,
       downColor: palette.down,
@@ -288,6 +351,30 @@ export function LiveChart({
     }
     bosOverlayRef.current.setAnalysis(displayBosAnalysis)
   }, [displayBosAnalysis])
+
+  useEffect(() => {
+    const equitySeries = equitySeriesRef.current
+    if (!equitySeries) return
+    if (
+      !displayPrefs.showEquityCurve ||
+      !strategySimulation ||
+      strategySimulation.equityCurve.length === 0
+    ) {
+      equitySeries.setData([])
+      return
+    }
+    const equityData = strategySimulation.equityCurve.map((point) => ({
+      time: point.time as Time,
+      value: point.value,
+    }))
+    equitySeries.setData(equityData)
+  }, [strategySimulation, displayPrefs.showEquityCurve])
+
+  useEffect(() => {
+    const primitive = backtestStatsRef.current
+    if (!primitive) return
+    primitive.update(backtestStats, displayPrefs.showBacktestStats)
+  }, [backtestStats, displayPrefs.showBacktestStats])
 
   useEffect(() => {
     const chart = chartRef.current

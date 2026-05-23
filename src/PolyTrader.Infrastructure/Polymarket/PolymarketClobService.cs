@@ -13,14 +13,18 @@ public interface IPolymarketClobService
     Task<double?> GetCollateralBalanceAsync(
         CancellationToken ct = default,
         int maxAttempts = 5);
-    /// <summary>Best ask (market buy) from CLOB REST.</summary>
+    /// <summary>Best ask (taker buy) from CLOB REST.</summary>
     Task<double?> TryGetBuyPriceAsync(string tokenId, CancellationToken ct = default);
+    /// <summary>Best bid (maker buy) from CLOB REST.</summary>
+    Task<double?> TryGetBidPriceAsync(string tokenId, CancellationToken ct = default);
     /// <summary>Midpoint from CLOB REST.</summary>
     Task<double?> TryGetMidPriceAsync(string tokenId, CancellationToken ct = default);
-    Task<LiveMarketBuyOutcome> PlaceMarketOrderAsync(
+    /// <summary>Live entry: maker limit (default) or IOC market per <see cref="PolyTraderOptions.LiveEntryOrderMode"/>.</summary>
+    Task<LiveMarketBuyOutcome> PlaceEntryOrderAsync(
         string tokenId,
         double sizeUsd,
-        double? entryPriceHint = null,
+        double? bidPriceHint = null,
+        double? askPriceHint = null,
         LiveEntryOrderKey? entryKey = null,
         CancellationToken ct = default);
 }
@@ -35,17 +39,20 @@ public sealed class PolymarketClobService : IPolymarketClobService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IPolymarketRestTradingClient _trading;
     private readonly IPolymarketWalletResolver _wallet;
+    private readonly PolyTraderOptions _options;
     private readonly ILogger<PolymarketClobService> _logger;
 
     public PolymarketClobService(
         IHttpClientFactory httpClientFactory,
         IPolymarketRestTradingClient trading,
         IPolymarketWalletResolver wallet,
+        IOptions<PolyTraderOptions> options,
         ILogger<PolymarketClobService> logger)
     {
         _httpClientFactory = httpClientFactory;
         _trading = trading;
         _wallet = wallet;
+        _options = options.Value;
         _logger = logger;
     }
 
@@ -58,6 +65,9 @@ public sealed class PolymarketClobService : IPolymarketClobService
 
     public async Task<double?> TryGetBuyPriceAsync(string tokenId, CancellationToken ct) =>
         await TryGetClobPriceAsync(tokenId, "BUY", ct);
+
+    public Task<double?> TryGetBidPriceAsync(string tokenId, CancellationToken ct) =>
+        TryGetClobPriceAsync(tokenId, "SELL", ct);
 
     public async Task<double?> TryGetMidPriceAsync(string tokenId, CancellationToken ct)
     {
@@ -137,10 +147,11 @@ public sealed class PolymarketClobService : IPolymarketClobService
             _ => null,
         };
 
-    public async Task<LiveMarketBuyOutcome> PlaceMarketOrderAsync(
+    public async Task<LiveMarketBuyOutcome> PlaceEntryOrderAsync(
         string tokenId,
         double sizeUsd,
-        double? entryPriceHint = null,
+        double? bidPriceHint = null,
+        double? askPriceHint = null,
         LiveEntryOrderKey? entryKey = null,
         CancellationToken ct = default)
     {
@@ -151,12 +162,59 @@ public sealed class PolymarketClobService : IPolymarketClobService
             return LiveMarketBuyOutcome.Fail(reason);
         }
 
+        var useMarket = string.Equals(
+            _options.LiveEntryOrderMode,
+            "Market",
+            StringComparison.OrdinalIgnoreCase);
+
+        if (useMarket)
+        {
+            _logger.LogInformation(
+                "Placing live market buy token {TokenId} notional ${Size:F2} wallet {Wallet}",
+                tokenId,
+                sizeUsd,
+                _wallet.ResolveWalletAddress() ?? "unknown");
+
+            return await _trading.PlaceMarketBuyUsdAsync(
+                tokenId,
+                sizeUsd,
+                askPriceHint,
+                entryKey,
+                ct);
+        }
+
+        var bid = bidPriceHint;
+        if (!PolymarketOrderPricing.IsValidOutcomePrice(bid))
+        {
+            bid = await TryGetBidPriceAsync(tokenId, ct);
+        }
+
+        if (!PolymarketOrderPricing.IsValidOutcomePrice(bid))
+        {
+            const string reason = "No valid best bid for maker limit entry";
+            _logger.LogWarning("{Reason} token {TokenId}", reason, tokenId);
+            return LiveMarketBuyOutcome.Fail(reason);
+        }
+
+        var firstWait = TimeSpan.FromSeconds(Math.Max(1, _options.LiveMakerFillWaitSeconds));
+        var remainderWait = TimeSpan.FromSeconds(Math.Max(1, _options.LiveMakerRemainderFillWaitSeconds));
         _logger.LogInformation(
-            "Placing live market buy token {TokenId} notional ${Size:F2} wallet {Wallet}",
+            "Placing live maker two-wave buy token {TokenId} notional ${Size:F2} @ {Bid:F4} wave1={Wave1Seconds}s wave2={Wave2Seconds}s wallet {Wallet}",
             tokenId,
             sizeUsd,
+            bid,
+            firstWait.TotalSeconds,
+            remainderWait.TotalSeconds,
             _wallet.ResolveWalletAddress() ?? "unknown");
 
-        return await _trading.PlaceMarketBuyUsdAsync(tokenId, sizeUsd, entryPriceHint, entryKey, ct);
+        return await _trading.PlaceMakerLimitBuyUsdAsync(
+            tokenId,
+            sizeUsd,
+            bid!.Value,
+            firstWait,
+            remainderWait,
+            ct => TryGetBidPriceAsync(tokenId, ct),
+            entryKey,
+            ct);
     }
 }

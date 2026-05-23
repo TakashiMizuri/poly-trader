@@ -1,6 +1,6 @@
 namespace PolyTrader.Infrastructure.Polymarket;
 
-/// <summary>Result of attempting a live CLOB market buy (IOC).</summary>
+/// <summary>Result of attempting a live CLOB entry (maker limit or IOC market).</summary>
 public sealed record LiveMarketBuyOutcome(
     LiveMarketBuyResult? Result,
     string? FailureReason)

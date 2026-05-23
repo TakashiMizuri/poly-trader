@@ -50,7 +50,7 @@ public sealed class GlobalResetService(
             settings.BetStakePercent = 3;
             settings.MaxBetStakeUsd = 500;
             EngineStakeSettings.SyncPendingFromActive(settings);
-            settings.CommissionPercent = 3.5;
+            settings.CommissionPercent = 0;
             settings.UpdatedAt = DateTime.UtcNow;
             await db.SaveChangesAsync(ct);
 

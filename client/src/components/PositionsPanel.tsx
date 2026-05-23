@@ -16,11 +16,14 @@ import { useTimeFormat } from '@/context/TimeFormatContext'
 import { polymarketMarketUrl } from '@/lib/polymarket'
 import {
   augmentPositionFeedGroups,
+  entryWaveTitle,
   fillEconomicsSegments,
+  formatEntryWaveLine,
   formatGroupTimeRange,
   formatPositionMarketTitle,
   formatPnl,
   formatStake,
+  hasEntryWaves,
   isAwaitingRedeem,
   isSettledFill,
   formatWindowProgressLabel,
@@ -98,68 +101,98 @@ function PositionFillRow({
   hideTopBorder?: boolean
 }) {
   const pnlLabel = formatPnl(fill)
+  const showEntryWaves = hasEntryWaves(fill)
 
   return (
     <div
       className={cn(
-        'flex items-center gap-2 px-2.5 py-1.5',
         !hideTopBorder && 'border-t border-border/40',
       )}
       title={resultTitle(fill)}
     >
       <div
         className={cn(
-          'flex min-w-0 flex-1 items-center gap-2',
-          positionDimTransitionClass,
-          positionDimStateClass(dimmed),
+          'flex items-center gap-2 px-2.5 py-1.5',
         )}
       >
-        {fill.side ? (
-          <StatusBadge tone={sideTone(fill.side)} className="shrink-0">
-            {fill.side}
-          </StatusBadge>
-        ) : null}
-        <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-          <span className="inline-flex min-w-0 max-w-full items-baseline gap-x-1.5 whitespace-nowrap">
-            {fillEconomicsSegments(fill).map((segment, index) => (
-              <Fragment key={`${segment.variant}-${index}`}>
-                {index > 0 ? (
-                  <span className="shrink-0 text-muted-foreground/60" aria-hidden>
-                    ·
+        <div
+          className={cn(
+            'flex min-w-0 flex-1 items-center gap-2',
+            positionDimTransitionClass,
+            positionDimStateClass(dimmed),
+          )}
+        >
+          {fill.side ? (
+            <StatusBadge tone={sideTone(fill.side)} className="shrink-0">
+              {fill.side}
+            </StatusBadge>
+          ) : null}
+          <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+            <span className="inline-flex min-w-0 max-w-full items-baseline gap-x-1.5 whitespace-nowrap">
+              {fillEconomicsSegments(fill).map((segment, index) => (
+                <Fragment key={`${segment.variant}-${index}`}>
+                  {index > 0 ? (
+                    <span className="shrink-0 text-muted-foreground/60" aria-hidden>
+                      ·
+                    </span>
+                  ) : null}
+                  <span
+                    className={cn(
+                      'shrink-0',
+                      segment.variant === 'metric' && 'font-mono tabular-nums',
+                      segment.variant === 'mode' &&
+                        (modeTone(fill.mode) === 'live' ? 'text-live' : 'text-shadow'),
+                    )}
+                  >
+                    {segment.text}
                   </span>
-                ) : null}
-                <span
-                  className={cn(
-                    'shrink-0',
-                    segment.variant === 'metric' && 'font-mono tabular-nums',
-                    segment.variant === 'mode' &&
-                      (modeTone(fill.mode) === 'live' ? 'text-live' : 'text-shadow'),
-                  )}
-                >
-                  {segment.text}
-                </span>
-              </Fragment>
-            ))}
+                </Fragment>
+              ))}
+            </span>
           </span>
-        </span>
+        </div>
+        {isSettledFill(fill) && pnlLabel != null && pnlLabel !== '—' ? (
+          <StatusBadge
+            tone={pnlBadgeTone(fill)}
+            title={resultTitle(fill)}
+            className="max-w-[9rem] min-w-0 shrink-0 font-mono tabular-nums overflow-hidden text-ellipsis whitespace-nowrap"
+          >
+            {pnlLabel}
+          </StatusBadge>
+        ) : (
+          <StatusBadge
+            tone={resultTone(fill)}
+            title={resultTitle(fill)}
+            className="max-w-[9rem] min-w-0 shrink overflow-hidden text-ellipsis whitespace-nowrap"
+          >
+            {resultLabel(fill)}
+          </StatusBadge>
+        )}
       </div>
-      {isSettledFill(fill) && !isAwaitingRedeem(fill) && pnlLabel != null ? (
-        <StatusBadge
-          tone={pnlBadgeTone(fill)}
-          title={resultTitle(fill)}
-          className="max-w-[9rem] min-w-0 shrink-0 font-mono tabular-nums overflow-hidden text-ellipsis whitespace-nowrap"
+      {showEntryWaves ? (
+        <div
+          className={cn(
+            'space-y-0.5 border-t border-border/30 bg-muted/10 px-2.5 py-1.5',
+            positionDimTransitionClass,
+            positionDimStateClass(dimmed),
+          )}
         >
-          {pnlLabel}
-        </StatusBadge>
-      ) : (
-        <StatusBadge
-          tone={resultTone(fill)}
-          title={resultTitle(fill)}
-          className="max-w-[9rem] min-w-0 shrink overflow-hidden text-ellipsis whitespace-nowrap"
-        >
-          {resultLabel(fill)}
-        </StatusBadge>
-      )}
+          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/80">
+            Entry (maker)
+          </p>
+          <ul className="space-y-0.5">
+            {fill.entryWaves!.map((wave) => (
+              <li
+                key={wave.wave}
+                className="font-mono text-[11px] tabular-nums text-muted-foreground"
+                title={entryWaveTitle(wave)}
+              >
+                {formatEntryWaveLine(wave)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   )
 }

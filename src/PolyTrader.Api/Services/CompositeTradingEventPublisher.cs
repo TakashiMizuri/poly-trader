@@ -1,4 +1,5 @@
 using PolyTrader.Core.Abstractions;
+using PolyTrader.Core.Models;
 
 namespace PolyTrader.Api.Services;
 
@@ -19,6 +20,9 @@ public sealed class CompositeTradingEventPublisher : ITradingEventPublisher
 
     public Task PublishTradePlacedAsync(object trade, CancellationToken ct = default) =>
         Task.WhenAll(_publishers.Select(p => p.PublishTradePlacedAsync(trade, ct)));
+
+    public Task PublishEntryFailedAsync(EntryFailedEvent entryFailed, CancellationToken ct = default) =>
+        Task.WhenAll(_publishers.Select(p => p.PublishEntryFailedAsync(entryFailed, ct)));
 
     public Task PublishBalanceUpdatedAsync(double balance, int paperAccountId = 0, CancellationToken ct = default) =>
         Task.WhenAll(_publishers.Select(p => p.PublishBalanceUpdatedAsync(balance, paperAccountId, ct)));

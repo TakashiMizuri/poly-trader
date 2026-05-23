@@ -34,6 +34,24 @@ public static class DependencyInjection
             opts.CorsOrigins ??= configuration["CORS_ORIGINS"];
             opts.TelegramBotToken ??= configuration["TELEGRAM_BOT_TOKEN"];
             opts.TelegramAdminChatIds ??= configuration["TELEGRAM_ADMIN_CHAT_IDS"];
+
+            var entryMode = configuration["POLYTRADER_LIVE_ENTRY_ORDER_MODE"];
+            if (!string.IsNullOrWhiteSpace(entryMode))
+            {
+                opts.LiveEntryOrderMode = entryMode.Trim();
+            }
+
+            if (int.TryParse(configuration["POLYTRADER_LIVE_MAKER_FILL_WAIT_SECONDS"], out var makerWait)
+                && makerWait >= 1)
+            {
+                opts.LiveMakerFillWaitSeconds = makerWait;
+            }
+
+            if (int.TryParse(configuration["POLYTRADER_LIVE_MAKER_REMAINDER_FILL_WAIT_SECONDS"], out var remainderWait)
+                && remainderWait >= 1)
+            {
+                opts.LiveMakerRemainderFillWaitSeconds = remainderWait;
+            }
         });
 
         services.AddHttpClient();
@@ -79,6 +97,7 @@ public static class DependencyInjection
         await EnsureEngineStakeSizingColumnsAsync(db, logger);
         await EnsureEngineStakePendingColumnsAsync(db, logger);
         await EnsureTradeRequestedStakeUsdColumnAsync(db, logger);
+        await EnsureTradeEntryWavesJsonColumnAsync(db, logger);
         await EnsureEngineAutoRedeemEnabledColumnAsync(db, logger);
 
         if (!await SchemaTableExistsAsync(db, "EngineSettings"))
@@ -221,6 +240,34 @@ public static class DependencyInjection
             """
             INSERT OR IGNORE INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
             VALUES ('20260520160624_EngineStakePending', '10.0.8');
+            """);
+    }
+
+    private static async Task EnsureTradeEntryWavesJsonColumnAsync(
+        PolyTraderDbContext db,
+        ILogger<PolyTraderDbContext>? logger)
+    {
+        if (!await SchemaTableExistsAsync(db, "Trades"))
+        {
+            return;
+        }
+
+        if (await ColumnExistsAsync(db, "Trades", "EntryWavesJson"))
+        {
+            return;
+        }
+
+        logger?.LogWarning("Trades is missing EntryWavesJson column; applying schema repair.");
+
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "Trades" ADD COLUMN "EntryWavesJson" TEXT NULL;
+            """);
+
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            INSERT OR IGNORE INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+            VALUES ('20260522180000_TradeEntryWavesJson', '10.0.8');
             """);
     }
 

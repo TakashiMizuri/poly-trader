@@ -62,6 +62,16 @@ docker compose up --build
 
 API on port **5088**, UI on **8080** (nginx proxies `/api` and `/hubs`). Details: [RUN_OPERATOR.md](RUN_OPERATOR.md).
 
+## VPS production (Ubuntu 24.04)
+
+Full deployment guide (Russian): **[DEPLOY.ru.md](DEPLOY.ru.md)**
+
+```bash
+sudo bash deploy/setup-server.sh
+cp .env.example .env   # set WEB_API_TOKEN, Polymarket keys
+bash deploy/update.sh  # uses docker-compose.prod.yml (API not exposed publicly)
+```
+
 ## API
 
 | Endpoint | Description |
@@ -82,13 +92,13 @@ API on port **5088**, UI on **8080** (nginx proxies `/api` and `/hubs`). Details
 
 ## Live trading
 
-Live mode uses **Polymarket.Net** for USDC balance and IOC market buys (partial fills are recorded), and **automatic CTF redeem** for winning positions (no manual cash-out in the Polymarket UI). Settlement prefers Polymarket Gamma/Data API resolution; Binance OHLC is fallback only. Start with paper, then follow the phased rollout in [RUN_OPERATOR.md](RUN_OPERATOR.md).
+Live mode uses **Polymarket.Net** for USDC balance and **two-wave post-only maker limits at the best bid** (0% fee): wave 1 on the full stake, wave 2 on the remainder with a refreshed bid — then the trade is recorded (partial total is OK; no taker top-up). Override with `POLYTRADER_LIVE_ENTRY_ORDER_MODE=Market` for legacy IOC taker orders. Tune `POLYTRADER_LIVE_MAKER_FILL_WAIT_SECONDS` / `POLYTRADER_LIVE_MAKER_REMAINDER_FILL_WAIT_SECONDS`. **Automatic CTF redeem** for winning positions (no manual cash-out in the Polymarket UI). Settlement prefers Polymarket Gamma/Data API resolution; Binance OHLC is fallback only. Start with paper, then follow the phased rollout in [RUN_OPERATOR.md](RUN_OPERATOR.md).
 
 ## Strategy
 
 Backend runs **blend_fade2** via `BlendFade2Signals` + `BetResolver` (same logic as `client/src/utils/chart/blendFade2Signals.ts`). On each closed Binance 5m candle the engine: (1) settles the bet signaled at that bar’s open, (2) opens a new bet for the **next** candle when blend_fade2 signals.
 
-Defaults: `blend2_pnl_max` preset, 3% compound stake capped at $500, 3.5% entry fee (Polymarket). See [docs/blend_fade2/STRATEGY.md](docs/blend_fade2/STRATEGY.md).
+Defaults: `blend2_pnl_max` preset, 3% compound stake capped at $500; live maker entries assume **0%** fee (set `CommissionPercent` in UI for paper/backtest). See [docs/blend_fade2/STRATEGY.md](docs/blend_fade2/STRATEGY.md).
 
 ## Project layout
 

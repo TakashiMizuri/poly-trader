@@ -300,6 +300,675 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
         return LiveMarketBuyOutcome.Fail(lastReason ?? "Market buy failed after retries");
     }
 
+    public async Task<LiveMarketBuyOutcome> PlaceMakerLimitBuyUsdAsync(
+        string tokenId,
+        double stakeUsd,
+        double limitPrice,
+        TimeSpan firstWaveFillWait,
+        TimeSpan remainderFillWait,
+        Func<CancellationToken, Task<double?>>? refreshBidAsync = null,
+        LiveEntryOrderKey? entryKey = null,
+        CancellationToken ct = default)
+    {
+        if (stakeUsd < 0.01)
+        {
+            var minStakeReason = $"Stake ${stakeUsd:F2} below minimum ($0.01)";
+            _logger.LogWarning("{Reason}", minStakeReason);
+            return LiveMarketBuyOutcome.Fail(minStakeReason);
+        }
+
+        if (!PolymarketOrderPricing.IsValidOutcomePrice(limitPrice))
+        {
+            const string priceReason = "Invalid limit price for maker buy (must be in (0, 1])";
+            _logger.LogWarning("{Reason}", priceReason);
+            return LiveMarketBuyOutcome.Fail(priceReason);
+        }
+
+        var client = await GetClientAsync(ct);
+        if (client == null)
+        {
+            const string clientReason =
+                "CLOB trading client unavailable (check private key, signature type, and funder address)";
+            _logger.LogWarning("Maker limit buy aborted for {TokenId}: {Reason}", tokenId, clientReason);
+            return LiveMarketBuyOutcome.Fail(clientReason);
+        }
+
+        var wave1ClientOrderId = entryKey?.DeriveClientOrderId(0);
+        string? lastReason = null;
+
+        for (var attempt = 1; attempt <= TransientRetryCount; attempt++)
+        {
+            var outcome = await PlaceMakerLimitBuyTwoWavesAsync(
+                client,
+                tokenId,
+                stakeUsd,
+                limitPrice,
+                firstWaveFillWait,
+                remainderFillWait,
+                refreshBidAsync,
+                entryKey,
+                wave1ClientOrderId,
+                ct);
+
+            if (outcome.IsSuccess)
+            {
+                return outcome;
+            }
+
+            lastReason = outcome.FailureReason;
+
+            if (entryKey != null && wave1ClientOrderId is long salt)
+            {
+                var recovered = await TryRecoverEntryOrderAsync(
+                    client,
+                    salt,
+                    entryKey,
+                    tokenId,
+                    stakeUsd,
+                    limitPrice,
+                    ct);
+                if (recovered is { IsSuccess: true })
+                {
+                    _logger.LogInformation(
+                        "Recovered live maker entry for candle {CandleTime} token {TokenId} (attempt {Attempt})",
+                        entryKey.CandleTimeMs,
+                        tokenId,
+                        attempt);
+                    return recovered;
+                }
+            }
+
+            if (IsDuplicateFailure(lastReason))
+            {
+                const string duplicateReason =
+                    "CLOB reported duplicate order but existing fill could not be recovered (no double-place retry)";
+                _logger.LogError(
+                    "{Reason} candle {CandleTime} token {TokenId}",
+                    duplicateReason,
+                    entryKey?.CandleTimeMs,
+                    tokenId);
+                return LiveMarketBuyOutcome.Fail(duplicateReason);
+            }
+
+            if (!IsTransientFailure(lastReason) || attempt == TransientRetryCount)
+            {
+                return outcome;
+            }
+
+            _logger.LogWarning(
+                "Maker two-wave buy attempt {Attempt}/{Max} for {TokenId} ${Stake:F2} failed ({Reason}); retrying in {DelaySeconds}s",
+                attempt,
+                TransientRetryCount,
+                tokenId,
+                stakeUsd,
+                lastReason,
+                TransientRetryDelay.TotalSeconds);
+            await Task.Delay(TransientRetryDelay, ct);
+        }
+
+        return LiveMarketBuyOutcome.Fail(lastReason ?? "Maker limit buy failed after retries");
+    }
+
+    private sealed record MakerLimitWaveResult(
+        bool PlacementFailed,
+        string? FailureReason,
+        string? OrderId,
+        double MatchedShares,
+        double? LimitPrice,
+        double FilledStakeUsd);
+
+    private async Task<LiveMarketBuyOutcome> PlaceMakerLimitBuyTwoWavesAsync(
+        PolymarketRestClient client,
+        string tokenId,
+        double requestedStakeUsd,
+        double limitPrice,
+        TimeSpan firstWaveFillWait,
+        TimeSpan remainderFillWait,
+        Func<CancellationToken, Task<double?>>? refreshBidAsync,
+        LiveEntryOrderKey? entryKey,
+        long? wave1ClientOrderId,
+        CancellationToken ct)
+    {
+        _logger.LogInformation(
+            "Maker entry wave 1 for {TokenId}: ${Stake:F2} @ {Price:F4}, wait {WaitSeconds}s",
+            tokenId,
+            requestedStakeUsd,
+            limitPrice,
+            firstWaveFillWait.TotalSeconds);
+
+        var wave1 = await ExecuteMakerLimitWaveAsync(
+            client,
+            tokenId,
+            requestedStakeUsd,
+            limitPrice,
+            firstWaveFillWait,
+            wave1ClientOrderId,
+            ct);
+
+        if (wave1.PlacementFailed)
+        {
+            return LiveMarketBuyOutcome.Fail(wave1.FailureReason ?? "Maker wave 1 placement failed");
+        }
+
+        var waves = new List<LiveEntryWaveFill>
+        {
+            ToLiveEntryWaveFill(1, requestedStakeUsd, wave1),
+        };
+
+        var totalFilledStake = wave1.FilledStakeUsd;
+        var totalMatchedShares = wave1.MatchedShares;
+        var primaryOrderId = wave1.OrderId;
+        var priceNumerator = wave1.MatchedShares * (wave1.LimitPrice ?? limitPrice);
+
+        if (totalFilledStake + 0.01 >= requestedStakeUsd)
+        {
+            return BuildAggregatedMakerOutcome(
+                tokenId,
+                requestedStakeUsd,
+                totalMatchedShares,
+                priceNumerator,
+                primaryOrderId,
+                waves,
+                totalFilledStake);
+        }
+
+        var remainderStake = requestedStakeUsd - totalFilledStake;
+        if (remainderStake < 0.01)
+        {
+            return BuildAggregatedMakerOutcome(
+                tokenId,
+                requestedStakeUsd,
+                totalMatchedShares,
+                priceNumerator,
+                primaryOrderId,
+                waves,
+                totalFilledStake);
+        }
+
+        var wave2Price = limitPrice;
+        if (refreshBidAsync != null)
+        {
+            try
+            {
+                var refreshed = await refreshBidAsync(ct);
+                if (PolymarketOrderPricing.IsValidOutcomePrice(refreshed))
+                {
+                    wave2Price = refreshed!.Value;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Bid refresh failed before maker wave 2 for {TokenId}", tokenId);
+            }
+        }
+
+        if (!PolymarketOrderPricing.IsValidOutcomePrice(wave2Price))
+        {
+            _logger.LogWarning(
+                "Skipping maker wave 2 for {TokenId}: invalid bid after wave 1 (${Filled:F2} of ${Requested:F2})",
+                tokenId,
+                totalFilledStake,
+                requestedStakeUsd);
+            return BuildAggregatedMakerOutcome(
+                tokenId,
+                requestedStakeUsd,
+                totalMatchedShares,
+                priceNumerator,
+                primaryOrderId,
+                waves,
+                totalFilledStake);
+        }
+
+        var minRemainderStake = PolymarketClobLimits.MinStakeUsd(wave2Price);
+        if (remainderStake + 0.001 < minRemainderStake)
+        {
+            _logger.LogInformation(
+                "Skipping maker wave 2 for {TokenId}: remainder ${Remainder:F2} below CLOB min ${Min:F2} at {Price:F4}",
+                tokenId,
+                remainderStake,
+                minRemainderStake,
+                wave2Price);
+            return BuildAggregatedMakerOutcome(
+                tokenId,
+                requestedStakeUsd,
+                totalMatchedShares,
+                priceNumerator,
+                primaryOrderId,
+                waves,
+                totalFilledStake);
+        }
+
+        _logger.LogInformation(
+            "Maker entry wave 2 for {TokenId}: remainder ${Remainder:F2} @ {Price:F4}, wait {WaitSeconds}s (wave1 filled ${Wave1:F2})",
+            tokenId,
+            remainderStake,
+            wave2Price,
+            remainderFillWait.TotalSeconds,
+            totalFilledStake);
+
+        var wave2ClientOrderId = entryKey?.DeriveClientOrderId(1);
+        var wave2 = await ExecuteMakerLimitWaveAsync(
+            client,
+            tokenId,
+            remainderStake,
+            wave2Price,
+            remainderFillWait,
+            wave2ClientOrderId,
+            ct);
+
+        if (wave2.PlacementFailed)
+        {
+            _logger.LogWarning(
+                "Maker wave 2 placement failed for {TokenId} ({Reason}); keeping wave 1 fill ${Filled:F2}",
+                tokenId,
+                wave2.FailureReason,
+                totalFilledStake);
+        }
+        else
+        {
+            waves.Add(ToLiveEntryWaveFill(2, remainderStake, wave2));
+            totalFilledStake += wave2.FilledStakeUsd;
+            totalMatchedShares += wave2.MatchedShares;
+            priceNumerator += wave2.MatchedShares * (wave2.LimitPrice ?? wave2Price);
+            if (string.IsNullOrWhiteSpace(primaryOrderId))
+            {
+                primaryOrderId = wave2.OrderId;
+            }
+        }
+
+        return BuildAggregatedMakerOutcome(
+            tokenId,
+            requestedStakeUsd,
+            totalMatchedShares,
+            priceNumerator,
+            primaryOrderId,
+            waves,
+            totalFilledStake);
+    }
+
+    private static LiveEntryWaveFill ToLiveEntryWaveFill(
+        int waveIndex,
+        double requestedStakeUsd,
+        MakerLimitWaveResult wave) =>
+        new(
+            waveIndex,
+            requestedStakeUsd,
+            wave.FilledStakeUsd,
+            wave.LimitPrice,
+            wave.OrderId);
+
+    private LiveMarketBuyOutcome BuildAggregatedMakerOutcome(
+        string tokenId,
+        double requestedStakeUsd,
+        double totalMatchedShares,
+        double priceNumerator,
+        string? primaryOrderId,
+        IReadOnlyList<LiveEntryWaveFill> entryWaves,
+        double totalFilledStakeUsd)
+    {
+        if (totalMatchedShares < MinMatchedShares)
+        {
+            var fillReason =
+                $"Insufficient maker fill after 2 waves on {tokenId}: {totalMatchedShares:F4} shares (min {MinMatchedShares:F2})";
+            _logger.LogWarning("{Reason}", fillReason);
+            return LiveMarketBuyOutcome.Fail(fillReason);
+        }
+
+        var avgPrice = priceNumerator > 0 && totalMatchedShares > 0
+            ? priceNumerator / totalMatchedShares
+            : (double?)null;
+        var filledStake = Math.Min(requestedStakeUsd, totalFilledStakeUsd);
+        if (filledStake <= 0 && avgPrice is > 0 and <= 1)
+        {
+            filledStake = Math.Min(requestedStakeUsd, totalMatchedShares * avgPrice.Value);
+        }
+
+        var orderId = string.IsNullOrWhiteSpace(primaryOrderId)
+            ? $"maker-agg-{Guid.NewGuid():N}"
+            : primaryOrderId;
+
+        var result = new LiveMarketBuyResult(
+            orderId,
+            totalMatchedShares,
+            avgPrice,
+            requestedStakeUsd,
+            filledStake,
+            entryWaves);
+
+        if (result.IsPartialFill)
+        {
+            _logger.LogWarning(
+                "Maker two-wave entry on {TokenId}: ${Filled:F2} of ${Requested:F2} ({Shares:F4} shares @ {Price:F4})",
+                tokenId,
+                filledStake,
+                requestedStakeUsd,
+                totalMatchedShares,
+                avgPrice ?? 0);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "Maker two-wave entry filled {TokenId}: ${Filled:F2} ({Shares:F4} shares @ {Price:F4})",
+                tokenId,
+                filledStake,
+                totalMatchedShares,
+                avgPrice ?? 0);
+        }
+
+        return LiveMarketBuyOutcome.Ok(result);
+    }
+
+    private async Task<MakerLimitWaveResult> ExecuteMakerLimitWaveAsync(
+        PolymarketRestClient client,
+        string tokenId,
+        double stakeUsd,
+        double limitPrice,
+        TimeSpan fillWait,
+        long? clientOrderId,
+        CancellationToken ct)
+    {
+        try
+        {
+            var tickSize = await ResolveTickSizeAsync(client, tokenId, ct);
+            var price = PolymarketOrderPricing.RoundDownToTick((decimal)limitPrice, tickSize);
+            if (price <= 0)
+            {
+                return new MakerLimitWaveResult(
+                    PlacementFailed: true,
+                    FailureReason: $"Limit price rounded to zero (tick {tickSize})",
+                    OrderId: null,
+                    MatchedShares: 0,
+                    LimitPrice: null,
+                    FilledStakeUsd: 0);
+            }
+
+            var shares = PolymarketOrderPricing.ComputeShareQuantity(stakeUsd, price);
+            if (shares < PolymarketClobLimits.MinOrderShares)
+            {
+                return new MakerLimitWaveResult(
+                    PlacementFailed: true,
+                    FailureReason:
+                        $"Share quantity {shares:F4} below Polymarket minimum ({PolymarketClobLimits.MinOrderShares}) "
+                        + $"for ${stakeUsd:F2} at {price:F4} (need ≥ ${PolymarketClobLimits.MinStakeUsd(price):F2})",
+                    OrderId: null,
+                    MatchedShares: 0,
+                    LimitPrice: null,
+                    FilledStakeUsd: 0);
+            }
+
+            if (shares <= 0)
+            {
+                return new MakerLimitWaveResult(
+                    PlacementFailed: true,
+                    FailureReason: $"Share quantity below minimum for ${stakeUsd:F2} at {price:F4}",
+                    OrderId: null,
+                    MatchedShares: 0,
+                    LimitPrice: null,
+                    FilledStakeUsd: 0);
+            }
+
+            var place = await client.ClobApi.Trading.PlaceOrderAsync(
+                tokenId,
+                OrderSide.Buy,
+                OrderType.Limit,
+                quantity: shares,
+                price: price,
+                timeInForce: TimeInForce.GoodTillCanceled,
+                postOnly: true,
+                clientOrderId: clientOrderId,
+                expiration: null,
+                quantityType: QuantityType.Shares,
+                ct: ct);
+
+            if (!place.Success || place.Data == null)
+            {
+                var placeReason = FormatApiError(place.Error)
+                    ?? FormatApiError(place.Data?.Error)
+                    ?? "Maker limit placement rejected by CLOB";
+                if (IsPostOnlyWouldCross(placeReason) && tickSize > 0 && price > tickSize)
+                {
+                    var stepped = PolymarketOrderPricing.RoundDownToTick(price - tickSize, tickSize);
+                    if (stepped > 0 && stepped < price)
+                    {
+                        _logger.LogInformation(
+                            "Retrying maker limit one tick lower for {TokenId}: {Old:F4} -> {New:F4}",
+                            tokenId,
+                            price,
+                            stepped);
+                        place = await client.ClobApi.Trading.PlaceOrderAsync(
+                            tokenId,
+                            OrderSide.Buy,
+                            OrderType.Limit,
+                            quantity: shares,
+                            price: stepped,
+                            timeInForce: TimeInForce.GoodTillCanceled,
+                            postOnly: true,
+                            clientOrderId: clientOrderId,
+                            expiration: null,
+                            quantityType: QuantityType.Shares,
+                            ct: ct);
+                        price = stepped;
+                    }
+                }
+
+                if (!place.Success || place.Data == null)
+                {
+                    placeReason = FormatApiError(place.Error)
+                        ?? FormatApiError(place.Data?.Error)
+                        ?? "Maker limit placement rejected by CLOB";
+                    return new MakerLimitWaveResult(
+                        PlacementFailed: true,
+                        FailureReason: placeReason,
+                        OrderId: null,
+                        MatchedShares: 0,
+                        LimitPrice: null,
+                        FilledStakeUsd: 0);
+                }
+            }
+
+            if (place.Data.Success == false)
+            {
+                var placeReason = FormatApiError(place.Data.Error) ?? "Maker limit placement rejected by CLOB";
+                return new MakerLimitWaveResult(
+                    PlacementFailed: true,
+                    FailureReason: placeReason,
+                    OrderId: null,
+                    MatchedShares: 0,
+                    LimitPrice: null,
+                    FilledStakeUsd: 0);
+            }
+
+            var orderId = place.Data.OrderId;
+            if (string.IsNullOrWhiteSpace(orderId))
+            {
+                return new MakerLimitWaveResult(
+                    PlacementFailed: true,
+                    FailureReason: "Maker limit placement returned no order id",
+                    OrderId: null,
+                    MatchedShares: 0,
+                    LimitPrice: null,
+                    FilledStakeUsd: 0);
+            }
+
+            if (clientOrderId is long salt)
+            {
+                _orderIdByClientOrderId[salt] = orderId;
+            }
+
+            var limitPx = (double)price;
+            var targetShares = (double)shares;
+            var (matched, avgPrice, _) = await WaitForMakerFillAsync(
+                client,
+                orderId,
+                targetShares,
+                fillWait,
+                ct);
+            var filledStake = ComputeFilledStakeUsd(matched, avgPrice, limitPx, stakeUsd);
+
+            return new MakerLimitWaveResult(
+                PlacementFailed: false,
+                FailureReason: null,
+                OrderId: orderId,
+                MatchedShares: matched,
+                LimitPrice: avgPrice ?? limitPx,
+                FilledStakeUsd: filledStake);
+        }
+        catch (Exception ex)
+        {
+            if (clientOrderId is long salt
+                && _orderIdByClientOrderId.TryGetValue(salt, out var cachedOrderId))
+            {
+                var (matched, avgPrice, _) = await ReadOrderFillSnapshotAsync(client, cachedOrderId, ct);
+                if (matched >= MinMatchedShares)
+                {
+                    var filledStake = ComputeFilledStakeUsd(matched, avgPrice, limitPrice, stakeUsd);
+                    return new MakerLimitWaveResult(
+                        PlacementFailed: false,
+                        FailureReason: null,
+                        OrderId: cachedOrderId,
+                        MatchedShares: matched,
+                        LimitPrice: avgPrice ?? limitPrice,
+                        FilledStakeUsd: filledStake);
+                }
+            }
+
+            if (IsTransientException(ex))
+            {
+                _logger.LogWarning(ex, "Transient error in maker limit wave for token {TokenId}", tokenId);
+            }
+            else
+            {
+                _logger.LogError(ex, "Maker limit wave failed for token {TokenId}", tokenId);
+            }
+
+            return new MakerLimitWaveResult(
+                PlacementFailed: true,
+                FailureReason: ex.Message,
+                OrderId: null,
+                MatchedShares: 0,
+                LimitPrice: null,
+                FilledStakeUsd: 0);
+        }
+    }
+
+    private static async Task<decimal> ResolveTickSizeAsync(
+        PolymarketRestClient client,
+        string tokenId,
+        CancellationToken ct)
+    {
+        try
+        {
+            var tick = await client.ClobApi.ExchangeData.GetTickSizeAsync(tokenId, ct);
+            if (tick.Success && tick.Data?.MinTickSize is > 0)
+            {
+                return tick.Data.MinTickSize;
+            }
+        }
+        catch
+        {
+            // fall through to default
+        }
+
+        return 0.01m;
+    }
+
+    private static bool IsPostOnlyWouldCross(string? reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return false;
+        }
+
+        var r = reason.ToLowerInvariant();
+        return r.Contains("post only", StringComparison.Ordinal)
+            || r.Contains("post-only", StringComparison.Ordinal)
+            || r.Contains("postonly", StringComparison.Ordinal)
+            || r.Contains("would cross", StringComparison.Ordinal);
+    }
+
+    private async Task<(double MatchedShares, double? AveragePrice, OrderStatus? TerminalStatus)> WaitForMakerFillAsync(
+        PolymarketRestClient client,
+        string orderId,
+        double targetShares,
+        TimeSpan fillWait,
+        CancellationToken ct)
+    {
+        _logger.LogDebug(
+            "Waiting for maker fill on order {OrderId} up to {Seconds}s (target {Shares:F4} shares)",
+            orderId,
+            fillWait.TotalSeconds,
+            targetShares);
+        var deadline = DateTime.UtcNow + fillWait;
+        OrderStatus? terminalStatus = null;
+
+        while (DateTime.UtcNow < deadline)
+        {
+            var snapshot = await ReadOrderFillSnapshotAsync(client, orderId, ct);
+
+            if (snapshot.TerminalStatus is OrderStatus.Matched or OrderStatus.Canceled)
+            {
+                return snapshot;
+            }
+
+            if (targetShares > 0 && snapshot.MatchedShares >= targetShares * 0.999)
+            {
+                await TryCancelOpenOrderAsync(client, orderId, ct);
+                return await ReadOrderFillSnapshotAsync(client, orderId, ct);
+            }
+
+            terminalStatus = snapshot.TerminalStatus;
+            try
+            {
+                await Task.Delay(500, ct);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+        }
+
+        await TryCancelOpenOrderAsync(client, orderId, ct);
+        var final = await ReadOrderFillSnapshotAsync(client, orderId, ct);
+        return (final.MatchedShares, final.AveragePrice, final.TerminalStatus ?? terminalStatus);
+    }
+
+    private static async Task TryCancelOpenOrderAsync(
+        PolymarketRestClient client,
+        string orderId,
+        CancellationToken ct)
+    {
+        try
+        {
+            await client.ClobApi.Trading.CancelOrderAsync(orderId, ct);
+        }
+        catch
+        {
+            // best effort
+        }
+    }
+
+    private static async Task<(double MatchedShares, double? AveragePrice, OrderStatus? TerminalStatus)> ReadOrderFillSnapshotAsync(
+        PolymarketRestClient client,
+        string orderId,
+        CancellationToken ct)
+    {
+        var order = await client.ClobApi.Trading.GetOrderAsync(orderId, ct);
+        if (!order.Success || order.Data == null)
+        {
+            return (0, null, null);
+        }
+
+        var matched = (double)order.Data.QuantityFilled;
+        var avgPrice = order.Data.Price is > 0 and <= 1
+            ? (double?)order.Data.Price
+            : null;
+        var terminal = order.Data.Status is OrderStatus.Canceled or OrderStatus.Matched
+            ? order.Data.Status
+            : (OrderStatus?)null;
+
+        return (matched, avgPrice, terminal);
+    }
+
     private async Task<LiveMarketBuyOutcome> PlaceMarketBuyUsdAttemptAsync(
         PolymarketRestClient client,
         string tokenId,
@@ -758,18 +1427,26 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
             var credentials = new PolymarketCredentials(
                 new PolymarketL1Credential(signType, pk, funding));
 
-            _client = new PolymarketRestClient(opts => opts.ApiCredentials = credentials);
+            var client = new PolymarketRestClient(opts => opts.ApiCredentials = credentials);
 
-            var l2 = await _client.ClobApi.Account.GetOrCreateApiCredentialsAsync(nonce: null, ct);
-            if (!l2.Success || l2.Data == null)
+            try
             {
-                _logger.LogError("Failed to derive CLOB L2 API credentials: {Error}", l2.Error);
-                _client = null;
+                var l2 = await client.ClobApi.Account.GetOrCreateApiCredentialsAsync(nonce: null, ct);
+                if (!l2.Success || l2.Data == null)
+                {
+                    _logger.LogError("Failed to derive CLOB L2 API credentials: {Error}", l2.Error);
+                    return null;
+                }
+
+                client.UpdateL2Credentials(l2.Data);
+                _client = client;
+                return _client;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to initialize Polymarket CLOB client (L2 credentials)");
                 return null;
             }
-
-            _client.UpdateL2Credentials(l2.Data);
-            return _client;
         }
         finally
         {

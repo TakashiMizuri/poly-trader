@@ -13,6 +13,7 @@ import { DashboardEnginePanel } from '@/components/DashboardEnginePanel'
 import { LiveChart } from '@/components/LiveChart'
 import { PositionsPanel } from '@/components/PositionsPanel'
 import { useBinanceLiveCandles } from '@/hooks/useBinanceLiveCandles'
+import { useChartDisplayPrefs } from '@/hooks/useChartDisplayPrefs'
 import { clearPollCache, writePollCache } from '@/api/poll-cache'
 import { usePaperTrading } from '@/context/PaperTradingContext'
 import { GLOBAL_RESET_EVENT } from '@/lib/appReset'
@@ -102,10 +103,13 @@ export function DashboardPage() {
     }
   }, [paperTradingEnabled, settings?.tradingMode, settings?.updatedAt, refreshAccount])
 
+  const [chartDisplayPrefs] = useChartDisplayPrefs()
+
   const { candles, status: candleStatus } = useBinanceLiveCandles({
     symbol: 'BTCUSDT',
     interval: '5m',
     liveRefreshMs: 1000,
+    historyLimit: chartDisplayPrefs.maxCandles,
   })
 
   const chartLoading =

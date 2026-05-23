@@ -9,6 +9,22 @@ import {
   type ReactNode,
 } from 'react'
 import { createTradingConnection } from '@/api/signalR'
+import type { LiveLogEntry } from '@/types/liveLog'
+
+const MAX_LIVE_LOGS = 500
+
+function normalizeLogEntry(raw: LiveLogEntry): LiveLogEntry {
+  return {
+    timestamp:
+      typeof raw.timestamp === 'string'
+        ? raw.timestamp
+        : new Date().toISOString(),
+    level: raw.level ?? 'Information',
+    message: raw.message ?? '',
+    sourceContext: raw.sourceContext ?? null,
+    exception: raw.exception ?? null,
+  }
+}
 
 export type TradingLiveEvent =
   | 'BalanceUpdated'
@@ -21,6 +37,8 @@ type TradingLiveContextValue = {
   liveConnected: boolean
   /** False until the first hub start attempt finishes (avoids "Reconnecting" flash on load). */
   liveConnectAttempted: boolean
+  logs: LiveLogEntry[]
+  clearLogs: () => void
   subscribe: (event: TradingLiveEvent, handler: () => void) => () => void
 }
 
@@ -29,6 +47,7 @@ const TradingLiveContext = createContext<TradingLiveContextValue | null>(null)
 export function TradingLiveProvider({ children }: { children: ReactNode }) {
   const [liveConnected, setLiveConnected] = useState(false)
   const [liveConnectAttempted, setLiveConnectAttempted] = useState(false)
+  const [logs, setLogs] = useState<LiveLogEntry[]>([])
   const connRef = useRef<HubConnection | null>(null)
   const handlersRef = useRef(
     new Map<TradingLiveEvent, Set<() => void>>(),
@@ -65,6 +84,14 @@ export function TradingLiveProvider({ children }: { children: ReactNode }) {
     conn.on('MarketWindowUpdated', () => emit('MarketWindowUpdated'))
     conn.on('TradePlaced', () => emit('TradePlaced'))
     conn.on('CandleClosed', () => emit('CandleClosed'))
+    conn.on('LogEntry', (entry: LiveLogEntry) => {
+      setLogs((prev) => {
+        const next = [...prev, normalizeLogEntry(entry)]
+        return next.length > MAX_LIVE_LOGS
+          ? next.slice(next.length - MAX_LIVE_LOGS)
+          : next
+      })
+    })
 
     conn
       .start()
@@ -78,9 +105,17 @@ export function TradingLiveProvider({ children }: { children: ReactNode }) {
     }
   }, [emit])
 
+  const clearLogs = useCallback(() => setLogs([]), [])
+
   return (
     <TradingLiveContext.Provider
-      value={{ liveConnected, liveConnectAttempted, subscribe }}
+      value={{
+        liveConnected,
+        liveConnectAttempted,
+        logs,
+        clearLogs,
+        subscribe,
+      }}
     >
       {children}
     </TradingLiveContext.Provider>
