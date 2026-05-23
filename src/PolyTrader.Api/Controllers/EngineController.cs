@@ -64,7 +64,8 @@ public sealed class EngineController : ControllerBase
             req.MaxBetStakeUsd,
             req.ClearMaxBetStakeUsd,
             req.CommissionPercent,
-            req.AutoRedeemEnabled);
+            req.AutoRedeemEnabled,
+            req.LiveEntryOrderMode);
 
     private static EngineSettingsDto MapDto(EngineSettingsSnapshot s) =>
         new(
@@ -84,6 +85,7 @@ public sealed class EngineController : ControllerBase
             s.ActivePaperAccountName,
             s.ActivePaperBalance,
             s.AutoRedeemEnabled,
+            s.LiveEntryOrderMode,
             s.UpdatedAt);
 
     public sealed record EngineSettingsDto(
@@ -103,6 +105,7 @@ public sealed class EngineController : ControllerBase
         string? ActivePaperAccountName,
         double? ActivePaperBalance,
         bool AutoRedeemEnabled,
+        string LiveEntryOrderMode,
         DateTime UpdatedAt);
 
     public sealed record UpdateEngineSettingsRequest(
@@ -115,7 +118,8 @@ public sealed class EngineController : ControllerBase
         double? MaxBetStakeUsd,
         bool? ClearMaxBetStakeUsd,
         double? CommissionPercent,
-        bool? AutoRedeemEnabled);
+        bool? AutoRedeemEnabled,
+        string? LiveEntryOrderMode);
 
     public sealed record LiveStatusDto(
         bool ClobConfigured,

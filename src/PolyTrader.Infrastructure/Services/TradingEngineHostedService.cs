@@ -946,6 +946,7 @@ public sealed class TradingEngineHostedService : BackgroundService
                             liveOutcome = await _clob.PlaceEntryOrderAsync(
                                 tokenId,
                                 stake,
+                                settings.LiveEntryOrderMode,
                                 bidPrice,
                                 askPrice,
                                 new LiveEntryOrderKey(actions.Entry.TargetCandleTime, tokenId),

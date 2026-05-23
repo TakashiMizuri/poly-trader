@@ -103,6 +103,10 @@ namespace PolyTrader.Infrastructure.Migrations
                     b.Property<bool>("IsRunning")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("LiveEntryOrderMode")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<double?>("MaxBetStakeUsd")
                         .HasColumnType("REAL");
 

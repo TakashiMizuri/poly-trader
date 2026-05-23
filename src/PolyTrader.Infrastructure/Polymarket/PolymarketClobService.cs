@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PolyTrader.Core.Models;
 using PolyTrader.Infrastructure.Options;
 
 namespace PolyTrader.Infrastructure.Polymarket;
@@ -19,10 +20,11 @@ public interface IPolymarketClobService
     Task<double?> TryGetBidPriceAsync(string tokenId, CancellationToken ct = default);
     /// <summary>Midpoint from CLOB REST.</summary>
     Task<double?> TryGetMidPriceAsync(string tokenId, CancellationToken ct = default);
-    /// <summary>Live entry: maker limit (default) or IOC market per <see cref="PolyTraderOptions.LiveEntryOrderMode"/>.</summary>
+    /// <summary>Live entry: limit (post-only) or IOC market per <see cref="LiveEntryOrderModes"/>.</summary>
     Task<LiveMarketBuyOutcome> PlaceEntryOrderAsync(
         string tokenId,
         double sizeUsd,
+        string liveEntryOrderMode,
         double? bidPriceHint = null,
         double? askPriceHint = null,
         LiveEntryOrderKey? entryKey = null,
@@ -150,6 +152,7 @@ public sealed class PolymarketClobService : IPolymarketClobService
     public async Task<LiveMarketBuyOutcome> PlaceEntryOrderAsync(
         string tokenId,
         double sizeUsd,
+        string liveEntryOrderMode,
         double? bidPriceHint = null,
         double? askPriceHint = null,
         LiveEntryOrderKey? entryKey = null,
@@ -162,10 +165,7 @@ public sealed class PolymarketClobService : IPolymarketClobService
             return LiveMarketBuyOutcome.Fail(reason);
         }
 
-        var useMarket = string.Equals(
-            _options.LiveEntryOrderMode,
-            "Market",
-            StringComparison.OrdinalIgnoreCase);
+        var useMarket = LiveEntryOrderModes.IsMarket(liveEntryOrderMode);
 
         if (useMarket)
         {

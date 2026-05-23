@@ -17,6 +17,7 @@ public sealed record EngineSettingsSnapshot(
     string? ActivePaperAccountName,
     double? ActivePaperBalance,
     bool AutoRedeemEnabled,
+    string LiveEntryOrderMode,
     DateTime UpdatedAt);
 
 public sealed record UpdateEngineSettingsCommand(
@@ -29,7 +30,8 @@ public sealed record UpdateEngineSettingsCommand(
     double? MaxBetStakeUsd = null,
     bool? ClearMaxBetStakeUsd = null,
     double? CommissionPercent = null,
-    bool? AutoRedeemEnabled = null);
+    bool? AutoRedeemEnabled = null,
+    string? LiveEntryOrderMode = null);
 
 public sealed record EngineSettingsUpdateResult(
     bool Success,

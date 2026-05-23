@@ -1,5 +1,6 @@
 # Production overrides for VPS deployment.
 # Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# Set WEB_PUBLISH=127.0.0.1:8081:80 in .env (host nginx proxies to that port).
 services:
   api:
     ports: !reset []
@@ -11,8 +12,11 @@ services:
       start_period: 40s
 
   web:
-    ports:
-      - "127.0.0.1:8080:80"
+    build:
+      args:
+        # Same-origin /api and /hubs via nginx — never bake localhost:5088 into prod UI
+        VITE_API_URL: ""
+        VITE_API_TOKEN: ""
     depends_on:
       api:
         condition: service_healthy

@@ -4,7 +4,7 @@ import { NumberInput } from '@/components/ui/number-input'
 
 type DraftNumberInputProps = Omit<
   React.ComponentProps<typeof NumberInput>,
-  'value' | 'onChange' | 'type' | 'defaultValue'
+  'value' | 'onChange' | 'defaultValue'
 > & {
   value: number | null
   onCommit: (value: number | null) => void

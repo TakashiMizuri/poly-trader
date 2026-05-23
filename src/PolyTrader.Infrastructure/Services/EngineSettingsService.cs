@@ -109,6 +109,11 @@ public sealed class EngineSettingsService : IEngineSettingsService
             s.AutoRedeemEnabled = command.AutoRedeemEnabled.Value;
         }
 
+        if (command.LiveEntryOrderMode is not null)
+        {
+            s.LiveEntryOrderMode = LiveEntryOrderModes.Normalize(command.LiveEntryOrderMode);
+        }
+
         s.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
 
@@ -247,6 +252,7 @@ public sealed class EngineSettingsService : IEngineSettingsService
             active?.Name,
             active?.Balance,
             s.AutoRedeemEnabled,
+            LiveEntryOrderModes.Normalize(s.LiveEntryOrderMode),
             s.UpdatedAt);
     }
 }

@@ -69,7 +69,14 @@ export interface EngineSettings {
   activePaperAccountName: string | null
   activePaperBalance: number | null
   autoRedeemEnabled: boolean
+  liveEntryOrderMode: 'Limit' | 'Market' | string
   updatedAt: string
+}
+
+export type LiveEntryOrderMode = 'Limit' | 'Market'
+
+export function normalizeLiveEntryOrderMode(mode: string): LiveEntryOrderMode {
+  return String(mode).toLowerCase() === 'market' ? 'Market' : 'Limit'
 }
 
 export function normalizeBetStakeMode(mode: BetStakeMode): 'percent' | 'fixed' {

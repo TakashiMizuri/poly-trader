@@ -24,11 +24,6 @@ public sealed class PolyTraderOptions
     /// <summary>Comma-separated numeric Telegram user/chat IDs allowed to control the bot and receive alerts.</summary>
     public string? TelegramAdminChatIds { get; set; }
 
-    /// <summary>
-    /// Live entry: <c>Maker</c> = post-only limit at best bid (0% fee); <c>Market</c> = IOC taker (legacy).
-    /// </summary>
-    public string LiveEntryOrderMode { get; set; } = "Maker";
-
     /// <summary>Seconds to wait on the first maker limit (full requested stake).</summary>
     public int LiveMakerFillWaitSeconds { get; set; } = 45;
 

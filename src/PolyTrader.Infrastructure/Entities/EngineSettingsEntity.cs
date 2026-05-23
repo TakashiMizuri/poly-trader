@@ -28,5 +28,7 @@ public sealed class EngineSettingsEntity
     public double CommissionPercent { get; set; } = 0;
     /// <summary>When false, background and post-win CTF redeems are skipped.</summary>
     public bool AutoRedeemEnabled { get; set; } = true;
+    /// <summary>Live entry: <see cref="LiveEntryOrderModes.Limit"/> (post-only) or <see cref="LiveEntryOrderModes.Market"/> (IOC taker).</summary>
+    public string LiveEntryOrderMode { get; set; } = LiveEntryOrderModes.Limit;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

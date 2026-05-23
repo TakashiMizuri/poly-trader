@@ -23,7 +23,7 @@ services:
         VITE_API_URL: ${VITE_API_URL:-}
         VITE_API_TOKEN: ${VITE_API_TOKEN:-}
     ports:
-      - "8080:80"
+      - "${WEB_PUBLISH:-8080:80}"
     depends_on:
       - api
     restart: unless-stopped

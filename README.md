@@ -72,6 +72,8 @@ cp .env.example .env   # set WEB_API_TOKEN, Polymarket keys
 bash deploy/update.sh  # uses docker-compose.prod.yml (API not exposed publicly)
 ```
 
+Day-2 ops (restart, git pull, logs): **[deploy/OPERATIONS.ru.md](deploy/OPERATIONS.ru.md)**
+
 ## API
 
 | Endpoint | Description |
@@ -92,7 +94,7 @@ bash deploy/update.sh  # uses docker-compose.prod.yml (API not exposed publicly)
 
 ## Live trading
 
-Live mode uses **Polymarket.Net** for USDC balance and **two-wave post-only maker limits at the best bid** (0% fee): wave 1 on the full stake, wave 2 on the remainder with a refreshed bid — then the trade is recorded (partial total is OK; no taker top-up). Override with `POLYTRADER_LIVE_ENTRY_ORDER_MODE=Market` for legacy IOC taker orders. Tune `POLYTRADER_LIVE_MAKER_FILL_WAIT_SECONDS` / `POLYTRADER_LIVE_MAKER_REMAINDER_FILL_WAIT_SECONDS`. **Automatic CTF redeem** for winning positions (no manual cash-out in the Polymarket UI). Settlement prefers Polymarket Gamma/Data API resolution; Binance OHLC is fallback only. Start with paper, then follow the phased rollout in [RUN_OPERATOR.md](RUN_OPERATOR.md).
+Live mode uses **Polymarket.Net** for USDC balance. In **Settings → Live entry order type**, choose **Limit** (default: two-wave post-only limits at the best bid, 0% fee) or **Market** (legacy IOC taker). Tune `POLYTRADER_LIVE_MAKER_FILL_WAIT_SECONDS` / `POLYTRADER_LIVE_MAKER_REMAINDER_FILL_WAIT_SECONDS` for limit waves. **Automatic CTF redeem** for winning positions (no manual cash-out in the Polymarket UI). Settlement prefers Polymarket Gamma/Data API resolution; Binance OHLC is fallback only. Start with paper, then follow the phased rollout in [RUN_OPERATOR.md](RUN_OPERATOR.md).
 
 ## Strategy
 

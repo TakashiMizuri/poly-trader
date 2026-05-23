@@ -14,7 +14,7 @@ const numberControlClass = cn(
 )
 
 type NumberInputProps = Omit<React.ComponentProps<'input'>, 'type'> & {
-  type?: 'number'
+  type?: 'number' | 'text'
   prefix?: React.ReactNode
   suffix?: React.ReactNode
   groupClassName?: string

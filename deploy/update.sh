@@ -24,5 +24,5 @@ echo "Recent API logs:"
 "${COMPOSE[@]}" logs --tail=30 api
 
 echo ""
-echo "UI (local on server): http://127.0.0.1:8080"
-echo "Health: curl -sf http://127.0.0.1:8080/health"
+echo "UI (local on server): http://127.0.0.1:8081"
+echo "Health: curl -sf http://127.0.0.1:8081/health"

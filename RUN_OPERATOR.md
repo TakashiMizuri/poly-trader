@@ -90,8 +90,10 @@ See **[DEPLOY.ru.md](DEPLOY.ru.md)** for the full Russian deployment guide.
 ```bash
 sudo bash deploy/setup-server.sh
 cp .env.example .env
-bash deploy/update.sh   # docker-compose.prod.yml: API internal only, web on 127.0.0.1:8080
+bash deploy/update.sh   # docker-compose.prod.yml: API internal only, web on 127.0.0.1:8081
 ```
+
+Эксплуатация (перезапуск, git pull, логи): **[deploy/OPERATIONS.ru.md](deploy/OPERATIONS.ru.md)**
 
 ## systemd example (API only)
 

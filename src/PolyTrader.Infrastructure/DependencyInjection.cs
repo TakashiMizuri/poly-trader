@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PolyTrader.Core.Abstractions;
+using PolyTrader.Core.Models;
 using PolyTrader.Infrastructure.Binance;
 using PolyTrader.Infrastructure.Data;
 using PolyTrader.Infrastructure.Options;
@@ -34,12 +35,6 @@ public static class DependencyInjection
             opts.CorsOrigins ??= configuration["CORS_ORIGINS"];
             opts.TelegramBotToken ??= configuration["TELEGRAM_BOT_TOKEN"];
             opts.TelegramAdminChatIds ??= configuration["TELEGRAM_ADMIN_CHAT_IDS"];
-
-            var entryMode = configuration["POLYTRADER_LIVE_ENTRY_ORDER_MODE"];
-            if (!string.IsNullOrWhiteSpace(entryMode))
-            {
-                opts.LiveEntryOrderMode = entryMode.Trim();
-            }
 
             if (int.TryParse(configuration["POLYTRADER_LIVE_MAKER_FILL_WAIT_SECONDS"], out var makerWait)
                 && makerWait >= 1)
@@ -89,6 +84,7 @@ public static class DependencyInjection
     {
         await using var scope = services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<PolyTraderDbContext>();
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         var logger = scope.ServiceProvider.GetService<ILogger<PolyTraderDbContext>>();
 
         logger?.LogInformation("Applying database migrations");
@@ -99,6 +95,10 @@ public static class DependencyInjection
         await EnsureTradeRequestedStakeUsdColumnAsync(db, logger);
         await EnsureTradeEntryWavesJsonColumnAsync(db, logger);
         await EnsureEngineAutoRedeemEnabledColumnAsync(db, logger);
+        var importedEntryModeFromEnv = await EnsureEngineLiveEntryOrderModeColumnAsync(
+            db,
+            configuration,
+            logger);
 
         if (!await SchemaTableExistsAsync(db, "EngineSettings"))
         {
@@ -111,8 +111,24 @@ public static class DependencyInjection
         if (!await db.EngineSettings.AnyAsync())
         {
             logger?.LogInformation("Seeding default engine settings");
-            db.EngineSettings.Add(new Entities.EngineSettingsEntity());
+            var seed = new Entities.EngineSettingsEntity();
+            if (importedEntryModeFromEnv is not null)
+            {
+                seed.LiveEntryOrderMode = importedEntryModeFromEnv;
+            }
+
+            db.EngineSettings.Add(seed);
             await db.SaveChangesAsync();
+        }
+        else if (importedEntryModeFromEnv is not null)
+        {
+            var settings = await db.EngineSettings.FirstAsync();
+            settings.LiveEntryOrderMode = importedEntryModeFromEnv;
+            settings.UpdatedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+            logger?.LogInformation(
+                "Imported live entry order mode from POLYTRADER_LIVE_ENTRY_ORDER_MODE: {Mode}",
+                importedEntryModeFromEnv);
         }
 
         if (!await db.PaperAccounts.AnyAsync())
@@ -298,6 +314,45 @@ public static class DependencyInjection
             INSERT OR IGNORE INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
             VALUES ('20260522120000_EngineAutoRedeemEnabled', '10.0.8');
             """);
+    }
+
+    /// <summary>
+    /// Returns a normalized mode from legacy <c>POLYTRADER_LIVE_ENTRY_ORDER_MODE</c> when the column was just added.
+    /// </summary>
+    private static async Task<string?> EnsureEngineLiveEntryOrderModeColumnAsync(
+        PolyTraderDbContext db,
+        IConfiguration configuration,
+        ILogger<PolyTraderDbContext>? logger)
+    {
+        if (!await SchemaTableExistsAsync(db, "EngineSettings"))
+        {
+            return null;
+        }
+
+        var columnExisted = await ColumnExistsAsync(db, "EngineSettings", "LiveEntryOrderMode");
+        if (columnExisted)
+        {
+            return null;
+        }
+
+        logger?.LogWarning(
+            "EngineSettings is missing LiveEntryOrderMode column; applying schema repair.");
+
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "EngineSettings" ADD COLUMN "LiveEntryOrderMode" TEXT NOT NULL DEFAULT 'Limit';
+            """);
+
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            INSERT OR IGNORE INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+            VALUES ('20260523120000_EngineLiveEntryOrderMode', '10.0.8');
+            """);
+
+        var envMode = configuration["POLYTRADER_LIVE_ENTRY_ORDER_MODE"];
+        return string.IsNullOrWhiteSpace(envMode)
+            ? null
+            : LiveEntryOrderModes.Normalize(envMode);
     }
 
     private static async Task EnsureTradeRequestedStakeUsdColumnAsync(

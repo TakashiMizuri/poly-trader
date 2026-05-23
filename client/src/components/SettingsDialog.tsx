@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { EngineSettings } from '@/api/client'
-import { api } from '@/api/client'
+import type { EngineSettings, LiveEntryOrderMode } from '@/api/client'
+import { api, normalizeLiveEntryOrderMode } from '@/api/client'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -30,6 +30,24 @@ const THEME_OPTIONS: { value: Theme; label: string; description: string }[] = [
 
 const TIME_FORMAT_SAMPLE_MS = new Date(2026, 4, 20, 23, 20, 0).getTime()
 
+const LIVE_ENTRY_ORDER_OPTIONS: {
+  value: LiveEntryOrderMode
+  label: string
+  description: string
+}[] = [
+  {
+    value: 'Limit',
+    label: 'Limit',
+    description:
+      'Post-only limit at the best bid (0% fee). Two waves: full stake, then remainder.',
+  },
+  {
+    value: 'Market',
+    label: 'Market',
+    description: 'IOC taker buy at the ask (legacy; pays taker fees).',
+  },
+]
+
 const TIME_FORMAT_OPTIONS: { value: TimeFormat; label: string; description: string }[] = [
   {
     value: '24h',
@@ -58,15 +76,24 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const [autoRedeemEnabled, setAutoRedeemEnabled] = useState(true)
   const [autoRedeemLoading, setAutoRedeemLoading] = useState(false)
   const [autoRedeemError, setAutoRedeemError] = useState<string | null>(null)
+  const [liveEntryOrderMode, setLiveEntryOrderMode] =
+    useState<LiveEntryOrderMode>('Limit')
+  const [liveEntryOrderLoading, setLiveEntryOrderLoading] = useState(false)
+  const [liveEntryOrderError, setLiveEntryOrderError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
     let cancelled = false
     setAutoRedeemLoading(true)
     setAutoRedeemError(null)
+    setLiveEntryOrderLoading(true)
+    setLiveEntryOrderError(null)
     void api<EngineSettings>('/api/engine')
       .then((settings) => {
-        if (!cancelled) setAutoRedeemEnabled(settings.autoRedeemEnabled)
+        if (!cancelled) {
+          setAutoRedeemEnabled(settings.autoRedeemEnabled)
+          setLiveEntryOrderMode(normalizeLiveEntryOrderMode(settings.liveEntryOrderMode))
+        }
       })
       .catch((e) => {
         if (!cancelled) {
@@ -76,12 +103,33 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         }
       })
       .finally(() => {
-        if (!cancelled) setAutoRedeemLoading(false)
+        if (!cancelled) {
+          setAutoRedeemLoading(false)
+          setLiveEntryOrderLoading(false)
+        }
       })
     return () => {
       cancelled = true
     }
   }, [open])
+
+  async function handleLiveEntryOrderModeChange(mode: LiveEntryOrderMode) {
+    setLiveEntryOrderError(null)
+    const previous = liveEntryOrderMode
+    setLiveEntryOrderMode(mode)
+    try {
+      const settings = await api<EngineSettings>('/api/engine', {
+        method: 'PUT',
+        body: JSON.stringify({ liveEntryOrderMode: mode }),
+      })
+      setLiveEntryOrderMode(normalizeLiveEntryOrderMode(settings.liveEntryOrderMode))
+    } catch (e) {
+      setLiveEntryOrderMode(previous)
+      setLiveEntryOrderError(
+        e instanceof Error ? e.message : 'Could not update entry order mode',
+      )
+    }
+  }
 
   async function handleAutoRedeemToggle(enabled: boolean) {
     setAutoRedeemError(null)
@@ -275,6 +323,54 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             {paperModeError ? (
               <p className="mt-2 text-sm text-destructive" role="alert">
                 {paperModeError}
+              </p>
+            ) : null}
+
+            <p className="mt-4 text-sm font-medium text-foreground">
+              Live entry order type
+            </p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Applies to the next live entry while the engine is running.
+            </p>
+            <div
+              className={cn(
+                'mt-2 grid gap-2 sm:grid-cols-2',
+                liveEntryOrderLoading && 'pointer-events-none opacity-60',
+              )}
+              role="radiogroup"
+              aria-label="Live entry order type"
+            >
+              {LIVE_ENTRY_ORDER_OPTIONS.map((option) => {
+                const selected = liveEntryOrderMode === option.value
+                return (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant="outline"
+                    role="radio"
+                    aria-checked={selected}
+                    disabled={liveEntryOrderLoading}
+                    onClick={() => void handleLiveEntryOrderModeChange(option.value)}
+                    className={cn(
+                      'h-auto w-full flex-col items-start justify-start gap-0.5 whitespace-normal px-4 py-3 text-left font-normal',
+                      selected
+                        ? 'border-primary bg-primary/10 ring-1 ring-primary/40'
+                        : 'bg-background hover:border-muted-foreground/40',
+                    )}
+                  >
+                    <span className="block font-medium text-foreground">
+                      {option.label}
+                    </span>
+                    <span className="mt-0.5 block text-sm font-normal text-muted-foreground">
+                      {option.description}
+                    </span>
+                  </Button>
+                )
+              })}
+            </div>
+            {liveEntryOrderError ? (
+              <p className="mt-2 text-sm text-destructive" role="alert">
+                {liveEntryOrderError}
               </p>
             ) : null}
 

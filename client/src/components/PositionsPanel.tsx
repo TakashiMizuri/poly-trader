@@ -24,7 +24,6 @@ import {
   formatPnl,
   formatStake,
   hasEntryWaves,
-  isAwaitingRedeem,
   isSettledFill,
   formatWindowProgressLabel,
   groupHasOpenBet,
