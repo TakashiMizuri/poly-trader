@@ -47,6 +47,7 @@ public sealed class EngineController : ControllerBase
         [FromQuery] double? betStakePercent,
         [FromQuery] double? maxBetStakeUsd,
         [FromQuery] bool clearMaxBetStakeUsd,
+        [FromQuery] double? referenceBid,
         CancellationToken ct)
     {
         TradingMode? mode = null;
@@ -71,7 +72,8 @@ public sealed class EngineController : ControllerBase
                 betStakeUsd,
                 betStakePercent,
                 maxBetStakeUsd,
-                clearMaxBetStakeUsd),
+                clearMaxBetStakeUsd,
+                referenceBid),
             ct);
 
         return Ok(MapPreviewDto(preview));
@@ -117,6 +119,8 @@ public sealed class EngineController : ControllerBase
             p.TradingMode,
             p.BalanceUsd,
             p.ReferenceBid,
+            p.MarketReferenceBid,
+            p.BidIsCustom,
             p.BidUnavailableReason,
             p.MinOrderShares,
             p.ClobMinStakeUsd,
@@ -194,6 +198,8 @@ public sealed class EngineController : ControllerBase
         string TradingMode,
         double? BalanceUsd,
         double? ReferenceBid,
+        double? MarketReferenceBid,
+        bool BidIsCustom,
         string? BidUnavailableReason,
         decimal MinOrderShares,
         double? ClobMinStakeUsd,

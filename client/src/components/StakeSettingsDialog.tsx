@@ -24,7 +24,9 @@ import {
   type StakeSnapshot,
 } from '@/lib/engineStakeSettings'
 import {
+  isValidPreviewBid,
   limitFeasibilityFromPreview,
+  mergePreviewWithBid,
   planLimitEntryStake,
 } from '@/lib/limitEntryFeasibility'
 import { cn } from '@/lib/utils'
@@ -110,6 +112,7 @@ function buildPreviewQuery(
   draft: StakeDraft,
   tradingMode: string,
   paperAccountId?: number | null,
+  previewBidCustom?: number | null,
 ): string {
   const params = new URLSearchParams()
   params.set('tradingMode', tradingMode)
@@ -123,6 +126,9 @@ function buildPreviewQuery(
     params.set('clearMaxBetStakeUsd', 'true')
   } else {
     params.set('maxBetStakeUsd', String(draft.maxBetStakeUsd))
+  }
+  if (previewBidCustom != null && isValidPreviewBid(previewBidCustom)) {
+    params.set('referenceBid', String(previewBidCustom))
   }
   return params.toString()
 }
@@ -147,6 +153,7 @@ export function StakeSettingsDialog({
   const [limitPreviewError, setLimitPreviewError] = useState<string | null>(
     null,
   )
+  const [previewBidCustom, setPreviewBidCustom] = useState<number | null>(null)
 
   const saved = draftFromSettings(settings)
   const isPercentStake = draft.mode === 'percent'
@@ -159,6 +166,7 @@ export function StakeSettingsDialog({
   useEffect(() => {
     if (open) {
       setDraft(draftFromSettings(settings))
+      setPreviewBidCustom(null)
     }
   }, [open, settings.updatedAt])
 
@@ -170,7 +178,12 @@ export function StakeSettingsDialog({
     }
 
     let cancelled = false
-    const query = buildPreviewQuery(draft, tradingMode, paperAccountId)
+    const query = buildPreviewQuery(
+      draft,
+      tradingMode,
+      paperAccountId,
+      previewBidCustom,
+    )
     setLimitPreviewLoading(true)
     setLimitPreviewError(null)
 
@@ -193,21 +206,31 @@ export function StakeSettingsDialog({
     return () => {
       cancelled = true
     }
-  }, [open, isLimitMode, draft, tradingMode, paperAccountId])
+  }, [open, isLimitMode, draft, tradingMode, paperAccountId, previewBidCustom])
+
+  const displayPreview = useMemo(() => {
+    if (!limitPreview) return null
+    if (previewBidCustom != null && isValidPreviewBid(previewBidCustom)) {
+      return mergePreviewWithBid(limitPreview, previewBidCustom, draft)
+    }
+    return limitPreview
+  }, [limitPreview, previewBidCustom, draft])
+
+  const previewBidDisplay =
+    previewBidCustom ??
+    limitPreview?.marketReferenceBid ??
+    limitPreview?.referenceBid ??
+    null
 
   const localLimitPlan = useMemo(() => {
-    if (
-      !isLimitMode ||
-      balanceUsd == null ||
-      limitPreview?.referenceBid == null
-    ) {
+    if (!isLimitMode || balanceUsd == null || displayPreview?.referenceBid == null) {
       return null
     }
-    return planLimitEntryStake(balanceUsd, draft, limitPreview.referenceBid)
-  }, [isLimitMode, balanceUsd, draft, limitPreview?.referenceBid])
+    return planLimitEntryStake(balanceUsd, draft, displayPreview.referenceBid)
+  }, [isLimitMode, balanceUsd, draft, displayPreview?.referenceBid])
 
   const limitFeasibility = limitFeasibilityFromPreview(
-    limitPreview,
+    displayPreview,
     limitPreviewLoading,
     limitPreviewError,
   )
@@ -283,9 +306,60 @@ export function StakeSettingsDialog({
             </p>
 
             {isLimitMode ? (
+              <>
+                <div className="mt-3 flex items-end gap-2">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <p className={fieldLabelClass}>Preview bid</p>
+                    <DraftNumberInput
+                      value={previewBidDisplay}
+                      disabled={busy || limitPreviewLoading}
+                      onCommit={(next) => {
+                        if (next == null || !isValidPreviewBid(next)) {
+                          setPreviewBidCustom(null)
+                          return
+                        }
+                        const live =
+                          limitPreview?.marketReferenceBid ??
+                          limitPreview?.referenceBid
+                        if (
+                          live != null &&
+                          Math.abs(next - live) < 0.0001 &&
+                          previewBidCustom == null
+                        ) {
+                          return
+                        }
+                        if (live != null && Math.abs(next - live) < 0.0001) {
+                          setPreviewBidCustom(null)
+                        } else {
+                          setPreviewBidCustom(next)
+                        }
+                      }}
+                      formatCommitted={(v) => v.toFixed(2)}
+                      groupClassName="w-full max-w-[8rem]"
+                      aria-label="Bid price for limit preview"
+                    />
+                  </div>
+                  {previewBidCustom != null ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="xs"
+                      className="mb-0.5 shrink-0 text-muted-foreground"
+                      disabled={busy || limitPreviewLoading}
+                      onClick={() => setPreviewBidCustom(null)}
+                    >
+                      Use live
+                    </Button>
+                  ) : null}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {previewBidCustom != null
+                    ? 'Custom bid for min-stake and balance estimates only.'
+                    : 'Uses highest live UP/DOWN bid from the book.'}
+                </p>
               <div
                 className={cn(
-                  'mt-3 rounded-lg border px-3 py-2.5 text-xs leading-relaxed',
+                  'mt-2 rounded-lg border px-3 py-2.5 text-xs leading-relaxed',
                   limitFeasibility.tone === 'ok' &&
                     'border-emerald-500/30 bg-emerald-500/5 text-foreground',
                   limitFeasibility.tone === 'warn' &&
@@ -301,7 +375,7 @@ export function StakeSettingsDialog({
                   <p key={line}>{line}</p>
                 ))}
                 {localLimitPlan &&
-                limitPreview?.referenceBid != null &&
+                displayPreview?.referenceBid != null &&
                 !limitPreviewLoading ? (
                   <p className="mt-1.5 text-muted-foreground">
                     Draft:{' '}
@@ -311,6 +385,7 @@ export function StakeSettingsDialog({
                   </p>
                 ) : null}
               </div>
+              </>
             ) : (
               <p className="mt-2 text-xs text-muted-foreground">
                 Market entries can be small ($1+); taker fees apply on live.

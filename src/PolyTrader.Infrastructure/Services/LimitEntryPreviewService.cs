@@ -72,7 +72,8 @@ public sealed class LimitEntryPreviewService
                 ? stakeUsd
                 : BetStakeResolver.RequestedStake(workingBalance, stakeParams));
 
-        var referenceBid = await TryResolveReferenceBidAsync(ct);
+        var marketReferenceBid = await TryResolveReferenceBidAsync(ct);
+        var referenceBid = ResolvePreviewBid(request.ReferenceBid, marketReferenceBid);
         LimitEntryStakePlan? plan = null;
         if (referenceBid is > 0)
         {
@@ -96,6 +97,8 @@ public sealed class LimitEntryPreviewService
             mode.ToString(),
             balance,
             referenceBid,
+            marketReferenceBid,
+            request.ReferenceBid is > 0 and <= 1,
             referenceBid == null ? "Bid price unavailable" : null,
             LimitEntryRules.MinOrderShares,
             referenceBid is > 0 ? LimitEntryRules.MinStakeUsd(referenceBid.Value) : null,
@@ -109,6 +112,16 @@ public sealed class LimitEntryPreviewService
             stakeMode == BetStakeMode.Percent ? stakePercent : null,
             stakeMode == BetStakeMode.Fixed ? stakeUsd : null,
             maxCap);
+    }
+
+    private static double? ResolvePreviewBid(double? requestedBid, double? marketBid)
+    {
+        if (requestedBid is > 0 and <= 1)
+        {
+            return requestedBid.Value;
+        }
+
+        return marketBid;
     }
 
     private async Task<double?> TryResolveReferenceBidAsync(CancellationToken ct)
@@ -151,12 +164,15 @@ public sealed record LimitEntryPreviewRequest(
     double? BetStakeUsd = null,
     double? BetStakePercent = null,
     double? MaxBetStakeUsd = null,
-    bool ClearMaxBetStakeUsd = false);
+    bool ClearMaxBetStakeUsd = false,
+    double? ReferenceBid = null);
 
 public sealed record LimitEntryPreview(
     string TradingMode,
     double? BalanceUsd,
     double? ReferenceBid,
+    double? MarketReferenceBid,
+    bool BidIsCustom,
     string? BidUnavailableReason,
     decimal MinOrderShares,
     double? ClobMinStakeUsd,

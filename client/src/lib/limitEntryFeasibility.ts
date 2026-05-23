@@ -12,6 +12,36 @@ import {
 
 export const MIN_LIMIT_ORDER_SHARES = 5
 
+const MIN_PREVIEW_BID = 0.01
+const MAX_PREVIEW_BID = 0.99
+
+export function isValidPreviewBid(bid: number): boolean {
+  return Number.isFinite(bid) && bid >= MIN_PREVIEW_BID && bid <= MAX_PREVIEW_BID
+}
+
+export function mergePreviewWithBid(
+  preview: LimitEntryPreview,
+  bid: number,
+  snapshot: StakeSnapshot,
+): LimitEntryPreview {
+  const balance = preview.balanceUsd ?? 0
+  const plan = planLimitEntryStake(balance, snapshot, bid)
+  return {
+    ...preview,
+    referenceBid: bid,
+    bidIsCustom: true,
+    clobMinStakeUsd: minLimitStakeUsd(bid),
+    requestedStakeUsd: plan.requestedStakeUsd,
+    effectiveStakeUsd: plan.effectiveStakeUsd,
+    canTrade: plan.canTrade,
+    willBump: plan.willBump,
+    blockReason: plan.blockReason,
+    minBalanceOneTradeUsd: minBalanceForOneLimitTrade(bid),
+    minBalanceConfiguredUsd: minBalanceForConfiguredStake(bid, snapshot),
+    bidUnavailableReason: null,
+  }
+}
+
 export function minLimitStakeUsd(bid: number): number {
   if (!Number.isFinite(bid) || bid <= 0) return Number.POSITIVE_INFINITY
   return Math.ceil(MIN_LIMIT_ORDER_SHARES * bid * 100) / 100
@@ -261,10 +291,18 @@ export function limitFeasibilityFromPreview(
 
   const bid = preview.referenceBid
   const minStake = preview.clobMinStakeUsd ?? minLimitStakeUsd(bid)
+  const bidSource = preview.bidIsCustom ? 'custom bid' : 'live bid'
   const lines: string[] = [
-    `Maker min: ${preview.minOrderShares} shares · ~$${minStake.toFixed(2)} @ bid ${bid.toFixed(2)} (0% fee).`,
+    `Maker min: ${preview.minOrderShares} shares · ~$${minStake.toFixed(2)} @ ${bidSource} ${bid.toFixed(2)} (0% fee).`,
     ...minBalanceLines(preview),
   ]
+  if (
+    preview.bidIsCustom &&
+    preview.marketReferenceBid != null &&
+    Math.abs(preview.marketReferenceBid - bid) > 0.0001
+  ) {
+    lines.push(`Live bid now: ${preview.marketReferenceBid.toFixed(2)}.`)
+  }
 
   if (preview.balanceUsd == null) {
     lines.push('Current balance unavailable for preview.')

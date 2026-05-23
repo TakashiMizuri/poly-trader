@@ -83,6 +83,8 @@ export interface LimitEntryPreview {
   tradingMode: string
   balanceUsd: number | null
   referenceBid: number | null
+  marketReferenceBid: number | null
+  bidIsCustom: boolean
   bidUnavailableReason: string | null
   minOrderShares: number
   clobMinStakeUsd: number | null
