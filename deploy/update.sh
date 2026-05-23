@@ -12,6 +12,8 @@ fi
 
 COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.prod.yml)
 
+mkdir -p logs
+
 echo "Building and starting containers..."
 "${COMPOSE[@]}" up -d --build --remove-orphans
 

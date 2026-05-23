@@ -22,7 +22,7 @@ Copy [`.env.example`](.env.example) to `.env`.
 | `CORS_ORIGINS` | Comma-separated production UI origins (e.g. `https://trader.example.com`) |
 | `VITE_API_URL` | Frontend API base (empty in Docker nginx proxy setup) |
 | `VITE_API_TOKEN` | Optional dev-only: same as `WEB_API_TOKEN` baked into Vite (skips the connect screen). Leave empty in production Docker builds so operators enter the token in the browser. |
-| `POLYTRADER_LOG_DIR` | Serilog file directory (default `logs`; Docker: `/app/logs` volume) |
+| `POLYTRADER_LOG_DIR` | Serilog file directory (default `logs`; Docker: `./logs` → `/app/logs`) |
 | `POLYTRADER_LOG_LEVEL` | Optional minimum level (`Debug`, `Information`, …) |
 | `TELEGRAM_BOT_TOKEN` | Bot token from [@BotFather](https://t.me/BotFather) (optional) |
 | `TELEGRAM_ADMIN_CHAT_IDS` | Comma-separated numeric Telegram user IDs allowed to control the bot and receive trade alerts |

@@ -289,7 +289,7 @@ bash deploy/update.sh
 | UI открывается, API 401 | Неверный токен; проверьте `WEB_API_TOKEN` в `.env` и пересоздайте API |
 | SignalR отключается | Проверьте блок `/hubs/` в nginx (WebSocket); см. `deploy/nginx/poly-trader.conf` |
 | Нет Live-баланса | `POLYMARKET_SIGNATURE_TYPE`, `POLYMARKET_FUNDER_ADDRESS` |
-| Мало места на диске | Логи: volume `polytrader-logs`; retention 90 дней в `appsettings.json` |
+| Мало места на диске | Логи: `./logs/` (retention 90 дней в `appsettings.json`) |
 | Сборка Docker падает | `docker compose ... build --no-cache`; нужен ~2 GB RAM для .NET build |
 
 ## 13. Быстрая шпаргалка

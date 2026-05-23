@@ -12,7 +12,7 @@ services:
       - PolyTrader__ConnectionString=Data Source=/app/data/polytrader.db
     volumes:
       - polytrader-data:/app/data
-      - polytrader-logs:/app/logs
+      - ./logs:/app/logs
     restart: unless-stopped
 
   web:
@@ -30,4 +30,3 @@ services:
 
 volumes:
   polytrader-data:
-  polytrader-logs:

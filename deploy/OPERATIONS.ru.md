@@ -95,7 +95,25 @@ curl -sf http://127.0.0.1:8081/health
 curl -sf http://127.0.0.1/api/health        # через host nginx
 ```
 
-Файлы логов API (volume): `polytrader-logs` → `polytrader-YYYYMMDD.log`.
+Файлы логов API (bind mount): `./logs/` в корне репозитория → `polytrader-YYYYMMDD.log` (в контейнере `/app/logs`).
+
+```bash
+ls -la logs/
+tail -f logs/polytrader-$(date +%Y%m%d).log
+```
+
+**Миграция со старого Docker volume** (если раньше был `polytrader-logs`):
+
+```bash
+cd /opt/poly-trader
+mkdir -p logs
+LOGS_VOL="$(docker volume ls --format '{{.Name}}' | grep '_polytrader-logs$' | head -1 || true)"
+if [[ -n "$LOGS_VOL" ]]; then
+  docker run --rm -v "${LOGS_VOL}:/from:ro" -v "$PWD/logs:/to" alpine cp -a /from/. /to/
+  echo "Copied from volume $LOGS_VOL"
+fi
+bash deploy/update.sh
+```
 
 ---
 

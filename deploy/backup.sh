@@ -25,13 +25,9 @@ docker run --rm \
   -v "$BACKUP_DIR:/backup" \
   alpine sh -c 'cd /data && tar czf /backup/polytrader-data.tar.gz .'
 
-echo "Exporting logs volume..."
-LOGS_VOL="$(docker volume ls --format '{{.Name}}' | grep '_polytrader-logs$' | head -1 || true)"
-if [[ -n "$LOGS_VOL" ]]; then
-  docker run --rm \
-    -v "${LOGS_VOL}:/logs:ro" \
-    -v "$BACKUP_DIR:/backup" \
-    alpine sh -c 'cd /logs && tar czf /backup/polytrader-logs.tar.gz . 2>/dev/null || true'
+echo "Archiving logs directory..."
+if [[ -d logs ]] && [[ -n "$(ls -A logs 2>/dev/null)" ]]; then
+  tar czf "$BACKUP_DIR/polytrader-logs.tar.gz" -C logs .
 fi
 
 echo "Starting API..."
