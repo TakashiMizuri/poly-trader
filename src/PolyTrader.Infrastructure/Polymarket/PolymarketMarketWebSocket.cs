@@ -43,7 +43,9 @@ public sealed class TokenPriceState
 
     /// <summary>Price for a post-only limit buy (join best bid).</summary>
 
-    public double? MakerBuyPrice => BestBid ?? LastTradePrice;
+    public double? MakerBuyPrice =>
+        BestBid
+        ?? (LastTradePrice is { } lt && (!BestAsk.HasValue || lt < BestAsk.Value) ? lt : null);
 
 }
 

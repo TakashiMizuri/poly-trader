@@ -707,111 +707,136 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                     FilledStakeUsd: 0);
             }
 
-            var place = await client.ClobApi.Trading.PlaceOrderAsync(
-                tokenId,
-                OrderSide.Buy,
-                OrderType.Limit,
-                quantity: shares,
-                price: price,
-                timeInForce: TimeInForce.GoodTillCanceled,
-                postOnly: true,
-                clientOrderId: clientOrderId,
-                expiration: null,
-                quantityType: QuantityType.Shares,
-                ct: ct);
+            const int maxPostOnlyTickRetries = 5;
+            string? lastPlaceReason = null;
 
-            if (!place.Success || place.Data == null)
+            for (var tickStep = 0; tickStep <= maxPostOnlyTickRetries; tickStep++)
             {
-                var placeReason = FormatApiError(place.Error)
-                    ?? FormatApiError(place.Data?.Error)
-                    ?? "Maker limit placement rejected by CLOB";
-                if (IsPostOnlyWouldCross(placeReason) && tickSize > 0 && price > tickSize)
+                if (tickStep > 0)
                 {
                     var stepped = PolymarketOrderPricing.RoundDownToTick(price - tickSize, tickSize);
-                    if (stepped > 0 && stepped < price)
+                    if (stepped <= 0 || stepped >= price)
                     {
-                        _logger.LogInformation(
-                            "Retrying maker limit one tick lower for {TokenId}: {Old:F4} -> {New:F4}",
-                            tokenId,
-                            price,
-                            stepped);
-                        place = await client.ClobApi.Trading.PlaceOrderAsync(
-                            tokenId,
-                            OrderSide.Buy,
-                            OrderType.Limit,
-                            quantity: shares,
-                            price: stepped,
-                            timeInForce: TimeInForce.GoodTillCanceled,
-                            postOnly: true,
-                            clientOrderId: clientOrderId,
-                            expiration: null,
-                            quantityType: QuantityType.Shares,
-                            ct: ct);
-                        price = stepped;
+                        return new MakerLimitWaveResult(
+                            PlacementFailed: true,
+                            FailureReason: lastPlaceReason ?? "Could not step post-only limit price lower",
+                            OrderId: null,
+                            MatchedShares: 0,
+                            LimitPrice: null,
+                            FilledStakeUsd: 0);
+                    }
+
+                    _logger.LogInformation(
+                        "Retrying maker limit one tick lower for {TokenId}: {Old:F4} -> {New:F4} (step {Step}/{Max})",
+                        tokenId,
+                        price,
+                        stepped,
+                        tickStep,
+                        maxPostOnlyTickRetries);
+                    price = stepped;
+                    shares = PolymarketOrderPricing.ComputeShareQuantity(stakeUsd, price);
+                    if (shares < PolymarketClobLimits.MinOrderShares)
+                    {
+                        return new MakerLimitWaveResult(
+                            PlacementFailed: true,
+                            FailureReason:
+                                $"Share quantity {shares:F4} below Polymarket minimum ({PolymarketClobLimits.MinOrderShares}) "
+                                + $"after tick-down to {price:F4}",
+                            OrderId: null,
+                            MatchedShares: 0,
+                            LimitPrice: null,
+                            FilledStakeUsd: 0);
                     }
                 }
 
+                var place = await client.ClobApi.Trading.PlaceOrderAsync(
+                    tokenId,
+                    OrderSide.Buy,
+                    OrderType.Limit,
+                    quantity: shares,
+                    price: price,
+                    timeInForce: TimeInForce.GoodTillCanceled,
+                    postOnly: true,
+                    clientOrderId: clientOrderId,
+                    expiration: null,
+                    quantityType: QuantityType.Shares,
+                    ct: ct);
+
+                string? placeReason;
                 if (!place.Success || place.Data == null)
                 {
                     placeReason = FormatApiError(place.Error)
                         ?? FormatApiError(place.Data?.Error)
                         ?? "Maker limit placement rejected by CLOB";
+                }
+                else if (place.Data.Success == false)
+                {
+                    placeReason = FormatApiError(place.Data.Error) ?? "Maker limit placement rejected by CLOB";
+                }
+                else
+                {
+                    placeReason = null;
+                }
+                if (placeReason != null)
+                {
+                    lastPlaceReason = placeReason;
+                    if (!IsPostOnlyWouldCross(placeReason) || tickStep == maxPostOnlyTickRetries)
+                    {
+                        return new MakerLimitWaveResult(
+                            PlacementFailed: true,
+                            FailureReason: placeReason,
+                            OrderId: null,
+                            MatchedShares: 0,
+                            LimitPrice: null,
+                            FilledStakeUsd: 0);
+                    }
+
+                    continue;
+                }
+
+                var orderId = place.Data!.OrderId;
+                if (string.IsNullOrWhiteSpace(orderId))
+                {
                     return new MakerLimitWaveResult(
                         PlacementFailed: true,
-                        FailureReason: placeReason,
+                        FailureReason: "Maker limit placement returned no order id",
                         OrderId: null,
                         MatchedShares: 0,
                         LimitPrice: null,
                         FilledStakeUsd: 0);
                 }
-            }
 
-            if (place.Data.Success == false)
-            {
-                var placeReason = FormatApiError(place.Data.Error) ?? "Maker limit placement rejected by CLOB";
+                if (clientOrderId is long salt)
+                {
+                    _orderIdByClientOrderId[salt] = orderId;
+                }
+
+                var limitPx = (double)price;
+                var targetShares = (double)shares;
+                var (matched, avgPrice, _) = await WaitForMakerFillAsync(
+                    client,
+                    orderId,
+                    targetShares,
+                    fillWait,
+                    ct);
+                var filledStake = ComputeFilledStakeUsd(matched, avgPrice, limitPx, stakeUsd);
+
                 return new MakerLimitWaveResult(
-                    PlacementFailed: true,
-                    FailureReason: placeReason,
-                    OrderId: null,
-                    MatchedShares: 0,
-                    LimitPrice: null,
-                    FilledStakeUsd: 0);
+                    PlacementFailed: false,
+                    FailureReason: null,
+                    OrderId: orderId,
+                    MatchedShares: matched,
+                    LimitPrice: avgPrice ?? limitPx,
+                    FilledStakeUsd: filledStake);
             }
-
-            var orderId = place.Data.OrderId;
-            if (string.IsNullOrWhiteSpace(orderId))
-            {
-                return new MakerLimitWaveResult(
-                    PlacementFailed: true,
-                    FailureReason: "Maker limit placement returned no order id",
-                    OrderId: null,
-                    MatchedShares: 0,
-                    LimitPrice: null,
-                    FilledStakeUsd: 0);
-            }
-
-            if (clientOrderId is long salt)
-            {
-                _orderIdByClientOrderId[salt] = orderId;
-            }
-
-            var limitPx = (double)price;
-            var targetShares = (double)shares;
-            var (matched, avgPrice, _) = await WaitForMakerFillAsync(
-                client,
-                orderId,
-                targetShares,
-                fillWait,
-                ct);
-            var filledStake = ComputeFilledStakeUsd(matched, avgPrice, limitPx, stakeUsd);
 
             return new MakerLimitWaveResult(
-                PlacementFailed: false,
-                FailureReason: null,
-                OrderId: orderId,
-                MatchedShares: matched,
-                LimitPrice: avgPrice ?? limitPx,
-                FilledStakeUsd: filledStake);
+                PlacementFailed: true,
+                FailureReason: lastPlaceReason ?? "Maker limit placement rejected by CLOB",
+                OrderId: null,
+                MatchedShares: 0,
+                LimitPrice: null,
+                FilledStakeUsd: 0);
         }
         catch (Exception ex)
         {
@@ -883,7 +908,8 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
         return r.Contains("post only", StringComparison.Ordinal)
             || r.Contains("post-only", StringComparison.Ordinal)
             || r.Contains("postonly", StringComparison.Ordinal)
-            || r.Contains("would cross", StringComparison.Ordinal);
+            || r.Contains("would cross", StringComparison.Ordinal)
+            || r.Contains("crosses book", StringComparison.Ordinal);
     }
 
     private async Task<(double MatchedShares, double? AveragePrice, OrderStatus? TerminalStatus)> WaitForMakerFillAsync(
