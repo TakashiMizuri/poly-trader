@@ -162,3 +162,66 @@ public sealed record LimitEntryStakePlan(
     bool CanTrade,
     bool WillBump,
     string? BlockReason);
+
+public sealed record HybridEntryPlan(
+    bool UseLimit,
+    bool UsedMarketFallback,
+    double RequestedStakeUsd,
+    double EffectiveStakeUsd,
+    bool CanTrade,
+    string? BlockReason);
+
+public static class HybridEntryRules
+{
+    /// <summary>
+    /// Limit when stake meets CLOB min without bump; otherwise market at configured stake (no limit bump).
+    /// </summary>
+    public static HybridEntryPlan PlanLimitElseMarket(
+        double balance,
+        double requestedStake,
+        double? maxBetStakeUsd,
+        double bidPrice)
+    {
+        var limitPlan = LimitEntryRules.Plan(balance, requestedStake, maxBetStakeUsd, bidPrice);
+
+        if (limitPlan.CanTrade && !limitPlan.WillBump)
+        {
+            return new HybridEntryPlan(
+                UseLimit: true,
+                UsedMarketFallback: false,
+                requestedStake,
+                limitPlan.EffectiveStakeUsd,
+                true,
+                null);
+        }
+
+        var maxAffordable = balance - SafeBetStake.BalanceFloor;
+        var marketStake = requestedStake;
+        if (maxBetStakeUsd is > 0)
+        {
+            marketStake = Math.Min(marketStake, maxBetStakeUsd.Value);
+        }
+
+        marketStake = Math.Min(marketStake, maxAffordable);
+
+        if (marketStake + 0.001 < SafeBetStake.MinBetStake)
+        {
+            return new HybridEntryPlan(
+                UseLimit: false,
+                UsedMarketFallback: true,
+                requestedStake,
+                0,
+                false,
+                limitPlan.BlockReason
+                    ?? $"Insufficient balance ${balance:F2} for ${requestedStake:F2} market entry");
+        }
+
+        return new HybridEntryPlan(
+            UseLimit: false,
+            UsedMarketFallback: true,
+            requestedStake,
+            marketStake,
+            true,
+            null);
+    }
+}

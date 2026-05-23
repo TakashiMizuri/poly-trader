@@ -1,7 +1,11 @@
-import type { LimitEntryPreview } from '@/api/client'
+import {
+  normalizeLiveEntryOrderMode,
+  type LimitEntryPreview,
+} from '@/api/client'
 import type { StakeSnapshot } from '@/lib/engineStakeSettings'
 import {
   BALANCE_FLOOR,
+  MIN_BET_STAKE,
   resolveBetStakeForBalance,
   resolveRequestedBetStake,
 } from '@/utils/chart/safeBetStake'
@@ -19,12 +23,83 @@ export function isValidPreviewBid(bid: number): boolean {
   return Number.isFinite(bid) && bid >= MIN_PREVIEW_BID && bid <= MAX_PREVIEW_BID
 }
 
+export function planLimitElseMarket(
+  balance: number,
+  snapshot: StakeSnapshot,
+  bid: number,
+) {
+  const limitPlan = planLimitEntryStake(balance, snapshot, bid)
+  if (limitPlan.canTrade && !limitPlan.willBump) {
+    return {
+      useLimit: true,
+      usedMarketFallback: false,
+      requestedStakeUsd: limitPlan.requestedStakeUsd,
+      effectiveStakeUsd: limitPlan.effectiveStakeUsd,
+      canTrade: true,
+      willBump: false,
+      blockReason: null as string | null,
+    }
+  }
+
+  const maxAffordable = balance - BALANCE_FLOOR
+  let marketStake = limitPlan.requestedStakeUsd
+  if (snapshot.maxBetStakeUsd != null && snapshot.maxBetStakeUsd > 0) {
+    marketStake = Math.min(marketStake, snapshot.maxBetStakeUsd)
+  }
+  marketStake = Math.min(marketStake, maxAffordable)
+
+  if (marketStake + 0.001 < MIN_BET_STAKE) {
+    return {
+      useLimit: false,
+      usedMarketFallback: true,
+      requestedStakeUsd: limitPlan.requestedStakeUsd,
+      effectiveStakeUsd: 0,
+      canTrade: false,
+      willBump: false,
+      blockReason:
+        limitPlan.blockReason ??
+        `Insufficient balance $${balance.toFixed(2)} for market entry`,
+    }
+  }
+
+  return {
+    useLimit: false,
+    usedMarketFallback: true,
+    requestedStakeUsd: limitPlan.requestedStakeUsd,
+    effectiveStakeUsd: marketStake,
+    canTrade: true,
+    willBump: false,
+    blockReason: null as string | null,
+  }
+}
+
 export function mergePreviewWithBid(
   preview: LimitEntryPreview,
   bid: number,
   snapshot: StakeSnapshot,
 ): LimitEntryPreview {
   const balance = preview.balanceUsd ?? 0
+  const mode = normalizeLiveEntryOrderMode(preview.liveEntryOrderMode)
+
+  if (mode === 'LimitElseMarket') {
+    const hybrid = planLimitElseMarket(balance, snapshot, bid)
+    return {
+      ...preview,
+      referenceBid: bid,
+      bidIsCustom: true,
+      clobMinStakeUsd: minLimitStakeUsd(bid),
+      requestedStakeUsd: hybrid.requestedStakeUsd,
+      effectiveStakeUsd: hybrid.effectiveStakeUsd,
+      canTrade: hybrid.canTrade,
+      willBump: false,
+      usesMarketFallback: hybrid.usedMarketFallback,
+      blockReason: hybrid.blockReason,
+      minBalanceOneTradeUsd: minBalanceForOneLimitTrade(bid),
+      minBalanceConfiguredUsd: minBalanceForConfiguredStake(bid, snapshot),
+      bidUnavailableReason: null,
+    }
+  }
+
   const plan = planLimitEntryStake(balance, snapshot, bid)
   return {
     ...preview,
@@ -35,6 +110,7 @@ export function mergePreviewWithBid(
     effectiveStakeUsd: plan.effectiveStakeUsd,
     canTrade: plan.canTrade,
     willBump: plan.willBump,
+    usesMarketFallback: false,
     blockReason: plan.blockReason,
     minBalanceOneTradeUsd: minBalanceForOneLimitTrade(bid),
     minBalanceConfiguredUsd: minBalanceForConfiguredStake(bid, snapshot),
@@ -313,9 +389,30 @@ export function limitFeasibilityFromPreview(
     `Current ${formatUsd(preview.balanceUsd)} · next stake ~$${preview.requestedStakeUsd.toFixed(2)}.`,
   )
 
+  const orderMode = normalizeLiveEntryOrderMode(preview.liveEntryOrderMode)
+
   if (!preview.canTrade) {
-    lines.push(preview.blockReason ?? 'Cannot place limit entry at current settings.')
+    lines.push(
+      preview.blockReason ?? 'Cannot place entry at current settings.',
+    )
     return { tone: 'error', lines }
+  }
+
+  if (orderMode === 'LimitElseMarket') {
+    if (preview.usesMarketFallback) {
+      lines.push(
+        `Planned: market ~$${preview.effectiveStakeUsd.toFixed(2)} at your ${formatConfiguredSizingLabel(preview)} sizing${formatBumpSizingSuffix(preview)} (~3.5% taker fee).`,
+      )
+      lines.push(
+        `Limit needs ≥ $${minStake.toFixed(2)} at this bid — using market instead of bump.`,
+      )
+      return { tone: 'warn', lines }
+    }
+
+    lines.push(
+      `Planned: limit ~$${preview.effectiveStakeUsd.toFixed(2)} at your ${formatConfiguredSizingLabel(preview)} sizing (0% fee, no bump).`,
+    )
+    return { tone: 'ok', lines }
   }
 
   if (preview.willBump) {

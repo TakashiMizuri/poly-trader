@@ -797,15 +797,17 @@ public sealed class TradingEngineHostedService : BackgroundService
                         entryMarket.NoTokenId,
                         tokenId,
                         ct);
-                    var useLimitEntry = !LiveEntryOrderModes.IsMarket(settings.LiveEntryOrderMode);
-                    var bidPrice = useLimitEntry
-                        ? await ResolveMakerBidPriceAsync(
+                    var entryOrderMode = LiveEntryOrderModes.Normalize(settings.LiveEntryOrderMode);
+                    var isPureMarket = LiveEntryOrderModes.IsMarket(entryOrderMode);
+                    var bidPrice = isPureMarket
+                        ? askPrice
+                        : await ResolveMakerBidPriceAsync(
                             entryMarket.YesTokenId,
                             entryMarket.NoTokenId,
                             tokenId,
-                            ct)
-                        : askPrice;
-                    var entryPrice = useLimitEntry ? bidPrice : askPrice;
+                            ct);
+                    var entryPrice = isPureMarket ? askPrice : bidPrice;
+                    var effectiveOrderMode = entryOrderMode;
 
                     string? orderId = null;
                     var balanceUnavailable = false;
@@ -855,13 +857,65 @@ public sealed class TradingEngineHostedService : BackgroundService
                             ? settings.BetStakeUsd
                             : BetStakeResolver.RequestedStake(balanceAtOpen, stakeParams));
 
-                    if (useLimitEntry)
+                    if (LiveEntryOrderModes.IsLimitElseMarket(entryOrderMode))
+                    {
+                        var hybrid = HybridEntryRules.PlanLimitElseMarket(
+                            balanceAtOpen,
+                            stake,
+                            stakeParams.MaxBetStakeUsd,
+                            bidPrice);
+                        if (!hybrid.CanTrade)
+                        {
+                            ReleaseEntryTargetClaim(targetCandleTime);
+                            _logger.LogWarning(
+                                "{Mode} LimitElseMarket entry skipped for candle {CandleTime}: {Reason}",
+                                settings.TradingMode,
+                                actions.Entry.TargetCandleTime,
+                                hybrid.BlockReason);
+                            await TryRecordSkipAsync(
+                                db,
+                                settings,
+                                actions.Entry.TargetCandleTime,
+                                tradeContextId,
+                                "insufficient_balance",
+                                entryMarket.Id,
+                                hybrid.BlockReason ?? "Cannot place limit or market entry",
+                                side: side.ToString(),
+                                trend: actions.Entry.Trend.ToString(),
+                                stakeUsd: stake,
+                                entryFailedToPublish: entryFailedToPublish,
+                                ct: ct);
+                            stake = 0;
+                        }
+                        else
+                        {
+                            stake = hybrid.EffectiveStakeUsd;
+                            effectiveOrderMode = hybrid.UseLimit
+                                ? LiveEntryOrderModes.Limit
+                                : LiveEntryOrderModes.Market;
+                            entryPrice = hybrid.UseLimit ? bidPrice : askPrice;
+                            if (hybrid.UsedMarketFallback)
+                            {
+                                _logger.LogInformation(
+                                    "{Mode} LimitElseMarket: market fallback ${Stake:F2} (requested ${Requested:F2}; limit needs ≥ ${Min:F2} for {MinShares} shares @ bid {Bid:F4})",
+                                    settings.TradingMode,
+                                    stake,
+                                    hybrid.RequestedStakeUsd,
+                                    LimitEntryRules.MinStakeUsd(bidPrice),
+                                    LimitEntryRules.MinOrderShares,
+                                    bidPrice);
+                            }
+                        }
+                    }
+                    else if (LiveEntryOrderModes.UsesLimitBump(entryOrderMode))
                     {
                         var limitPlan = LimitEntryRules.Plan(
                             balanceAtOpen,
                             stake,
                             stakeParams.MaxBetStakeUsd,
                             bidPrice);
+                        entryPrice = bidPrice;
+                        effectiveOrderMode = LiveEntryOrderModes.Limit;
                         if (limitPlan.WillBump)
                         {
                             _logger.LogInformation(
@@ -902,6 +956,11 @@ public sealed class TradingEngineHostedService : BackgroundService
                             stake = limitPlan.EffectiveStakeUsd;
                         }
                     }
+                    else
+                    {
+                        entryPrice = askPrice;
+                        effectiveOrderMode = LiveEntryOrderModes.Market;
+                    }
 
                     if (stake <= 0)
                     {
@@ -936,7 +995,7 @@ public sealed class TradingEngineHostedService : BackgroundService
                             liveOutcome = await _clob.PlaceEntryOrderAsync(
                                 tokenId,
                                 stake,
-                                settings.LiveEntryOrderMode,
+                                effectiveOrderMode,
                                 bidPrice,
                                 askPrice,
                                 new LiveEntryOrderKey(actions.Entry.TargetCandleTime, tokenId),
@@ -986,9 +1045,11 @@ public sealed class TradingEngineHostedService : BackgroundService
                         {
                             orderId = $"paper-{Guid.NewGuid():N}";
                             _logger.LogInformation(
-                                "Paper fill @ {Price:F4} on token {TokenId} (simulated order {OrderId})",
+                                "Paper {OrderMode} fill @ {Price:F4} on token {TokenId} stake ${Stake:F2} (simulated order {OrderId})",
+                                effectiveOrderMode,
                                 entryPrice,
                                 tokenId,
+                                stake,
                                 orderId);
                         }
 

@@ -55,4 +55,22 @@ public class LimitEntryRulesTests
         Assert.NotNull(minBal);
         Assert.InRange(minBal.Value, 2.65, 2.67);
     }
+
+    [Fact]
+    public void PlanLimitElseMarket_uses_limit_when_stake_meets_min()
+    {
+        var hybrid = HybridEntryRules.PlanLimitElseMarket(300, 9, null, 0.53);
+        Assert.True(hybrid.UseLimit);
+        Assert.False(hybrid.UsedMarketFallback);
+        Assert.Equal(9, hybrid.EffectiveStakeUsd, 2);
+    }
+
+    [Fact]
+    public void PlanLimitElseMarket_falls_back_to_market_without_bump()
+    {
+        var hybrid = HybridEntryRules.PlanLimitElseMarket(50, 1.50, null, 0.53);
+        Assert.False(hybrid.UseLimit);
+        Assert.True(hybrid.UsedMarketFallback);
+        Assert.Equal(1.50, hybrid.EffectiveStakeUsd, 2);
+    }
 }

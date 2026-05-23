@@ -56,7 +56,12 @@ const ENTRY_ORDER_OPTIONS: {
   {
     value: 'Limit',
     label: 'Limit',
-    hint: 'Post-only @ bid · 0% fee · min 5 shares',
+    hint: 'Post-only @ bid · 0% fee · bumps to 5 shares if needed',
+  },
+  {
+    value: 'LimitElseMarket',
+    label: 'Limit → Market',
+    hint: 'Limit at your % when ≥ 5 shares; else market at your % (no bump)',
   },
   {
     value: 'Market',
@@ -130,6 +135,7 @@ function buildPreviewQuery(
   if (previewBidCustom != null && isValidPreviewBid(previewBidCustom)) {
     params.set('referenceBid', String(previewBidCustom))
   }
+  params.set('liveEntryOrderMode', draft.liveEntryOrderMode)
   return params.toString()
 }
 
@@ -161,7 +167,7 @@ export function StakeSettingsDialog({
   const isRunning = settings.isRunning
   const isDirty = !draftsEqual(draft, saved)
   const canSave = isDirty && isDraftValid(draft) && !busy
-  const isLimitMode = draft.liveEntryOrderMode === 'Limit'
+  const isLimitMode = draft.liveEntryOrderMode !== 'Market'
 
   useEffect(() => {
     if (open) {
@@ -271,7 +277,7 @@ export function StakeSettingsDialog({
           <section>
             <p className={fieldLabelClass}>Entry order</p>
             <div
-              className="mt-2 flex w-full rounded-lg border border-border bg-background p-0.5"
+              className="mt-2 grid grid-cols-3 gap-0.5 rounded-lg border border-border bg-background p-0.5"
               role="group"
               aria-label="Entry order type"
             >
@@ -287,7 +293,7 @@ export function StakeSettingsDialog({
                     setDraft((d) => ({ ...d, liveEntryOrderMode: value }))
                   }
                   className={cn(
-                    'h-auto min-h-8 flex-1 flex-col gap-0 py-1.5',
+                    'h-auto min-h-8 flex-col gap-0 px-1 py-1.5',
                     draft.liveEntryOrderMode === value
                       ? 'bg-primary/15 text-primary hover:bg-primary/20 hover:text-primary'
                       : 'text-muted-foreground',

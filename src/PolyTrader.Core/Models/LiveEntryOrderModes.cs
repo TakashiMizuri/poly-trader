@@ -5,6 +5,8 @@ public static class LiveEntryOrderModes
 {
     public const string Limit = "Limit";
     public const string Market = "Market";
+    /// <summary>Limit when stake meets 5-share min; otherwise market at configured stake (no bump).</summary>
+    public const string LimitElseMarket = "LimitElseMarket";
 
     public static string Normalize(string? value)
     {
@@ -19,6 +21,12 @@ public static class LiveEntryOrderModes
             return Market;
         }
 
+        if (v.Equals(LimitElseMarket, StringComparison.OrdinalIgnoreCase)
+            || v.Equals("Limit-Market", StringComparison.OrdinalIgnoreCase))
+        {
+            return LimitElseMarket;
+        }
+
         // Legacy env/appsettings value and synonym for limit entries.
         if (v.Equals("Maker", StringComparison.OrdinalIgnoreCase)
             || v.Equals(Limit, StringComparison.OrdinalIgnoreCase))
@@ -31,4 +39,10 @@ public static class LiveEntryOrderModes
 
     public static bool IsMarket(string? value) =>
         Normalize(value) == Market;
+
+    public static bool IsLimitElseMarket(string? value) =>
+        Normalize(value) == LimitElseMarket;
+
+    public static bool UsesLimitBump(string? value) =>
+        Normalize(value) == Limit;
 }

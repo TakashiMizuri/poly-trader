@@ -73,14 +73,18 @@ export interface EngineSettings {
   updatedAt: string
 }
 
-export type LiveEntryOrderMode = 'Limit' | 'Market'
+export type LiveEntryOrderMode = 'Limit' | 'Market' | 'LimitElseMarket'
 
 export function normalizeLiveEntryOrderMode(mode: string): LiveEntryOrderMode {
-  return String(mode).toLowerCase() === 'market' ? 'Market' : 'Limit'
+  const v = String(mode).trim().toLowerCase()
+  if (v === 'market') return 'Market'
+  if (v === 'limitelsemarket' || v === 'limit-market') return 'LimitElseMarket'
+  return 'Limit'
 }
 
 export interface LimitEntryPreview {
   tradingMode: string
+  liveEntryOrderMode: string
   balanceUsd: number | null
   referenceBid: number | null
   marketReferenceBid: number | null
@@ -92,6 +96,7 @@ export interface LimitEntryPreview {
   effectiveStakeUsd: number
   canTrade: boolean
   willBump: boolean
+  usesMarketFallback: boolean
   blockReason: string | null
   minBalanceOneTradeUsd: number | null
   minBalanceConfiguredUsd: number | null

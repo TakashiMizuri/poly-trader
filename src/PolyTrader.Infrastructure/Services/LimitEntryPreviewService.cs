@@ -72,12 +72,54 @@ public sealed class LimitEntryPreviewService
                 ? stakeUsd
                 : BetStakeResolver.RequestedStake(workingBalance, stakeParams));
 
+        var entryOrderMode = LiveEntryOrderModes.Normalize(
+            request.LiveEntryOrderMode ?? settings.LiveEntryOrderMode);
+
         var marketReferenceBid = await TryResolveReferenceBidAsync(ct);
         var referenceBid = ResolvePreviewBid(request.ReferenceBid, marketReferenceBid);
-        LimitEntryStakePlan? plan = null;
+
+        var effectiveStake = 0d;
+        var canTrade = false;
+        var willBump = false;
+        string? blockReason = null;
+        var usesMarketFallback = false;
+
         if (referenceBid is > 0)
         {
-            plan = LimitEntryRules.Plan(workingBalance, requested, maxCap, referenceBid.Value);
+            if (LiveEntryOrderModes.IsLimitElseMarket(entryOrderMode))
+            {
+                var hybrid = HybridEntryRules.PlanLimitElseMarket(
+                    workingBalance,
+                    requested,
+                    maxCap,
+                    referenceBid.Value);
+                effectiveStake = hybrid.EffectiveStakeUsd;
+                canTrade = hybrid.CanTrade;
+                usesMarketFallback = hybrid.UsedMarketFallback;
+                blockReason = hybrid.BlockReason;
+            }
+            else if (LiveEntryOrderModes.UsesLimitBump(entryOrderMode))
+            {
+                var plan = LimitEntryRules.Plan(workingBalance, requested, maxCap, referenceBid.Value);
+                effectiveStake = plan.EffectiveStakeUsd;
+                canTrade = plan.CanTrade;
+                willBump = plan.WillBump;
+                blockReason = plan.BlockReason;
+            }
+            else
+            {
+                var maxAffordable = workingBalance - SafeBetStake.BalanceFloor;
+                effectiveStake = Math.Min(requested, maxAffordable);
+                if (maxCap is > 0)
+                {
+                    effectiveStake = Math.Min(effectiveStake, maxCap.Value);
+                }
+
+                canTrade = effectiveStake >= SafeBetStake.MinBetStake;
+                blockReason = canTrade
+                    ? null
+                    : $"Insufficient balance ${workingBalance:F2} for market entry";
+            }
         }
 
         double? minBalanceOneTrade = null;
@@ -95,6 +137,7 @@ public sealed class LimitEntryPreviewService
 
         return new LimitEntryPreview(
             mode.ToString(),
+            entryOrderMode,
             balance,
             referenceBid,
             marketReferenceBid,
@@ -103,10 +146,11 @@ public sealed class LimitEntryPreviewService
             LimitEntryRules.MinOrderShares,
             referenceBid is > 0 ? LimitEntryRules.MinStakeUsd(referenceBid.Value) : null,
             requested,
-            plan?.EffectiveStakeUsd ?? 0,
-            plan?.CanTrade ?? false,
-            plan?.WillBump ?? false,
-            plan?.BlockReason,
+            effectiveStake,
+            canTrade,
+            willBump,
+            usesMarketFallback,
+            blockReason,
             minBalanceOneTrade,
             minBalanceConfigured,
             stakeMode == BetStakeMode.Percent ? stakePercent : null,
@@ -165,10 +209,12 @@ public sealed record LimitEntryPreviewRequest(
     double? BetStakePercent = null,
     double? MaxBetStakeUsd = null,
     bool ClearMaxBetStakeUsd = false,
-    double? ReferenceBid = null);
+    double? ReferenceBid = null,
+    string? LiveEntryOrderMode = null);
 
 public sealed record LimitEntryPreview(
     string TradingMode,
+    string LiveEntryOrderMode,
     double? BalanceUsd,
     double? ReferenceBid,
     double? MarketReferenceBid,
@@ -180,6 +226,7 @@ public sealed record LimitEntryPreview(
     double EffectiveStakeUsd,
     bool CanTrade,
     bool WillBump,
+    bool UsesMarketFallback,
     string? BlockReason,
     double? MinBalanceOneTradeUsd,
     double? MinBalanceConfiguredUsd,

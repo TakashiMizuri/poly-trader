@@ -48,6 +48,7 @@ public sealed class EngineController : ControllerBase
         [FromQuery] double? maxBetStakeUsd,
         [FromQuery] bool clearMaxBetStakeUsd,
         [FromQuery] double? referenceBid,
+        [FromQuery] string? liveEntryOrderMode,
         CancellationToken ct)
     {
         TradingMode? mode = null;
@@ -73,7 +74,8 @@ public sealed class EngineController : ControllerBase
                 betStakePercent,
                 maxBetStakeUsd,
                 clearMaxBetStakeUsd,
-                referenceBid),
+                referenceBid,
+                liveEntryOrderMode),
             ct);
 
         return Ok(MapPreviewDto(preview));
@@ -117,6 +119,7 @@ public sealed class EngineController : ControllerBase
     private static LimitEntryPreviewDto MapPreviewDto(LimitEntryPreview p) =>
         new(
             p.TradingMode,
+            p.LiveEntryOrderMode,
             p.BalanceUsd,
             p.ReferenceBid,
             p.MarketReferenceBid,
@@ -128,6 +131,7 @@ public sealed class EngineController : ControllerBase
             p.EffectiveStakeUsd,
             p.CanTrade,
             p.WillBump,
+            p.UsesMarketFallback,
             p.BlockReason,
             p.MinBalanceOneTradeUsd,
             p.MinBalanceConfiguredUsd,
@@ -196,6 +200,7 @@ public sealed class EngineController : ControllerBase
 
     public sealed record LimitEntryPreviewDto(
         string TradingMode,
+        string LiveEntryOrderMode,
         double? BalanceUsd,
         double? ReferenceBid,
         double? MarketReferenceBid,
@@ -207,6 +212,7 @@ public sealed class EngineController : ControllerBase
         double EffectiveStakeUsd,
         bool CanTrade,
         bool WillBump,
+        bool UsesMarketFallback,
         string? BlockReason,
         double? MinBalanceOneTradeUsd,
         double? MinBalanceConfiguredUsd,

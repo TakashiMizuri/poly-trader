@@ -94,7 +94,7 @@ Day-2 ops (restart, git pull, logs): **[deploy/OPERATIONS.ru.md](deploy/OPERATIO
 
 ## Live trading
 
-Live mode uses **Polymarket.Net** for USDC balance. In **Settings → Live entry order type**, choose **Limit** (default: two-wave post-only limits at the best bid, 0% fee) or **Market** (legacy IOC taker). Tune `POLYTRADER_LIVE_MAKER_FILL_WAIT_SECONDS` / `POLYTRADER_LIVE_MAKER_REMAINDER_FILL_WAIT_SECONDS` for limit waves. **Automatic CTF redeem** for winning positions (no manual cash-out in the Polymarket UI). Settlement prefers Polymarket Gamma/Data API resolution; Binance OHLC is fallback only. Start with paper, then follow the phased rollout in [RUN_OPERATOR.md](RUN_OPERATOR.md).
+Live mode uses **Polymarket.Net** for USDC balance. In **Stake → Entry order**, choose **Limit** (post-only with bump to 5 shares), **Limit → Market** (limit when size allows; else market at your % stake, no bump), or **Market** (IOC taker). Tune `POLYTRADER_LIVE_MAKER_FILL_WAIT_SECONDS` / `POLYTRADER_LIVE_MAKER_REMAINDER_FILL_WAIT_SECONDS` for limit waves. **Automatic CTF redeem** for winning positions (no manual cash-out in the Polymarket UI). Settlement prefers Polymarket Gamma/Data API resolution; Binance OHLC is fallback only. Start with paper, then follow the phased rollout in [RUN_OPERATOR.md](RUN_OPERATOR.md).
 
 ## Strategy
 
