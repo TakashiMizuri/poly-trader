@@ -27,6 +27,124 @@ export function minBalanceForPercentNoBump(
   return Math.ceil((minStake / (stakePercent / 100)) * 100) / 100
 }
 
+export function minBalanceForOneLimitTrade(bid: number): number {
+  const minStake = minLimitStakeUsd(bid)
+  if (!Number.isFinite(minStake)) return Number.POSITIVE_INFINITY
+  return Math.ceil((minStake + BALANCE_FLOOR) * 100) / 100
+}
+
+export function minBalanceForConfiguredStake(
+  bid: number,
+  snapshot: StakeSnapshot,
+): number | null {
+  const minStake = minLimitStakeUsd(bid)
+  if (!Number.isFinite(minStake)) return null
+  if (
+    snapshot.maxBetStakeUsd != null &&
+    snapshot.maxBetStakeUsd > 0 &&
+    snapshot.maxBetStakeUsd + 0.001 < minStake
+  ) {
+    return null
+  }
+  if (snapshot.mode === 'percent') {
+    return minBalanceForPercentNoBump(bid, snapshot.betStakePercent)
+  }
+  const requiredStake = Math.max(minStake, snapshot.betStakeUsd)
+  return Math.ceil((requiredStake + BALANCE_FLOOR) * 100) / 100
+}
+
+function formatUsd(amount: number): string {
+  return `$${amount.toFixed(2)}`
+}
+
+function formatStakePercentOfBalance(
+  stakeUsd: number,
+  balanceUsd: number,
+): string | null {
+  if (!Number.isFinite(balanceUsd) || balanceUsd <= 0) return null
+  const pct = (stakeUsd / balanceUsd) * 100
+  if (!Number.isFinite(pct)) return null
+  return `${pct.toFixed(2)}%`
+}
+
+function formatConfiguredSizingLabel(preview: LimitEntryPreview): string {
+  if (preview.stakePercent != null) {
+    return `${preview.stakePercent}%`
+  }
+  if (preview.stakeUsd != null) {
+    return formatUsd(preview.stakeUsd)
+  }
+  return 'configured'
+}
+
+function formatBumpSizingSuffix(preview: LimitEntryPreview): string {
+  if (preview.balanceUsd == null) return ''
+  const effectivePct = formatStakePercentOfBalance(
+    preview.effectiveStakeUsd,
+    preview.balanceUsd,
+  )
+  return effectivePct ? ` (${effectivePct})` : ''
+}
+
+function minBalanceLines(preview: LimitEntryPreview): string[] {
+  const lines: string[] = []
+  const one = preview.minBalanceOneTradeUsd
+  const configured = preview.minBalanceConfiguredUsd
+
+  if (one != null && Number.isFinite(one)) {
+    lines.push(`Min balance (1 limit trade, with bump): ${formatUsd(one)}.`)
+  }
+
+  if (configured == null) {
+    if (
+      preview.maxBetStakeUsd != null &&
+      preview.clobMinStakeUsd != null &&
+      preview.maxBetStakeUsd + 0.001 < preview.clobMinStakeUsd
+    ) {
+      lines.push(
+        `Cap $${preview.maxBetStakeUsd.toFixed(2)} is below limit min $${preview.clobMinStakeUsd.toFixed(2)} — raise cap or use Market.`,
+      )
+    }
+  } else if (preview.stakePercent != null) {
+    lines.push(
+      `Min balance (${preview.stakePercent}% without bump): ${formatUsd(configured)}.`,
+    )
+  } else if (preview.stakeUsd != null) {
+    const minStake = preview.clobMinStakeUsd
+    if (minStake != null && preview.stakeUsd + 0.001 < minStake) {
+      lines.push(
+        `Min balance (fixed $${preview.stakeUsd.toFixed(2)} without bump): ${formatUsd(configured)} — or raise fixed stake to ≥ ${formatUsd(minStake)}.`,
+      )
+    } else {
+      lines.push(
+        `Min balance (fixed $${preview.stakeUsd.toFixed(2)}): ${formatUsd(configured)}.`,
+      )
+    }
+  } else {
+    lines.push(`Min balance (your sizing, no bump): ${formatUsd(configured)}.`)
+  }
+
+  if (
+    preview.balanceUsd != null &&
+    one != null &&
+    preview.balanceUsd + 0.01 < one
+  ) {
+    lines.push(
+      `Current balance ${formatUsd(preview.balanceUsd)} is below the one-trade minimum.`,
+    )
+  } else if (
+    preview.balanceUsd != null &&
+    configured != null &&
+    preview.balanceUsd + 0.01 < configured
+  ) {
+    lines.push(
+      `Current balance ${formatUsd(preview.balanceUsd)} is below the no-bump minimum.`,
+    )
+  }
+
+  return lines
+}
+
 function stakeParamsFromSnapshot(
   balance: number,
   snapshot: StakeSnapshot,
@@ -145,15 +263,16 @@ export function limitFeasibilityFromPreview(
   const minStake = preview.clobMinStakeUsd ?? minLimitStakeUsd(bid)
   const lines: string[] = [
     `Maker min: ${preview.minOrderShares} shares · ~$${minStake.toFixed(2)} @ bid ${bid.toFixed(2)} (0% fee).`,
+    ...minBalanceLines(preview),
   ]
 
   if (preview.balanceUsd == null) {
-    lines.push('Balance unavailable for preview.')
+    lines.push('Current balance unavailable for preview.')
     return { tone: 'muted', lines }
   }
 
   lines.push(
-    `Balance $${preview.balanceUsd.toFixed(2)} · requested $${preview.requestedStakeUsd.toFixed(2)}.`,
+    `Current ${formatUsd(preview.balanceUsd)} · next stake ~$${preview.requestedStakeUsd.toFixed(2)}.`,
   )
 
   if (!preview.canTrade) {
@@ -163,21 +282,12 @@ export function limitFeasibilityFromPreview(
 
   if (preview.willBump) {
     lines.push(
-      `Stake will bump to $${preview.effectiveStakeUsd.toFixed(2)} (above your ${preview.stakePercent != null ? `${preview.stakePercent}%` : 'configured'} sizing).`,
+      `Stake will bump to $${preview.effectiveStakeUsd.toFixed(2)} (above your ${formatConfiguredSizingLabel(preview)} sizing${formatBumpSizingSuffix(preview)}).`,
     )
     return { tone: 'warn', lines }
   }
 
   lines.push(`Next limit entry ~$${preview.effectiveStakeUsd.toFixed(2)} — no bump.`)
-
-  if (
-    preview.minBalanceNoBumpUsd != null &&
-    preview.balanceUsd + 0.01 < preview.minBalanceNoBumpUsd
-  ) {
-    lines.push(
-      `For no bump at ${preview.stakePercent}%: balance ≥ ~$${preview.minBalanceNoBumpUsd.toFixed(0)}.`,
-    )
-  }
 
   return { tone: 'ok', lines }
 }

@@ -125,8 +125,10 @@ public sealed class EngineController : ControllerBase
             p.CanTrade,
             p.WillBump,
             p.BlockReason,
-            p.MinBalanceNoBumpUsd,
+            p.MinBalanceOneTradeUsd,
+            p.MinBalanceConfiguredUsd,
             p.StakePercent,
+            p.StakeUsd,
             p.MaxBetStakeUsd);
 
     private static EngineSettingsDto MapDto(EngineSettingsSnapshot s) =>
@@ -200,7 +202,9 @@ public sealed class EngineController : ControllerBase
         bool CanTrade,
         bool WillBump,
         string? BlockReason,
-        double? MinBalanceNoBumpUsd,
+        double? MinBalanceOneTradeUsd,
+        double? MinBalanceConfiguredUsd,
         double? StakePercent,
+        double? StakeUsd,
         double? MaxBetStakeUsd);
 }

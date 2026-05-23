@@ -79,12 +79,17 @@ public sealed class LimitEntryPreviewService
             plan = LimitEntryRules.Plan(workingBalance, requested, maxCap, referenceBid.Value);
         }
 
-        double? minBalanceNoBump = null;
-        if (referenceBid is > 0 && stakeMode == BetStakeMode.Percent)
+        double? minBalanceOneTrade = null;
+        double? minBalanceConfigured = null;
+        if (referenceBid is > 0)
         {
-            minBalanceNoBump = LimitEntryRules.MinBalanceForPercentStake(
+            minBalanceOneTrade = LimitEntryRules.MinBalanceForOneLimitTrade(referenceBid.Value);
+            minBalanceConfigured = LimitEntryRules.MinBalanceForConfiguredStake(
                 referenceBid.Value,
-                stakePercent);
+                stakeMode,
+                stakeUsd,
+                stakePercent,
+                maxCap);
         }
 
         return new LimitEntryPreview(
@@ -99,8 +104,10 @@ public sealed class LimitEntryPreviewService
             plan?.CanTrade ?? false,
             plan?.WillBump ?? false,
             plan?.BlockReason,
-            minBalanceNoBump,
+            minBalanceOneTrade,
+            minBalanceConfigured,
             stakeMode == BetStakeMode.Percent ? stakePercent : null,
+            stakeMode == BetStakeMode.Fixed ? stakeUsd : null,
             maxCap);
     }
 
@@ -158,6 +165,8 @@ public sealed record LimitEntryPreview(
     bool CanTrade,
     bool WillBump,
     string? BlockReason,
-    double? MinBalanceNoBumpUsd,
+    double? MinBalanceOneTradeUsd,
+    double? MinBalanceConfiguredUsd,
     double? StakePercent,
+    double? StakeUsd,
     double? MaxBetStakeUsd);

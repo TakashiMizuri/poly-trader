@@ -36,6 +36,49 @@ public static class LimitEntryRules
         return Math.Ceiling(minStake / (stakePercent / 100.0) * 100) / 100;
     }
 
+    /// <summary>Lowest balance that can afford one limit entry (auto-bump to CLOB min).</summary>
+    public static double MinBalanceForOneLimitTrade(double limitPrice)
+    {
+        var minStake = MinStakeUsd(limitPrice);
+        if (!double.IsFinite(minStake))
+        {
+            return double.PositiveInfinity;
+        }
+
+        return Math.Ceiling((minStake + SafeBetStake.BalanceFloor) * 100) / 100;
+    }
+
+    /// <summary>
+    /// Balance so configured stake meets the limit minimum without bump
+    /// (percent: stake% × balance ≥ min; fixed: stake ≥ min).
+    /// </summary>
+    public static double? MinBalanceForConfiguredStake(
+        double limitPrice,
+        BetStakeMode mode,
+        double stakeUsd,
+        double stakePercent,
+        double? maxBetStakeUsd)
+    {
+        var minStake = MinStakeUsd(limitPrice);
+        if (!double.IsFinite(minStake))
+        {
+            return null;
+        }
+
+        if (maxBetStakeUsd is > 0 && maxBetStakeUsd.Value + 0.001 < minStake)
+        {
+            return null;
+        }
+
+        if (mode == BetStakeMode.Percent)
+        {
+            return MinBalanceForPercentStake(limitPrice, stakePercent);
+        }
+
+        var requiredStake = Math.Max(minStake, stakeUsd);
+        return Math.Ceiling((requiredStake + SafeBetStake.BalanceFloor) * 100) / 100;
+    }
+
     public static LimitEntryStakePlan Plan(
         double balance,
         double requestedStake,

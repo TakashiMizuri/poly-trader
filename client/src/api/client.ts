@@ -91,8 +91,10 @@ export interface LimitEntryPreview {
   canTrade: boolean
   willBump: boolean
   blockReason: string | null
-  minBalanceNoBumpUsd: number | null
+  minBalanceOneTradeUsd: number | null
+  minBalanceConfiguredUsd: number | null
   stakePercent: number | null
+  stakeUsd: number | null
   maxBetStakeUsd: number | null
 }
 

@@ -35,4 +35,24 @@ public class LimitEntryRulesTests
         var minBal = LimitEntryRules.MinBalanceForPercentStake(0.53, 1);
         Assert.Equal(265, minBal);
     }
+
+    [Fact]
+    public void MinBalanceForOneLimitTrade_includes_floor()
+    {
+        var minBal = LimitEntryRules.MinBalanceForOneLimitTrade(0.53);
+        Assert.InRange(minBal, 2.65, 2.67);
+    }
+
+    [Fact]
+    public void MinBalanceForConfiguredStake_fixed_below_min()
+    {
+        var minBal = LimitEntryRules.MinBalanceForConfiguredStake(
+            0.53,
+            BetStakeMode.Fixed,
+            1,
+            3,
+            null);
+        Assert.NotNull(minBal);
+        Assert.InRange(minBal.Value, 2.65, 2.67);
+    }
 }
