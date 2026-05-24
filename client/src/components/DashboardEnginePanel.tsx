@@ -60,7 +60,7 @@ export function DashboardEnginePanel({
     return (
       <Panel
         className={cn(
-          'flex min-h-[7.25rem] w-fit shrink-0 divide-x divide-border',
+          'flex min-h-[7.25rem] w-full max-w-full shrink-0 divide-x divide-border sm:w-fit',
           className,
         )}
       >
@@ -150,7 +150,7 @@ export function DashboardEnginePanel({
     <>
       <Panel
         className={cn(
-          'flex min-h-[7.25rem] w-fit max-w-full shrink-0 flex-wrap items-stretch divide-y divide-border sm:flex-nowrap sm:divide-x sm:divide-y-0',
+          'flex min-h-[7.25rem] w-full max-w-full shrink-0 flex-wrap items-stretch divide-y divide-border sm:w-fit sm:flex-nowrap sm:divide-x sm:divide-y-0',
           className,
         )}
       >

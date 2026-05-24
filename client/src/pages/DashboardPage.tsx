@@ -154,7 +154,7 @@ export function DashboardPage() {
   useTradingLiveEvent('CandleClosed', bumpTrades)
 
   return (
-    <div className="flex h-full min-h-0 w-full flex-col gap-3 p-3 md:gap-4 md:p-4">
+    <div className="flex w-full flex-col gap-3 p-3 lg:h-full lg:min-h-0 md:gap-4 md:p-4">
       <header className="grid shrink-0 gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-stretch">
         <DashboardBalancePanel
           settings={settings}
@@ -167,15 +167,15 @@ export function DashboardPage() {
           settings={settings}
           onSettingsSaved={applyAccountSettings}
           onUpdated={refreshAccount}
-          className="min-w-0 lg:w-max lg:max-w-full"
+          className="min-w-0 w-full lg:w-max lg:max-w-full"
         />
       </header>
 
-      <div className="grid min-h-0 flex-1 gap-3 lg:grid-cols-[minmax(0,1.2fr)_minmax(440px,600px)] xl:grid-cols-[minmax(0,1.05fr)_minmax(480px,680px)] 2xl:grid-cols-[minmax(0,1fr)_minmax(520px,720px)] lg:grid-rows-1">
+      <div className="grid gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(440px,600px)] lg:grid-rows-1 xl:grid-cols-[minmax(0,1.05fr)_minmax(480px,680px)] 2xl:grid-cols-[minmax(0,1fr)_minmax(520px,720px)]">
         <PageCard
           title="BTC / USDT"
           fill
-          className="min-h-[min(48vh,440px)] lg:min-h-0"
+          className="min-h-[min(52vw,280px)] sm:min-h-[min(44vh,360px)] lg:min-h-0"
           contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
           action={
             <span className="font-mono text-xs tabular-nums text-muted-foreground">
@@ -198,14 +198,14 @@ export function DashboardPage() {
             tradingMode={tradingMode}
             liveBalance={balance?.liveBalance}
             clobConfigured={balance?.clobConfigured}
-            className="h-[min(28vh,240px)] shrink-0 lg:h-[220px]"
+            className="h-[min(32vw,200px)] shrink-0 sm:h-[min(28vh,240px)] lg:h-[220px]"
           />
           <PositionsPanel
             refreshKey={tradeRefreshKey}
             paperAccountId={paperAccountId}
             tradingMode={tradingMode}
             engineRunning={settings?.isRunning ?? false}
-            className="min-h-[min(36vh,320px)] flex-1 lg:min-h-0"
+            className="min-h-[min(48vh,420px)] lg:min-h-0 lg:flex-1"
           />
         </aside>
       </div>

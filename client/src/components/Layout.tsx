@@ -21,7 +21,7 @@ export function Layout() {
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-background">
       <header className="shrink-0 border-b border-border bg-card/95 backdrop-blur-sm">
-        <div className="flex items-stretch justify-between gap-3 px-3 py-2 sm:px-4 md:px-5">
+        <div className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-stretch sm:justify-between sm:gap-3 sm:px-4 md:px-5">
           <div className="min-w-0 shrink-0">
             <h1 className="logo-glow-primary truncate text-lg font-semibold text-primary sm:text-xl">
               Poly Trader
@@ -30,7 +30,7 @@ export function Layout() {
               BTC 5m {'\u00b7'} Polymarket
             </p>
           </div>
-          <div className="flex min-h-0 min-w-0 flex-1 items-stretch justify-end gap-2 sm:gap-3">
+          <div className="flex min-h-0 min-w-0 flex-1 items-center justify-end gap-2 sm:items-stretch sm:gap-3">
             <HeaderConnectivity />
             <Button
               type="button"
@@ -51,7 +51,7 @@ export function Layout() {
         </div>
       </header>
       <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
-        <main className="min-h-0 min-w-0 flex-1 overflow-hidden">
+        <main className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:overflow-hidden lg:pb-0">
           <Outlet />
         </main>
         <LiveLogsSidebar />

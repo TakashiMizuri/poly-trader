@@ -22,10 +22,11 @@ public interface IPolymarketRestTradingClient
     Task<LiveMarketBuyOutcome> PlaceMakerLimitBuyUsdAsync(
         string tokenId,
         double stakeUsd,
-        double limitPrice,
+        double bidPriceHint,
+        double? askPriceHint,
         TimeSpan firstWaveFillWait,
         TimeSpan remainderFillWait,
-        Func<CancellationToken, Task<double?>>? refreshBidAsync = null,
+        Func<CancellationToken, Task<(double? Bid, double? Ask)>>? refreshQuoteAsync = null,
         LiveEntryOrderKey? entryKey = null,
         CancellationToken ct = default);
 

@@ -303,10 +303,11 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
     public async Task<LiveMarketBuyOutcome> PlaceMakerLimitBuyUsdAsync(
         string tokenId,
         double stakeUsd,
-        double limitPrice,
+        double bidPriceHint,
+        double? askPriceHint,
         TimeSpan firstWaveFillWait,
         TimeSpan remainderFillWait,
-        Func<CancellationToken, Task<double?>>? refreshBidAsync = null,
+        Func<CancellationToken, Task<(double? Bid, double? Ask)>>? refreshQuoteAsync = null,
         LiveEntryOrderKey? entryKey = null,
         CancellationToken ct = default)
     {
@@ -317,9 +318,9 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
             return LiveMarketBuyOutcome.Fail(minStakeReason);
         }
 
-        if (!PolymarketOrderPricing.IsValidOutcomePrice(limitPrice))
+        if (!PolymarketOrderPricing.IsValidOutcomePrice(bidPriceHint))
         {
-            const string priceReason = "Invalid limit price for maker buy (must be in (0, 1])";
+            const string priceReason = "Invalid bid hint for maker buy (must be in (0, 1])";
             _logger.LogWarning("{Reason}", priceReason);
             return LiveMarketBuyOutcome.Fail(priceReason);
         }
@@ -342,10 +343,11 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                 client,
                 tokenId,
                 stakeUsd,
-                limitPrice,
+                bidPriceHint,
+                askPriceHint,
                 firstWaveFillWait,
                 remainderFillWait,
-                refreshBidAsync,
+                refreshQuoteAsync,
                 entryKey,
                 wave1ClientOrderId,
                 ct);
@@ -365,7 +367,7 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                     entryKey,
                     tokenId,
                     stakeUsd,
-                    limitPrice,
+                    bidPriceHint,
                     ct);
                 if (recovered is { IsSuccess: true })
                 {
@@ -421,26 +423,46 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
         PolymarketRestClient client,
         string tokenId,
         double requestedStakeUsd,
-        double limitPrice,
+        double bidPriceHint,
+        double? askPriceHint,
         TimeSpan firstWaveFillWait,
         TimeSpan remainderFillWait,
-        Func<CancellationToken, Task<double?>>? refreshBidAsync,
+        Func<CancellationToken, Task<(double? Bid, double? Ask)>>? refreshQuoteAsync,
         LiveEntryOrderKey? entryKey,
         long? wave1ClientOrderId,
         CancellationToken ct)
     {
+        var tickSize = await ResolveTickSizeAsync(client, tokenId, ct);
+        var (wave1Bid, wave1Ask) = await ResolveQuoteAsync(
+            bidPriceHint,
+            askPriceHint,
+            refreshQuoteAsync,
+            refreshFromApi: false,
+            ct);
+        var wave1Limit = ResolvePostOnlyLimit(wave1Bid, wave1Ask, tickSize, requestedStakeUsd);
+        if (wave1Limit == null)
+        {
+            return LiveMarketBuyOutcome.Fail(
+                $"Cannot derive post-only limit for wave 1 on {tokenId} (bid {wave1Bid:F4}, ask {wave1Ask?.ToString("F4") ?? "n/a"}, stake ${requestedStakeUsd:F2})");
+        }
+
+        LogLimitAdjustment(bidPriceHint, wave1Ask, wave1Limit.Value, wave: 1, tokenId);
+
         _logger.LogInformation(
             "Maker entry wave 1 for {TokenId}: ${Stake:F2} @ {Price:F4}, wait {WaitSeconds}s",
             tokenId,
             requestedStakeUsd,
-            limitPrice,
+            wave1Limit.Value,
             firstWaveFillWait.TotalSeconds);
 
         var wave1 = await ExecuteMakerLimitWaveAsync(
             client,
             tokenId,
             requestedStakeUsd,
-            limitPrice,
+            wave1Bid,
+            wave1Ask,
+            tickSize,
+            refreshQuoteAsync,
             firstWaveFillWait,
             wave1ClientOrderId,
             ct);
@@ -458,7 +480,7 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
         var totalFilledStake = wave1.FilledStakeUsd;
         var totalMatchedShares = wave1.MatchedShares;
         var primaryOrderId = wave1.OrderId;
-        var priceNumerator = wave1.MatchedShares * (wave1.LimitPrice ?? limitPrice);
+        var priceNumerator = wave1.MatchedShares * (wave1.LimitPrice ?? wave1Limit.Value);
 
         if (totalFilledStake + 0.01 >= requestedStakeUsd)
         {
@@ -485,49 +507,29 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                 totalFilledStake);
         }
 
-        var wave2Price = limitPrice;
-        if (refreshBidAsync != null)
-        {
-            try
-            {
-                var refreshed = await refreshBidAsync(ct);
-                if (PolymarketOrderPricing.IsValidOutcomePrice(refreshed))
-                {
-                    wave2Price = refreshed!.Value;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(ex, "Bid refresh failed before maker wave 2 for {TokenId}", tokenId);
-            }
-        }
-
-        if (!PolymarketOrderPricing.IsValidOutcomePrice(wave2Price))
-        {
-            _logger.LogWarning(
-                "Skipping maker wave 2 for {TokenId}: invalid bid after wave 1 (${Filled:F2} of ${Requested:F2})",
-                tokenId,
-                totalFilledStake,
-                requestedStakeUsd);
-            return BuildAggregatedMakerOutcome(
-                tokenId,
-                requestedStakeUsd,
-                totalMatchedShares,
-                priceNumerator,
-                primaryOrderId,
-                waves,
-                totalFilledStake);
-        }
-
-        var minRemainderStake = PolymarketClobLimits.MinStakeUsd(wave2Price);
-        if (remainderStake + 0.001 < minRemainderStake)
+        if (totalMatchedShares < MinMatchedShares)
         {
             _logger.LogInformation(
-                "Skipping maker wave 2 for {TokenId}: remainder ${Remainder:F2} below CLOB min ${Min:F2} at {Price:F4}",
+                "Maker wave 1 unfilled on {TokenId}; re-quoting wave 2 for full remainder ${Remainder:F2}",
+                tokenId,
+                remainderStake);
+        }
+
+        var (wave2Bid, wave2Ask) = await ResolveQuoteAsync(
+            bidPriceHint,
+            askPriceHint,
+            refreshQuoteAsync,
+            refreshFromApi: true,
+            ct);
+        var wave2Limit = ResolvePostOnlyLimit(wave2Bid, wave2Ask, tickSize, remainderStake);
+        if (wave2Limit == null)
+        {
+            _logger.LogWarning(
+                "Skipping maker wave 2 for {TokenId}: no post-only price for remainder ${Remainder:F2} (bid {Bid:F4}, ask {Ask})",
                 tokenId,
                 remainderStake,
-                minRemainderStake,
-                wave2Price);
+                wave2Bid,
+                wave2Ask?.ToString("F4") ?? "n/a");
             return BuildAggregatedMakerOutcome(
                 tokenId,
                 requestedStakeUsd,
@@ -537,12 +539,14 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                 waves,
                 totalFilledStake);
         }
+
+        LogLimitAdjustment(wave2Bid, wave2Ask, wave2Limit.Value, wave: 2, tokenId);
 
         _logger.LogInformation(
             "Maker entry wave 2 for {TokenId}: remainder ${Remainder:F2} @ {Price:F4}, wait {WaitSeconds}s (wave1 filled ${Wave1:F2})",
             tokenId,
             remainderStake,
-            wave2Price,
+            wave2Limit.Value,
             remainderFillWait.TotalSeconds,
             totalFilledStake);
 
@@ -551,7 +555,10 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
             client,
             tokenId,
             remainderStake,
-            wave2Price,
+            wave2Bid,
+            wave2Ask,
+            tickSize,
+            refreshQuoteAsync,
             remainderFillWait,
             wave2ClientOrderId,
             ct);
@@ -569,7 +576,7 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
             waves.Add(ToLiveEntryWaveFill(2, remainderStake, wave2));
             totalFilledStake += wave2.FilledStakeUsd;
             totalMatchedShares += wave2.MatchedShares;
-            priceNumerator += wave2.MatchedShares * (wave2.LimitPrice ?? wave2Price);
+            priceNumerator += wave2.MatchedShares * (wave2.LimitPrice ?? wave2Limit.Value);
             if (string.IsNullOrWhiteSpace(primaryOrderId))
             {
                 primaryOrderId = wave2.OrderId;
@@ -662,60 +669,53 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
         PolymarketRestClient client,
         string tokenId,
         double stakeUsd,
-        double limitPrice,
+        double bidHint,
+        double? askHint,
+        decimal tickSize,
+        Func<CancellationToken, Task<(double? Bid, double? Ask)>>? refreshQuoteAsync,
         TimeSpan fillWait,
         long? clientOrderId,
         CancellationToken ct)
     {
         try
         {
-            var tickSize = await ResolveTickSizeAsync(client, tokenId, ct);
-            var price = PolymarketOrderPricing.RoundDownToTick((decimal)limitPrice, tickSize);
-            if (price <= 0)
+            var price = MakerLimitPricing.ComputePostOnlyBuyLimit(bidHint, askHint, tickSize, stakeUsd);
+            if (price is not > 0)
             {
                 return new MakerLimitWaveResult(
                     PlacementFailed: true,
-                    FailureReason: $"Limit price rounded to zero (tick {tickSize})",
+                    FailureReason:
+                        $"No valid post-only limit for ${stakeUsd:F2} (bid {bidHint:F4}, ask {askHint?.ToString("F4") ?? "n/a"})",
                     OrderId: null,
                     MatchedShares: 0,
                     LimitPrice: null,
                     FilledStakeUsd: 0);
             }
 
-            var shares = PolymarketOrderPricing.ComputeShareQuantity(stakeUsd, price);
+            var shares = PolymarketOrderPricing.ComputeShareQuantity(stakeUsd, price.Value);
             if (shares < PolymarketClobLimits.MinOrderShares)
             {
                 return new MakerLimitWaveResult(
                     PlacementFailed: true,
                     FailureReason:
                         $"Share quantity {shares:F4} below Polymarket minimum ({PolymarketClobLimits.MinOrderShares}) "
-                        + $"for ${stakeUsd:F2} at {price:F4} (need ≥ ${PolymarketClobLimits.MinStakeUsd(price):F2})",
+                        + $"for ${stakeUsd:F2} at {price:F4} (need ≥ ${PolymarketClobLimits.MinStakeUsd(price.Value):F2})",
                     OrderId: null,
                     MatchedShares: 0,
                     LimitPrice: null,
                     FilledStakeUsd: 0);
             }
 
-            if (shares <= 0)
-            {
-                return new MakerLimitWaveResult(
-                    PlacementFailed: true,
-                    FailureReason: $"Share quantity below minimum for ${stakeUsd:F2} at {price:F4}",
-                    OrderId: null,
-                    MatchedShares: 0,
-                    LimitPrice: null,
-                    FilledStakeUsd: 0);
-            }
-
-            const int maxPostOnlyTickRetries = 5;
+            const int maxPostOnlyTickRetries = 2;
             string? lastPlaceReason = null;
+            var repricedFromBook = false;
 
             for (var tickStep = 0; tickStep <= maxPostOnlyTickRetries; tickStep++)
             {
                 if (tickStep > 0)
                 {
-                    var stepped = PolymarketOrderPricing.RoundDownToTick(price - tickSize, tickSize);
-                    if (stepped <= 0 || stepped >= price)
+                    var stepped = PolymarketOrderPricing.RoundDownToTick(price.Value - tickSize, tickSize);
+                    if (stepped <= 0 || stepped >= price.Value)
                     {
                         return new MakerLimitWaveResult(
                             PlacementFailed: true,
@@ -734,7 +734,7 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                         tickStep,
                         maxPostOnlyTickRetries);
                     price = stepped;
-                    shares = PolymarketOrderPricing.ComputeShareQuantity(stakeUsd, price);
+                    shares = PolymarketOrderPricing.ComputeShareQuantity(stakeUsd, price.Value);
                     if (shares < PolymarketClobLimits.MinOrderShares)
                     {
                         return new MakerLimitWaveResult(
@@ -754,7 +754,7 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                     OrderSide.Buy,
                     OrderType.Limit,
                     quantity: shares,
-                    price: price,
+                    price: price.Value,
                     timeInForce: TimeInForce.GoodTillCanceled,
                     postOnly: true,
                     clientOrderId: clientOrderId,
@@ -780,6 +780,39 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                 if (placeReason != null)
                 {
                     lastPlaceReason = placeReason;
+                    if (IsPostOnlyWouldCross(placeReason)
+                        && !repricedFromBook
+                        && refreshQuoteAsync != null)
+                    {
+                        repricedFromBook = true;
+                        var (freshBid, freshAsk) = await ResolveQuoteAsync(
+                            bidHint,
+                            askHint,
+                            refreshQuoteAsync,
+                            refreshFromApi: true,
+                            ct);
+                        var repriced = MakerLimitPricing.ComputePostOnlyBuyLimit(
+                            freshBid,
+                            freshAsk,
+                            tickSize,
+                            stakeUsd);
+                        if (repriced is > 0 && repriced != price.Value)
+                        {
+                            _logger.LogInformation(
+                                "Re-priced maker limit for {TokenId} after cross: {Old:F4} -> {New:F4} (bid {Bid:F4}, ask {Ask})",
+                                tokenId,
+                                price,
+                                repriced,
+                                freshBid,
+                                freshAsk?.ToString("F4") ?? "n/a");
+                            price = repriced;
+                            bidHint = freshBid;
+                            askHint = freshAsk;
+                            shares = PolymarketOrderPricing.ComputeShareQuantity(stakeUsd, price.Value);
+                            continue;
+                        }
+                    }
+
                     if (!IsPostOnlyWouldCross(placeReason) || tickStep == maxPostOnlyTickRetries)
                     {
                         return new MakerLimitWaveResult(
@@ -811,7 +844,7 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                     _orderIdByClientOrderId[salt] = orderId;
                 }
 
-                var limitPx = (double)price;
+                var limitPx = (double)price.Value;
                 var targetShares = (double)shares;
                 var (matched, avgPrice, _) = await WaitForMakerFillAsync(
                     client,
@@ -846,13 +879,13 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                 var (matched, avgPrice, _) = await ReadOrderFillSnapshotAsync(client, cachedOrderId, ct);
                 if (matched >= MinMatchedShares)
                 {
-                    var filledStake = ComputeFilledStakeUsd(matched, avgPrice, limitPrice, stakeUsd);
+                    var filledStake = ComputeFilledStakeUsd(matched, avgPrice, bidHint, stakeUsd);
                     return new MakerLimitWaveResult(
                         PlacementFailed: false,
                         FailureReason: null,
                         OrderId: cachedOrderId,
                         MatchedShares: matched,
-                        LimitPrice: avgPrice ?? limitPrice,
+                        LimitPrice: avgPrice ?? bidHint,
                         FilledStakeUsd: filledStake);
                 }
             }
@@ -874,6 +907,68 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                 LimitPrice: null,
                 FilledStakeUsd: 0);
         }
+    }
+
+    private static async Task<(double Bid, double? Ask)> ResolveQuoteAsync(
+        double bidHint,
+        double? askHint,
+        Func<CancellationToken, Task<(double? Bid, double? Ask)>>? refreshQuoteAsync,
+        bool refreshFromApi,
+        CancellationToken ct)
+    {
+        if (refreshFromApi && refreshQuoteAsync != null)
+        {
+            try
+            {
+                var refreshed = await refreshQuoteAsync(ct);
+                if (PolymarketOrderPricing.IsValidOutcomePrice(refreshed.Bid))
+                {
+                    bidHint = refreshed.Bid!.Value;
+                }
+
+                if (PolymarketOrderPricing.IsValidOutcomePrice(refreshed.Ask))
+                {
+                    askHint = refreshed.Ask;
+                }
+            }
+            catch
+            {
+                // keep hints
+            }
+        }
+
+        return (bidHint, askHint);
+    }
+
+    private static double? ResolvePostOnlyLimit(
+        double bid,
+        double? ask,
+        decimal tickSize,
+        double stakeUsd)
+    {
+        var limit = MakerLimitPricing.ComputePostOnlyBuyLimit(bid, ask, tickSize, stakeUsd);
+        return limit is > 0 ? (double)limit.Value : null;
+    }
+
+    private void LogLimitAdjustment(
+        double bidHint,
+        double? askHint,
+        double limit,
+        int wave,
+        string tokenId)
+    {
+        if (Math.Abs(limit - bidHint) < 0.0001)
+        {
+            return;
+        }
+
+        _logger.LogInformation(
+            "Maker wave {Wave} limit {Limit:F4} for {TokenId} (bid hint {Bid:F4}, ask {Ask})",
+            wave,
+            limit,
+            tokenId,
+            bidHint,
+            askHint?.ToString("F4") ?? "n/a");
     }
 
     private static async Task<decimal> ResolveTickSizeAsync(

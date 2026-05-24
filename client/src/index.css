@@ -231,6 +231,14 @@ body,
   overflow: hidden;
 }
 
+/* iOS safe areas when using fixed overlays / FABs */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
 @layer utilities {
   .animate-shimmer {
     background-image: linear-gradient(
@@ -255,6 +263,14 @@ body,
 
   .animate-pulse-warn {
     animation: pulse-warn 2.5s ease-in-out infinite;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
 }
 

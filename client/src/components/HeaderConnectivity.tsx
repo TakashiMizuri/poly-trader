@@ -38,7 +38,7 @@ export function HeaderConnectivity() {
 
   return (
     <div
-      className="grid shrink-0 select-none grid-cols-3 gap-x-2 gap-y-1"
+      className="scrollbar-none -mx-1 flex max-w-full shrink-0 select-none items-center gap-1.5 overflow-x-auto px-1 sm:mx-0 sm:grid sm:w-auto sm:grid-cols-3 sm:gap-x-2 sm:gap-y-1 sm:overflow-visible sm:px-0"
       aria-label="Connection status"
     >
       {pending ? (

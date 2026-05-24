@@ -196,13 +196,20 @@ public sealed class PolymarketClobService : IPolymarketClobService
             return LiveMarketBuyOutcome.Fail(reason);
         }
 
+        var ask = askPriceHint;
+        if (!PolymarketOrderPricing.IsValidOutcomePrice(ask))
+        {
+            ask = await TryGetBuyPriceAsync(tokenId, ct);
+        }
+
         var firstWait = TimeSpan.FromSeconds(Math.Max(1, _options.LiveMakerFillWaitSeconds));
         var remainderWait = TimeSpan.FromSeconds(Math.Max(1, _options.LiveMakerRemainderFillWaitSeconds));
         _logger.LogInformation(
-            "Placing live maker two-wave buy token {TokenId} notional ${Size:F2} @ {Bid:F4} wave1={Wave1Seconds}s wave2={Wave2Seconds}s wallet {Wallet}",
+            "Placing live maker two-wave buy token {TokenId} notional ${Size:F2} bid {Bid:F4} ask {Ask} wave1={Wave1Seconds}s wave2={Wave2Seconds}s wallet {Wallet}",
             tokenId,
             sizeUsd,
             bid,
+            ask?.ToString("F4") ?? "n/a",
             firstWait.TotalSeconds,
             remainderWait.TotalSeconds,
             _wallet.ResolveWalletAddress() ?? "unknown");
@@ -211,10 +218,14 @@ public sealed class PolymarketClobService : IPolymarketClobService
             tokenId,
             sizeUsd,
             bid!.Value,
+            ask,
             firstWait,
             remainderWait,
-            ct => TryGetBidPriceAsync(tokenId, ct),
+            ct => RefreshQuoteAsync(tokenId, ct),
             entryKey,
             ct);
     }
+
+    private async Task<(double? Bid, double? Ask)> RefreshQuoteAsync(string tokenId, CancellationToken ct) =>
+        (await TryGetBidPriceAsync(tokenId, ct), await TryGetBuyPriceAsync(tokenId, ct));
 }

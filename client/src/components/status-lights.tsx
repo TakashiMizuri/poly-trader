@@ -83,7 +83,7 @@ export function StatusLightCompact({
 
   return (
     <div
-      className="flex h-6 min-w-0 select-none items-center gap-1.5 rounded-md border border-border/50 bg-background/40 px-1.5"
+      className="flex h-6 max-w-[9.5rem] min-w-0 shrink-0 select-none items-center gap-1.5 rounded-md border border-border/50 bg-background/40 px-1.5 sm:max-w-none"
       title={tooltip}
     >
       <span

@@ -1,7 +1,15 @@
-import { PanelRightClose, PanelRightOpen, ScrollText, Trash2 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { PanelRightClose, PanelRightOpen, ScrollText, Trash2, X } from 'lucide-react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react'
 import { useTradingLive } from '@/api/tradingLive'
 import { Button } from '@/components/ui/button'
+import { DESKTOP_LAYOUT_QUERY, useMediaQuery } from '@/hooks/useMediaQuery'
 import {
   classifyLogLevel,
   filterLiveLogs,
@@ -133,8 +141,54 @@ function LogLine({ entry }: { entry: LiveLogEntry }) {
   )
 }
 
+function LogsPanelBody({
+  logs,
+  filteredLogs,
+  liveConnected,
+  levelFilter,
+  onToggleLevelFilter,
+  scrollRef,
+  onScroll,
+}: {
+  logs: LiveLogEntry[]
+  filteredLogs: LiveLogEntry[]
+  liveConnected: boolean
+  levelFilter: Set<LogLevelFilter>
+  onToggleLevelFilter: (level: LogLevelFilter) => void
+  scrollRef: RefObject<HTMLDivElement | null>
+  onScroll: () => void
+}) {
+  return (
+    <>
+      <LogLevelFilterBar active={levelFilter} onToggle={onToggleLevelFilter} />
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+      >
+        {logs.length === 0 ? (
+          <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+            {liveConnected
+              ? 'Waiting for log events…'
+              : 'Connect to the API to stream logs.'}
+          </p>
+        ) : filteredLogs.length === 0 ? (
+          <p className="px-3 py-6 text-center text-xs text-muted-foreground">
+            No logs match the selected levels.
+          </p>
+        ) : (
+          filteredLogs.map((entry, i) => (
+            <LogLine key={`${entry.timestamp}-${i}`} entry={entry} />
+          ))
+        )}
+      </div>
+    </>
+  )
+}
+
 export function LiveLogsSidebar() {
   const { logs, clearLogs, liveConnected } = useTradingLive()
+  const isDesktop = useMediaQuery(DESKTOP_LAYOUT_QUERY)
   const [open, setOpen] = useState(readOpenPreference)
   const [levelFilter, setLevelFilter] = useState(readLevelFilterPreference)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -183,10 +237,109 @@ export function LiveLogsSidebar() {
     stickToBottomRef.current = distance < 48
   }, [])
 
+  useEffect(() => {
+    if (!open || isDesktop) {
+      return
+    }
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [open, isDesktop])
+
+  const panelBody = (
+    <LogsPanelBody
+      logs={logs}
+      filteredLogs={filteredLogs}
+      liveConnected={liveConnected}
+      levelFilter={levelFilter}
+      onToggleLevelFilter={toggleLevelFilter}
+      scrollRef={scrollRef}
+      onScroll={onScroll}
+    />
+  )
+
+  if (!isDesktop) {
+    return (
+      <>
+        {open ? (
+          <div
+            className="fixed inset-0 z-50 flex flex-col bg-background/80 backdrop-blur-sm"
+            role="presentation"
+            onClick={() => setOpenPersisted(false)}
+          >
+            <aside
+              className="mt-auto flex max-h-[min(85dvh,640px)] min-h-0 flex-col rounded-t-xl border border-b-0 border-border bg-card shadow-2xl"
+              aria-label="Live backend logs"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border px-3 py-2.5">
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <ScrollText className="size-4 shrink-0 text-primary" aria-hidden />
+                  <span className="truncate text-sm font-medium">Live logs</span>
+                  <span
+                    className={cn(
+                      'size-1.5 shrink-0 rounded-full',
+                      liveConnected ? 'bg-emerald-500' : 'bg-amber-500',
+                    )}
+                    title={liveConnected ? 'Streaming' : 'Disconnected'}
+                  />
+                </div>
+                <div className="flex shrink-0 items-center gap-0.5">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={clearLogs}
+                    aria-label="Clear logs"
+                    title="Clear"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => setOpenPersisted(false)}
+                    aria-label="Close logs"
+                    title="Close"
+                  >
+                    <X className="size-4" />
+                  </Button>
+                </div>
+              </div>
+              {panelBody}
+            </aside>
+          </div>
+        ) : null}
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={() => setOpenPersisted(true)}
+          className="fixed bottom-4 right-4 z-40 size-11 rounded-full shadow-lg"
+          style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
+          aria-label="Show live logs"
+          title="Live logs"
+        >
+          <ScrollText className="size-5" aria-hidden />
+          <span
+            className={cn(
+              'absolute right-2.5 top-2.5 size-2 rounded-full ring-2 ring-card',
+              liveConnected ? 'bg-emerald-500' : 'bg-amber-500',
+            )}
+            aria-hidden
+          />
+        </Button>
+      </>
+    )
+  }
+
   return (
     <aside
       className={cn(
-        'flex h-full shrink-0 flex-col border-l border-border bg-card/80 backdrop-blur-sm transition-[width] duration-200 ease-out',
+        'hidden h-full shrink-0 flex-col border-l border-border bg-card/80 backdrop-blur-sm transition-[width] duration-200 ease-out lg:flex',
         open ? 'w-[min(100vw,22rem)]' : 'w-10',
       )}
       aria-label="Live backend logs"
@@ -248,32 +401,7 @@ export function LiveLogsSidebar() {
         )}
       </div>
 
-      {open ? (
-        <>
-          <LogLevelFilterBar active={levelFilter} onToggle={toggleLevelFilter} />
-          <div
-            ref={scrollRef}
-            onScroll={onScroll}
-            className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
-          >
-            {logs.length === 0 ? (
-              <p className="px-3 py-6 text-center text-xs text-muted-foreground">
-                {liveConnected
-                  ? 'Waiting for log events…'
-                  : 'Connect to the API to stream logs.'}
-              </p>
-            ) : filteredLogs.length === 0 ? (
-              <p className="px-3 py-6 text-center text-xs text-muted-foreground">
-                No logs match the selected levels.
-              </p>
-            ) : (
-              filteredLogs.map((entry, i) => (
-                <LogLine key={`${entry.timestamp}-${i}`} entry={entry} />
-              ))
-            )}
-          </div>
-        </>
-      ) : null}
+      {open ? panelBody : null}
     </aside>
   )
 }
