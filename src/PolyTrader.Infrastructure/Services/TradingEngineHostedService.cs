@@ -808,6 +808,7 @@ public sealed class TradingEngineHostedService : BackgroundService
                             ct);
                     var entryPrice = isPureMarket ? askPrice : bidPrice;
                     var effectiveOrderMode = entryOrderMode;
+                    var quoteForPriceGate = isPureMarket ? askPrice : bidPrice;
 
                     string? orderId = null;
                     var balanceUnavailable = false;
@@ -849,6 +850,28 @@ public sealed class TradingEngineHostedService : BackgroundService
                     {
                         // skip entry; balance_unavailable already recorded
                     }
+                    else if (!EntryPriceRules.IsAllowed(quoteForPriceGate))
+                    {
+                        ReleaseEntryTargetClaim(targetCandleTime);
+                        _logger.LogInformation(
+                            "{Mode} entry skipped for candle {CandleTime}: quote {Price:F4} outside allowed (0, {Max:F2}]",
+                            settings.TradingMode,
+                            actions.Entry.TargetCandleTime,
+                            quoteForPriceGate,
+                            EntryPriceRules.MaxEntryPrice);
+                        await TryRecordSkipAsync(
+                            db,
+                            settings,
+                            actions.Entry.TargetCandleTime,
+                            tradeContextId,
+                            "entry_price_out_of_range",
+                            entryMarket.Id,
+                            $"Entry quote {quoteForPriceGate:F4} outside allowed (0, {EntryPriceRules.MaxEntryPrice:F2}]",
+                            side: side.ToString(),
+                            trend: actions.Entry.Trend.ToString(),
+                            entryFailedToPublish: entryFailedToPublish,
+                            ct: ct);
+                    }
                     else
                     {
                     var stakeParams = settings.ToStrategyParams(balanceAtOpen);
@@ -887,24 +910,37 @@ public sealed class TradingEngineHostedService : BackgroundService
                                 ct: ct);
                             stake = 0;
                         }
+                        else if (hybrid.UsedMarketFallback)
+                        {
+                            ReleaseEntryTargetClaim(targetCandleTime);
+                            var minStake = LimitEntryRules.MinStakeUsd(bidPrice);
+                            var limitOnlyReason =
+                                $"Limit-only: need ≥ ${minStake:F2} for {LimitEntryRules.MinOrderShares} shares @ bid {bidPrice:F4} (requested ${hybrid.RequestedStakeUsd:F2})";
+                            _logger.LogInformation(
+                                "{Mode} entry skipped for candle {CandleTime}: {Reason}",
+                                settings.TradingMode,
+                                actions.Entry.TargetCandleTime,
+                                limitOnlyReason);
+                            await TryRecordSkipAsync(
+                                db,
+                                settings,
+                                actions.Entry.TargetCandleTime,
+                                tradeContextId,
+                                "clob_min_order_size",
+                                entryMarket.Id,
+                                limitOnlyReason,
+                                side: side.ToString(),
+                                trend: actions.Entry.Trend.ToString(),
+                                stakeUsd: hybrid.RequestedStakeUsd,
+                                entryFailedToPublish: entryFailedToPublish,
+                                ct: ct);
+                            stake = 0;
+                        }
                         else
                         {
                             stake = hybrid.EffectiveStakeUsd;
-                            effectiveOrderMode = hybrid.UseLimit
-                                ? LiveEntryOrderModes.Limit
-                                : LiveEntryOrderModes.Market;
-                            entryPrice = hybrid.UseLimit ? bidPrice : askPrice;
-                            if (hybrid.UsedMarketFallback)
-                            {
-                                _logger.LogInformation(
-                                    "{Mode} LimitElseMarket: market fallback ${Stake:F2} (requested ${Requested:F2}; limit needs ≥ ${Min:F2} for {MinShares} shares @ bid {Bid:F4})",
-                                    settings.TradingMode,
-                                    stake,
-                                    hybrid.RequestedStakeUsd,
-                                    LimitEntryRules.MinStakeUsd(bidPrice),
-                                    LimitEntryRules.MinOrderShares,
-                                    bidPrice);
-                            }
+                            effectiveOrderMode = LiveEntryOrderModes.Limit;
+                            entryPrice = bidPrice;
                         }
                     }
                     else if (LiveEntryOrderModes.UsesLimitBump(entryOrderMode))
@@ -1468,7 +1504,12 @@ public sealed class TradingEngineHostedService : BackgroundService
     }
 
     private static bool IsEntryErrorSkipReason(string skipReason) =>
-        skipReason is "order_failed" or "insufficient_balance" or "balance_unavailable" or "no_market" or "clob_min_order_size";
+        skipReason is "order_failed"
+            or "insufficient_balance"
+            or "balance_unavailable"
+            or "no_market"
+            or "clob_min_order_size"
+            or "entry_price_out_of_range";
 
     private async Task<bool> TryRecordSkipAsync(
         PolyTraderDbContext db,

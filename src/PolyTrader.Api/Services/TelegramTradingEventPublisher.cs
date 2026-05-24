@@ -161,6 +161,7 @@ public sealed class TelegramTradingEventPublisher : ITradingEventPublisher
         "balance_unavailable" => "CLOB balance unavailable",
         "no_market" => "No active market",
         "clob_min_order_size" => "Below Polymarket min order size",
+        "entry_price_out_of_range" => "Entry price outside allowed band",
         _ => skipReason.Replace('_', ' '),
     };
 

@@ -18,9 +18,15 @@ export const MIN_LIMIT_ORDER_SHARES = 5
 
 const MIN_PREVIEW_BID = 0.01
 const MAX_PREVIEW_BID = 0.99
+/** Matches server EntryPriceRules.MaxEntryPrice */
+export const MAX_ENTRY_PRICE = 0.52
 
 export function isValidPreviewBid(bid: number): boolean {
   return Number.isFinite(bid) && bid >= MIN_PREVIEW_BID && bid <= MAX_PREVIEW_BID
+}
+
+export function isAllowedEntryPrice(price: number): boolean {
+  return Number.isFinite(price) && price > 0 && price <= MAX_ENTRY_PRICE
 }
 
 export function planLimitElseMarket(
@@ -81,19 +87,41 @@ export function mergePreviewWithBid(
   const balance = preview.balanceUsd ?? 0
   const mode = normalizeLiveEntryOrderMode(preview.liveEntryOrderMode)
 
+  if (!isAllowedEntryPrice(bid)) {
+    return {
+      ...preview,
+      referenceBid: bid,
+      bidIsCustom: true,
+      clobMinStakeUsd: minLimitStakeUsd(bid),
+      canTrade: false,
+      willBump: false,
+      usesMarketFallback: false,
+      blockReason: `Entry bid ${bid.toFixed(4)} outside allowed (0, ${MAX_ENTRY_PRICE.toFixed(2)}]`,
+      minBalanceOneTradeUsd: minBalanceForOneLimitTrade(bid),
+      minBalanceConfiguredUsd: minBalanceForConfiguredStake(bid, snapshot),
+      bidUnavailableReason: null,
+    }
+  }
+
   if (mode === 'LimitElseMarket') {
     const hybrid = planLimitElseMarket(balance, snapshot, bid)
+    const limitOnlyBlock =
+      hybrid.usedMarketFallback && hybrid.canTrade
+        ? `Limit-only: need ≥ $${minLimitStakeUsd(bid).toFixed(2)} for ${MIN_LIMIT_ORDER_SHARES} shares @ bid ${bid.toFixed(4)}`
+        : hybrid.usedMarketFallback
+          ? hybrid.blockReason
+          : null
     return {
       ...preview,
       referenceBid: bid,
       bidIsCustom: true,
       clobMinStakeUsd: minLimitStakeUsd(bid),
       requestedStakeUsd: hybrid.requestedStakeUsd,
-      effectiveStakeUsd: hybrid.effectiveStakeUsd,
-      canTrade: hybrid.canTrade,
+      effectiveStakeUsd: limitOnlyBlock ? 0 : hybrid.effectiveStakeUsd,
+      canTrade: limitOnlyBlock ? false : hybrid.canTrade,
       willBump: false,
-      usesMarketFallback: hybrid.usedMarketFallback,
-      blockReason: hybrid.blockReason,
+      usesMarketFallback: false,
+      blockReason: limitOnlyBlock ?? hybrid.blockReason,
       minBalanceOneTradeUsd: minBalanceForOneLimitTrade(bid),
       minBalanceConfiguredUsd: minBalanceForConfiguredStake(bid, snapshot),
       bidUnavailableReason: null,

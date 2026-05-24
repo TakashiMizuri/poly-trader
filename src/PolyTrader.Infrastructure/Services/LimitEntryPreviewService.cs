@@ -86,17 +86,32 @@ public sealed class LimitEntryPreviewService
 
         if (referenceBid is > 0)
         {
-            if (LiveEntryOrderModes.IsLimitElseMarket(entryOrderMode))
+            if (!EntryPriceRules.IsAllowed(referenceBid.Value))
+            {
+                canTrade = false;
+                blockReason =
+                    $"Entry bid {referenceBid.Value:F4} outside allowed (0, {EntryPriceRules.MaxEntryPrice:F2}]";
+            }
+            else if (LiveEntryOrderModes.IsLimitElseMarket(entryOrderMode))
             {
                 var hybrid = HybridEntryRules.PlanLimitElseMarket(
                     workingBalance,
                     requested,
                     maxCap,
                     referenceBid.Value);
-                effectiveStake = hybrid.EffectiveStakeUsd;
-                canTrade = hybrid.CanTrade;
-                usesMarketFallback = hybrid.UsedMarketFallback;
-                blockReason = hybrid.BlockReason;
+                if (hybrid.UsedMarketFallback)
+                {
+                    canTrade = false;
+                    usesMarketFallback = false;
+                    blockReason =
+                        $"Limit-only: need ≥ ${LimitEntryRules.MinStakeUsd(referenceBid.Value):F2} for {LimitEntryRules.MinOrderShares} shares @ bid {referenceBid.Value:F4}";
+                }
+                else
+                {
+                    effectiveStake = hybrid.EffectiveStakeUsd;
+                    canTrade = hybrid.CanTrade;
+                    blockReason = hybrid.BlockReason;
+                }
             }
             else if (LiveEntryOrderModes.UsesLimitBump(entryOrderMode))
             {
