@@ -186,10 +186,15 @@ export function LiveChart({
     if (!containerRef.current || isInitializedRef.current) return
 
     const container = containerRef.current
-    const chartHeight = Math.max(1, container.clientHeight || height || 320)
+    const surface = surfaceRef.current ?? container
+    const chartWidth = Math.max(1, Math.floor(surface.clientWidth))
+    const chartHeight = Math.max(
+      1,
+      Math.floor(surface.clientHeight || height || 320),
+    )
     const palette = getChartPalette()
     const chart = createChart(container, {
-      width: container.clientWidth,
+      width: chartWidth,
       height: chartHeight,
       layout: {
         background: { color: palette.background },
@@ -263,16 +268,19 @@ export function LiveChart({
     }
 
     const handleResize = () => {
-      if (!containerRef.current || !chartRef.current) return
-      chartRef.current.applyOptions({
-        width: containerRef.current.clientWidth,
-        height: Math.max(1, containerRef.current.clientHeight || height || 320),
-      })
+      const surface = surfaceRef.current
+      if (!surface || !chartRef.current) return
+      const nextWidth = Math.max(1, Math.floor(surface.clientWidth))
+      const nextHeight = Math.max(
+        1,
+        Math.floor(surface.clientHeight || height || 320),
+      )
+      chartRef.current.applyOptions({ width: nextWidth, height: nextHeight })
     }
 
     window.addEventListener('resize', handleResize)
     const resizeObserver = new ResizeObserver(handleResize)
-    resizeObserver.observe(container)
+    resizeObserver.observe(surfaceRef.current ?? container)
 
     isInitializedRef.current = true
     requestAnimationFrame(handleResize)
@@ -483,7 +491,7 @@ export function LiveChart({
   return (
     <div
       className={cn(
-        'flex min-h-0 w-full flex-col overflow-hidden',
+        'flex min-h-0 w-full min-w-0 max-w-full flex-col overflow-hidden',
         fillParent ? 'h-full' : undefined,
         className,
       )}
@@ -491,19 +499,19 @@ export function LiveChart({
     >
       <div
         className={cn(
-          'relative min-h-0 w-full',
+          'relative min-h-0 w-full min-w-0 max-w-full',
           fillParent ? 'flex-1' : undefined,
         )}
         style={fillParent ? undefined : { height: height ?? 420 }}
       >
         <div
           ref={surfaceRef}
-          className="relative h-full w-full"
+          className="relative h-full w-full min-w-0 max-w-full overflow-hidden"
           onContextMenu={handleSurfaceContextMenu}
         >
           <div
             ref={containerRef}
-            className="h-full w-full"
+            className="h-full w-full min-w-0 max-w-full overflow-hidden"
           />
           {showOverlay && (
             <div

@@ -6,11 +6,15 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { BarChart3 } from 'lucide-react'
 import { api } from '@/api/client'
 import { usePoll } from '@/api/hooks'
 import { EventWindowProgressFill } from '@/components/EventWindowProgressFill'
 import { MarketCell } from '@/components/MarketCell'
 import { PageCard, Skeleton, StatusBadge } from '@/components/app-ui'
+import { TradeStatisticsDialog } from '@/components/TradeStatisticsDialog'
+import { Button } from '@/components/ui/button'
+import { useEntryPatienceCountdown } from '@/hooks/useEntryPatienceCountdown'
 import { useEventWindowProgress } from '@/hooks/useEventWindowProgress'
 import { useTimeFormat } from '@/context/TimeFormatContext'
 import { polymarketMarketUrl } from '@/lib/polymarket'
@@ -31,6 +35,9 @@ import {
   resolveDisplayedFills,
   resolveDisplayedOpenFill,
   resolveDisplayedSkipFill,
+  resolveDisplayedWaitingFill,
+  isWaitingForEntryFill,
+  waitingEntryLabel,
   type PositionFeedFill,
   type PositionFeedGroup,
   sortPositionFeedGroups,
@@ -101,6 +108,14 @@ function PositionFillRow({
 }) {
   const pnlLabel = formatPnl(fill)
   const showEntryWaves = hasEntryWaves(fill)
+  const waiting = isWaitingForEntryFill(fill)
+  const patience = useEntryPatienceCountdown(
+    waiting ? fill.entryWaitStartedMs : null,
+    waiting ? fill.entryWaitExpiresMs : null,
+  )
+  const statusLabel = waiting
+    ? resultLabel(fill, patience.remainingSeconds)
+    : resultLabel(fill)
 
   return (
     <div
@@ -126,8 +141,8 @@ function PositionFillRow({
               {fill.side}
             </StatusBadge>
           ) : null}
-          <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-            <span className="inline-flex min-w-0 max-w-full items-baseline gap-x-1.5 whitespace-nowrap">
+          <span className="min-w-0 flex-1 text-xs text-muted-foreground">
+            <span className="flex min-w-0 max-w-full flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
               {fillEconomicsSegments(fill).map((segment, index) => (
                 <Fragment key={`${segment.variant}-${index}`}>
                   {index > 0 ? (
@@ -162,9 +177,9 @@ function PositionFillRow({
           <StatusBadge
             tone={resultTone(fill)}
             title={resultTitle(fill)}
-            className="max-w-[9rem] min-w-0 shrink overflow-hidden text-ellipsis whitespace-nowrap"
+            className="max-w-[9rem] min-w-0 shrink overflow-hidden text-ellipsis whitespace-nowrap font-mono tabular-nums"
           >
-            {resultLabel(fill)}
+            {statusLabel}
           </StatusBadge>
         )}
       </div>
@@ -279,10 +294,19 @@ function PositionBlock({
   const showLiveChrome = isLiveCard
   const openFill = resolveDisplayedOpenFill(group, allGroups)
   const skipFill = resolveDisplayedSkipFill(group, allGroups)
+  const waitingFill = resolveDisplayedWaitingFill(group, allGroups)
+  const patience = useEntryPatienceCountdown(
+    waitingFill?.entryWaitStartedMs,
+    waitingFill?.entryWaitExpiresMs,
+  )
   const displayedFills = resolveDisplayedFills(group, allGroups)
   const hasOpenBet = openFill != null || groupHasOpenBet(group)
   const awaitingEntry =
-    engineRunning && isLiveCard && openFill == null && skipFill == null
+    engineRunning &&
+    isLiveCard &&
+    openFill == null &&
+    skipFill == null &&
+    waitingFill == null
   const progressLabel =
     eventWindow != null
       ? formatWindowProgressLabel(progressPct, remainingMs, phase)
@@ -304,11 +328,13 @@ function PositionBlock({
   const statusLine =
     showLiveChrome && openFill
       ? `BTC 5m · ${openFill.side ?? 'open'} ${formatStake(openFill)}`
-      : showLiveChrome
-        ? 'BTC 5m · live'
-        : isCompact
-          ? 'BTC 5m · up next'
-          : 'BTC 5m'
+      : showLiveChrome && waitingFill
+        ? `BTC 5m · ${waitingEntryLabel(patience.remainingSeconds)}`
+        : showLiveChrome
+          ? 'BTC 5m · live'
+          : isCompact
+            ? 'BTC 5m · up next'
+            : 'BTC 5m'
 
   return (
     <article
@@ -411,10 +437,18 @@ function PositionBlock({
                 )}
               />
               <div className="flex shrink-0 items-center gap-1.5">
-                {!showCompleted && progressLabel ? (
+                {!showCompleted && waitingFill ? (
+                  <span
+                    className="max-w-[42%] shrink truncate rounded-md bg-amber-500/15 px-2 py-0.5 font-mono text-[11px] font-medium tabular-nums text-amber-700 dark:text-amber-400 sm:max-w-none"
+                    title={waitingEntryLabel(patience.remainingSeconds)}
+                  >
+                    {waitingEntryLabel(patience.remainingSeconds)}
+                  </span>
+                ) : null}
+                {!showCompleted && !waitingFill && progressLabel ? (
                   <span
                     className={cn(
-                      'rounded-md font-mono text-[11px] font-medium tabular-nums whitespace-nowrap',
+                      'max-w-[42%] shrink truncate rounded-md font-mono text-[11px] font-medium tabular-nums sm:max-w-none',
                       isCompact ? 'px-1.5 py-0.5' : 'px-2 py-0.5',
                       showLiveChrome && hasOpenBet
                         ? 'bg-primary/15 text-primary'
@@ -493,7 +527,9 @@ function PositionBlock({
                   positionDimStateClass(showCompleted),
                 )}
               >
-                {awaitingEntry
+                {waitingFill
+                  ? `${waitingEntryLabel(patience.remainingSeconds)} (limit ≤ 0.50)`
+                  : awaitingEntry
                   ? 'Awaiting entry (decision at bar open)…'
                   : !engineRunning && isLiveCard && openFill == null && skipFill == null
                     ? 'Engine stopped'
@@ -562,6 +598,7 @@ export function PositionsPanel({
     [rawGroups, feedNowMs],
   )
   const feedPending = feedPoll.loading && feedPoll.data == null
+  const [statsOpen, setStatsOpen] = useState(false)
 
   const onWindowBoundary = useCallback(() => {
     setFeedNowMs(Date.now())
@@ -584,12 +621,26 @@ export function PositionsPanel({
   }, [groups, feedPoll.refresh])
 
   return (
-    <PageCard
-      title="Position history"
-      fill
-      className={cn('h-full min-h-0', className)}
-      contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
-    >
+    <>
+      <PageCard
+        title="Position history"
+        fill
+        className={cn('h-full min-h-0 min-w-0 max-w-full', className)}
+        contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+        action={
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-8"
+            onClick={() => setStatsOpen(true)}
+            aria-label="Trading statistics"
+            title="Statistics"
+          >
+            <BarChart3 className="size-4" aria-hidden />
+          </Button>
+        }
+      >
       <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {feedPending ? (
           <PositionFeedSkeleton />
@@ -611,5 +662,12 @@ export function PositionsPanel({
         )}
       </div>
     </PageCard>
+      <TradeStatisticsDialog
+        open={statsOpen}
+        onClose={() => setStatsOpen(false)}
+        tradingMode={tradingMode}
+        paperAccountId={paperAccountId}
+      />
+    </>
   )
 }

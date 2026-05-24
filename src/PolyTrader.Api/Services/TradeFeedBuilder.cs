@@ -4,6 +4,7 @@ using PolyTrader.Core.Strategy;
 using PolyTrader.Infrastructure.Data;
 using PolyTrader.Infrastructure.Entities;
 using PolyTrader.Infrastructure.Polymarket;
+using PolyTrader.Infrastructure.Services;
 
 namespace PolyTrader.Api.Services;
 
@@ -26,7 +27,8 @@ public static class TradeFeedBuilder
         int limit,
         MarketEntity? liveMarket,
         MarketEntity? nextScheduledMarket,
-        CancellationToken ct)
+        IEntryWaitTracker? entryWaitTracker = null,
+        CancellationToken ct = default)
     {
         var trades = await db.Trades
             .AsNoTracking()
@@ -95,6 +97,7 @@ public static class TradeFeedBuilder
             liveGroup.IsPrimary = true;
             AttachTradesToLiveWindow(liveGroup, trades, openTrades, settings.CommissionPercent);
             AttachSkipsToLiveWindow(liveGroup, skips);
+            AttachEntryWaitsToLiveWindow(liveGroup, entryWaitTracker, modeFilter, contextId);
             EnsureEngineStoppedFillForInProgressWindow(liveGroup, settings);
         }
 
@@ -247,6 +250,52 @@ public static class TradeFeedBuilder
     /// <summary>
     /// In-progress window with engine off (reset, stop, or startup) and no bet — show as engine stopped.
     /// </summary>
+    private static void AttachEntryWaitsToLiveWindow(
+        FeedGroupBuilder liveGroup,
+        IEntryWaitTracker? entryWaitTracker,
+        TradingMode modeFilter,
+        int contextId)
+    {
+        if (entryWaitTracker == null)
+        {
+            return;
+        }
+
+        if (HasActualBet(liveGroup))
+        {
+            return;
+        }
+
+        if (liveGroup.Fills.Any(f => f.Result is "Open" or "Pending"))
+        {
+            return;
+        }
+
+        foreach (var wait in entryWaitTracker.GetActive(modeFilter, contextId))
+        {
+            if (wait.WindowStartMs != liveGroup.WindowStartMs
+                && wait.CandleTime * 1000L != liveGroup.WindowStartMs)
+            {
+                continue;
+            }
+
+            var startedMs = new DateTimeOffset(
+                DateTime.SpecifyKind(wait.StartedUtc, DateTimeKind.Utc)).ToUnixTimeMilliseconds();
+            var waitMs = (long)EntryPriceRules.PatienceWaitDuration.TotalMilliseconds;
+            liveGroup.Fills.Add(new FeedFill
+            {
+                Id = $"entry-wait-{wait.CandleTime}-{wait.Mode}-{wait.PaperAccountId}",
+                TimeMs = wait.WindowStartMs > 0 ? wait.WindowStartMs : wait.CandleTime * 1000L,
+                Side = wait.Side,
+                Result = "Pending",
+                SkipReason = "waiting_for_entry",
+                EntryWaitStartedMs = startedMs,
+                EntryWaitExpiresMs = startedMs + waitMs,
+            });
+            break;
+        }
+    }
+
     private static void EnsureEngineStoppedFillForInProgressWindow(
         FeedGroupBuilder group,
         EngineSettingsEntity settings)
@@ -459,6 +508,8 @@ public static class TradeFeedBuilder
                     f.PnlUsd,
                     f.PolymarketOrderId,
                     awaitingRedeem = f.AwaitingRedeem,
+                    entryWaitStartedMs = f.EntryWaitStartedMs,
+                    entryWaitExpiresMs = f.EntryWaitExpiresMs,
                     entryWaves = f.EntryWaves?.Select(w => new
                     {
                         wave = w.Wave,
@@ -490,6 +541,8 @@ public static class TradeFeedBuilder
         public double? PnlUsd { get; init; }
         public string? PolymarketOrderId { get; init; }
         public bool AwaitingRedeem { get; init; }
+        public long? EntryWaitStartedMs { get; init; }
+        public long? EntryWaitExpiresMs { get; init; }
         public IReadOnlyList<TradeEntryWaveDto>? EntryWaves { get; init; }
     }
 }

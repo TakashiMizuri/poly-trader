@@ -143,8 +143,8 @@ export function DashboardBalanceChart({
       crosshair: { mode: CrosshairMode.Normal },
       rightPriceScale: { borderColor: palette.border },
       timeScale: { borderColor: palette.border, timeVisible: true },
-      width: container.clientWidth,
-      height: container.clientHeight,
+      width: Math.max(1, Math.floor(container.clientWidth)),
+      height: Math.max(1, Math.floor(container.clientHeight)),
     })
 
     const actualSeries = chart.addSeries(LineSeries, {
@@ -166,8 +166,8 @@ export function DashboardBalanceChart({
 
     const ro = new ResizeObserver(() => {
       chart.applyOptions({
-        width: container.clientWidth,
-        height: container.clientHeight,
+        width: Math.max(1, Math.floor(container.clientWidth)),
+        height: Math.max(1, Math.floor(container.clientHeight)),
       })
     })
     ro.observe(container)
@@ -229,7 +229,7 @@ export function DashboardBalanceChart({
   return (
     <PageCard
       title={title}
-      className={cn('flex min-h-[200px] flex-col', className)}
+      className={cn('flex min-h-[200px] min-w-0 max-w-full flex-col', className)}
       contentClassName="relative min-h-0 flex-1 overflow-hidden p-0"
       action={
         <div className="flex flex-col items-end gap-1.5 sm:flex-row sm:items-center sm:gap-3">
@@ -259,7 +259,10 @@ export function DashboardBalanceChart({
             : 'Snapshots appear after each 5m candle while the engine runs.'}
         </div>
       ) : null}
-      <div ref={containerRef} className="absolute inset-0" />
+      <div
+        ref={containerRef}
+        className="absolute inset-0 min-w-0 max-w-full overflow-hidden"
+      />
     </PageCard>
   )
 }

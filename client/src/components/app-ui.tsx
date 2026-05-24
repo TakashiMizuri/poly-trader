@@ -59,7 +59,7 @@ export function AccountMetricsBar({
   return (
     <Panel
       className={cn(
-        'flex min-h-0 flex-wrap items-stretch divide-y divide-border sm:flex-nowrap sm:divide-x sm:divide-y-0',
+        'flex min-h-0 min-w-0 max-w-full flex-wrap items-stretch divide-y divide-border sm:flex-nowrap sm:divide-x sm:divide-y-0',
         className,
       )}
     >
@@ -122,7 +122,7 @@ export function PageCard({
   return (
     <Card
       className={cn(
-        'overflow-hidden',
+        'max-w-full min-w-0 overflow-hidden',
         fill && 'flex h-full min-h-0 flex-col',
         className,
       )}

@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PolyTrader.Core.Models;
+using PolyTrader.Core.Strategy;
 using PolyTrader.Infrastructure.Options;
 
 namespace PolyTrader.Infrastructure.Polymarket;
@@ -26,6 +27,16 @@ public interface IPolymarketClobService
         double sizeUsd,
         string liveEntryOrderMode,
         double? bidPriceHint = null,
+        double? askPriceHint = null,
+        LiveEntryOrderKey? entryKey = null,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Post-open patience entry: single maker wave at max patience price, bounded wait.
+    /// </summary>
+    Task<LiveMarketBuyOutcome> PlacePatienceEntryOrderAsync(
+        string tokenId,
+        double sizeUsd,
         double? askPriceHint = null,
         LiveEntryOrderKey? entryKey = null,
         CancellationToken ct = default);
@@ -221,6 +232,40 @@ public sealed class PolymarketClobService : IPolymarketClobService
             ask,
             firstWait,
             remainderWait,
+            ct => RefreshQuoteAsync(tokenId, ct),
+            entryKey,
+            ct);
+    }
+
+    public Task<LiveMarketBuyOutcome> PlacePatienceEntryOrderAsync(
+        string tokenId,
+        double sizeUsd,
+        double? askPriceHint = null,
+        LiveEntryOrderKey? entryKey = null,
+        CancellationToken ct = default)
+    {
+        if (!IsConfigured)
+        {
+            const string reason = "POLYMARKET_PRIVATE_KEY not configured";
+            _logger.LogWarning("Patience entry skipped: {Reason}", reason);
+            return Task.FromResult(LiveMarketBuyOutcome.Fail(reason));
+        }
+
+        var wait = EntryPriceRules.PatienceWaitDuration;
+        _logger.LogInformation(
+            "Placing patience maker buy token {TokenId} notional ${Size:F2} max bid {Bid:F4} wait {WaitSeconds}s wallet {Wallet}",
+            tokenId,
+            sizeUsd,
+            EntryPriceRules.PatienceMaxEntryPrice,
+            wait.TotalSeconds,
+            _wallet.ResolveWalletAddress() ?? "unknown");
+
+        return _trading.PlaceMakerLimitBuySingleWaveAsync(
+            tokenId,
+            sizeUsd,
+            EntryPriceRules.PatienceMaxEntryPrice,
+            askPriceHint,
+            wait,
             ct => RefreshQuoteAsync(tokenId, ct),
             entryKey,
             ct);

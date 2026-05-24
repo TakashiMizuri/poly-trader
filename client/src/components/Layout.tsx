@@ -19,7 +19,7 @@ export function Layout() {
   }, [])
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-background">
+    <div className="flex h-screen w-full max-w-full flex-col overflow-hidden bg-background">
       <header className="shrink-0 border-b border-border bg-card/95 backdrop-blur-sm">
         <div className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-stretch sm:justify-between sm:gap-3 sm:px-4 md:px-5">
           <div className="min-w-0 shrink-0">

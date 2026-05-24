@@ -150,12 +150,12 @@ export function DashboardEnginePanel({
     <>
       <Panel
         className={cn(
-          'flex min-h-[7.25rem] w-full max-w-full shrink-0 flex-wrap items-stretch divide-y divide-border sm:w-fit sm:flex-nowrap sm:divide-x sm:divide-y-0',
+          'flex min-h-[7.25rem] w-full min-w-0 max-w-full shrink-0 flex-wrap items-stretch divide-y divide-border sm:w-fit sm:flex-nowrap sm:divide-x sm:divide-y-0',
           className,
         )}
       >
         {paperTradingEnabled ? (
-          <div className={cn(sectionClass, 'min-w-[8.5rem]')}>
+          <div className={cn(sectionClass, 'w-full sm:min-w-[8.5rem] sm:w-auto')}>
             <p className={labelClass}>Mode</p>
             <div
               className="mt-2 flex w-full max-w-[8.5rem] rounded-lg border border-border bg-background p-0.5"
@@ -205,7 +205,7 @@ export function DashboardEnginePanel({
           </div>
         ) : null}
 
-        <div className={cn(sectionClass, 'min-w-[7.5rem]')}>
+        <div className={cn(sectionClass, 'w-full sm:min-w-[7.5rem] sm:w-auto')}>
           <div className="flex items-center gap-2">
             <p className={labelClass}>Engine</p>
             <StatusBadge

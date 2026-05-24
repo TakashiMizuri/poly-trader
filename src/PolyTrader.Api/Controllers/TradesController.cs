@@ -4,6 +4,7 @@ using PolyTrader.Api.Services;
 using PolyTrader.Core.Models;
 using PolyTrader.Infrastructure.Data;
 using PolyTrader.Infrastructure.Polymarket;
+using PolyTrader.Infrastructure.Services;
 
 namespace PolyTrader.Api.Controllers;
 
@@ -13,11 +14,16 @@ public sealed class TradesController : ControllerBase
 {
     private readonly PolyTraderDbContext _db;
     private readonly IPolymarketGammaService _gamma;
+    private readonly IEntryWaitTracker _entryWaitTracker;
 
-    public TradesController(PolyTraderDbContext db, IPolymarketGammaService gamma)
+    public TradesController(
+        PolyTraderDbContext db,
+        IPolymarketGammaService gamma,
+        IEntryWaitTracker entryWaitTracker)
     {
         _db = db;
         _gamma = gamma;
+        _entryWaitTracker = entryWaitTracker;
     }
 
     [HttpGet]
@@ -97,6 +103,7 @@ public sealed class TradesController : ControllerBase
             limit,
             primary,
             upcoming,
+            _entryWaitTracker,
             ct);
         return Ok(groups);
     }
@@ -136,5 +143,39 @@ public sealed class TradesController : ControllerBase
             won = t.Won,
             paperAccountId = t.PaperAccountId
         }));
+    }
+
+    [HttpGet("statistics")]
+    public async Task<ActionResult<object>> Statistics(
+        [FromQuery] string? period = "all",
+        [FromQuery] string? mode = null,
+        [FromQuery] int? paperAccountId = null,
+        CancellationToken ct = default)
+    {
+        var settings = await _db.EngineSettings.AsNoTracking().FirstAsync(ct);
+        var modeFilter = settings.TradingMode;
+        if (!string.IsNullOrWhiteSpace(mode)
+            && Enum.TryParse<TradingMode>(mode, true, out var parsedMode))
+        {
+            modeFilter = parsedMode;
+        }
+
+        var contextId = 0;
+        if (modeFilter == TradingMode.Paper)
+        {
+            var accountId = paperAccountId ?? settings.ActivePaperAccountId;
+            if (accountId is int id)
+            {
+                contextId = id;
+            }
+        }
+
+        var stats = await TradeStatisticsService.BuildAsync(
+            _db,
+            modeFilter,
+            contextId,
+            period,
+            ct);
+        return Ok(stats);
     }
 }

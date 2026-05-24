@@ -154,8 +154,8 @@ export function DashboardPage() {
   useTradingLiveEvent('CandleClosed', bumpTrades)
 
   return (
-    <div className="flex w-full flex-col gap-3 p-3 lg:h-full lg:min-h-0 md:gap-4 md:p-4">
-      <header className="grid shrink-0 gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-stretch">
+    <div className="flex w-full min-w-0 max-w-full flex-col gap-3 p-3 lg:h-full lg:min-h-0 md:gap-4 md:p-4">
+      <header className="grid min-w-0 shrink-0 gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-stretch">
         <DashboardBalancePanel
           settings={settings}
           balance={balance}
@@ -171,11 +171,11 @@ export function DashboardPage() {
         />
       </header>
 
-      <div className="grid gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(440px,600px)] lg:grid-rows-1 xl:grid-cols-[minmax(0,1.05fr)_minmax(480px,680px)] 2xl:grid-cols-[minmax(0,1fr)_minmax(520px,720px)]">
+      <div className="grid min-w-0 max-w-full gap-3 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(440px,600px)] lg:grid-rows-1 xl:grid-cols-[minmax(0,1.05fr)_minmax(480px,680px)] 2xl:grid-cols-[minmax(0,1fr)_minmax(520px,720px)]">
         <PageCard
           title="BTC / USDT"
           fill
-          className="min-h-[min(52vw,280px)] sm:min-h-[min(44vh,360px)] lg:min-h-0"
+          className="min-w-0 max-w-full min-h-[min(52vw,280px)] sm:min-h-[min(44vh,360px)] lg:min-h-0"
           contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
           action={
             <span className="font-mono text-xs tabular-nums text-muted-foreground">
@@ -192,7 +192,7 @@ export function DashboardPage() {
           />
         </PageCard>
 
-        <aside className="flex min-h-0 flex-col gap-3 lg:min-h-0">
+        <aside className="flex min-h-0 min-w-0 max-w-full flex-col gap-3 lg:min-h-0">
           <DashboardBalanceChart
             paperAccountId={paperAccountId}
             tradingMode={tradingMode}

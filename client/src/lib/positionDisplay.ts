@@ -33,6 +33,10 @@ export interface PositionFeedFill {
   polymarketOrderId?: string | null
   /** Live win awaiting on-chain CTF redeem. */
   awaitingRedeem?: boolean
+  /** Patience window start (unix ms) while waiting for entry. */
+  entryWaitStartedMs?: number | null
+  /** Patience window end (unix ms). */
+  entryWaitExpiresMs?: number | null
 }
 
 /** Polymarket BTC 5m event length. */
@@ -162,8 +166,10 @@ export function sortPositionFeedGroups(groups: PositionFeedGroup[]): PositionFee
 
 const SKIP_LABELS: Record<string, string> = {
   engine_stopped: 'Engine stopped',
-  no_signal: 'No signal',
+  no_signal: 'Skip',
   no_market: 'No active market',
+  waiting_for_entry: 'Waiting for entry',
+  entry_price_out_of_range: 'No entry',
   order_failed: 'Live order failed',
   insufficient_balance: 'Insufficient balance',
   balance_unavailable: 'CLOB balance unavailable',
@@ -180,6 +186,19 @@ const ENTRY_ERROR_SKIP_REASONS = new Set([
 
 export function isEntryErrorFill(fill: PositionFeedFill): boolean {
   return fill.result === 'Error' || ENTRY_ERROR_SKIP_REASONS.has(fill.skipReason ?? '')
+}
+
+export function isWaitingForEntryFill(fill: PositionFeedFill): boolean {
+  return fill.result === 'Pending' && fill.skipReason === 'waiting_for_entry'
+}
+
+export function isNoEntryFill(fill: PositionFeedFill): boolean {
+  return fill.skipReason === 'entry_price_out_of_range'
+}
+
+export function waitingEntryLabel(remainingSeconds: number | null): string {
+  if (remainingSeconds == null) return 'Waiting for entry'
+  return `Waiting for entry · ${Math.max(0, remainingSeconds)}s`
 }
 
 export function skipLabel(reason: string | null | undefined): string | null {
@@ -332,6 +351,35 @@ export function resolveDisplayedOpenFill(
  * Strategy skip (e.g. no_signal) for the live window, including fills grouped under
  * a sibling key when candle time and Polymarket window start differ.
  */
+export function resolveDisplayedWaitingFill(
+  group: PositionFeedGroup,
+  allGroups: PositionFeedGroup[],
+  nowMs: number = Date.now(),
+): PositionFeedFill | null {
+  if (group.completed) return null
+  const { windowStartMs, windowEndMs } = group
+  if (windowEndMs <= windowStartMs || windowStartMs > nowMs || nowMs >= windowEndMs) {
+    return null
+  }
+
+  const local = group.fills.find(isWaitingForEntryFill)
+  if (local) return local
+
+  for (const other of allGroups) {
+    if (other.key === group.key) continue
+    const fill = other.fills.find(isWaitingForEntryFill)
+    if (fill == null) continue
+    if (
+      fillOverlapsWindow(fill, windowStartMs, windowEndMs)
+      || groupsShareLiveWindow(group, other)
+    ) {
+      return fill
+    }
+  }
+
+  return null
+}
+
 export function resolveDisplayedSkipFill(
   group: PositionFeedGroup,
   allGroups: PositionFeedGroup[],
@@ -370,6 +418,8 @@ export function resolveDisplayedFills(
   if (group.fills.length > 0) return group.fills
   const borrowedOpen = resolveDisplayedOpenFill(group, allGroups, nowMs)
   if (borrowedOpen) return [borrowedOpen]
+  const borrowedWait = resolveDisplayedWaitingFill(group, allGroups, nowMs)
+  if (borrowedWait) return [borrowedWait]
   const borrowedSkip = resolveDisplayedSkipFill(group, allGroups, nowMs)
   return borrowedSkip ? [borrowedSkip] : []
 }
@@ -424,6 +474,7 @@ export function modeTone(mode: string | null | undefined): StatusBadgeTone {
 }
 
 export function resultTone(fill: PositionFeedFill): StatusBadgeTone {
+  if (isWaitingForEntryFill(fill)) return 'warn'
   if (isAwaitingRedeem(fill)) return 'warn'
   if (isEntryErrorFill(fill)) return 'neutral'
   if (fill.result === 'Skipped') {
@@ -435,7 +486,13 @@ export function resultTone(fill: PositionFeedFill): StatusBadgeTone {
   return 'neutral'
 }
 
-export function resultLabel(fill: PositionFeedFill): string {
+export function resultLabel(
+  fill: PositionFeedFill,
+  entryWaitRemainingSeconds?: number | null,
+): string {
+  if (isWaitingForEntryFill(fill)) {
+    return waitingEntryLabel(entryWaitRemainingSeconds ?? null)
+  }
   if (isAwaitingRedeem(fill)) {
     const pnl = formatPnl(fill)
     if (fill.result === 'Won' && pnl && pnl !== '—') return pnl
@@ -452,6 +509,9 @@ export function resultLabel(fill: PositionFeedFill): string {
 }
 
 export function resultTitle(fill: PositionFeedFill): string | undefined {
+  if (isWaitingForEntryFill(fill)) {
+    return 'Watching for a fill at ≤ 0.50 during the 30s patience window'
+  }
   if (hasEntryWaves(fill)) {
     const lines = fill.entryWaves!.map((w) => formatEntryWaveLine(w)).join('; ')
     const total =
@@ -483,7 +543,10 @@ export function resultTitle(fill: PositionFeedFill): string | undefined {
       return label ?? 'Trading engine is stopped — bet was not placed'
     }
     if (fill.skipReason === 'no_signal') {
-      return label ?? 'No entry signal — bet was not placed'
+      return label ?? 'Strategy skip — no bet this window'
+    }
+    if (fill.skipReason === 'entry_price_out_of_range') {
+      return label ?? 'No entry — price stayed outside allowed band'
     }
     return label ?? undefined
   }

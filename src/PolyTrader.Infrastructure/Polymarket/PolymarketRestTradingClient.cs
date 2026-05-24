@@ -411,6 +411,77 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
         return LiveMarketBuyOutcome.Fail(lastReason ?? "Maker limit buy failed after retries");
     }
 
+    public async Task<LiveMarketBuyOutcome> PlaceMakerLimitBuySingleWaveAsync(
+        string tokenId,
+        double stakeUsd,
+        double bidPriceHint,
+        double? askPriceHint,
+        TimeSpan fillWait,
+        Func<CancellationToken, Task<(double? Bid, double? Ask)>>? refreshQuoteAsync = null,
+        LiveEntryOrderKey? entryKey = null,
+        CancellationToken ct = default)
+    {
+        if (stakeUsd < 0.01)
+        {
+            return LiveMarketBuyOutcome.Fail($"Stake ${stakeUsd:F2} below minimum ($0.01)");
+        }
+
+        if (!PolymarketOrderPricing.IsValidOutcomePrice(bidPriceHint))
+        {
+            return LiveMarketBuyOutcome.Fail("Invalid bid hint for maker buy (must be in (0, 1])");
+        }
+
+        var client = await GetClientAsync(ct);
+        if (client == null)
+        {
+            return LiveMarketBuyOutcome.Fail(
+                "CLOB trading client unavailable (check private key, signature type, and funder address)");
+        }
+
+        var tickSize = await ResolveTickSizeAsync(client, tokenId, ct);
+        var (bid, ask) = await ResolveQuoteAsync(
+            bidPriceHint,
+            askPriceHint,
+            refreshQuoteAsync,
+            refreshFromApi: false,
+            ct);
+        var limit = ResolvePostOnlyLimit(bid, ask, tickSize, stakeUsd);
+        if (limit == null)
+        {
+            return LiveMarketBuyOutcome.Fail(
+                $"Cannot derive post-only limit on {tokenId} (bid {bid:F4}, ask {ask?.ToString("F4") ?? "n/a"}, stake ${stakeUsd:F2})");
+        }
+
+        LogLimitAdjustment(bidPriceHint, ask, limit.Value, wave: 1, tokenId);
+        var wave = await ExecuteMakerLimitWaveAsync(
+            client,
+            tokenId,
+            stakeUsd,
+            bid,
+            ask,
+            tickSize,
+            refreshQuoteAsync,
+            fillWait,
+            entryKey?.DeriveClientOrderId(0),
+            ct);
+
+        if (wave.PlacementFailed)
+        {
+            return LiveMarketBuyOutcome.Fail(wave.FailureReason ?? "Maker limit placement failed");
+        }
+
+        var waves = new List<LiveEntryWaveFill> { ToLiveEntryWaveFill(1, stakeUsd, wave) };
+        var priceNumerator = wave.MatchedShares * (wave.LimitPrice ?? limit.Value);
+        return BuildAggregatedMakerOutcome(
+            tokenId,
+            stakeUsd,
+            wave.MatchedShares,
+            priceNumerator,
+            wave.OrderId,
+            waves,
+            wave.FilledStakeUsd);
+    }
+
     private sealed record MakerLimitWaveResult(
         bool PlacementFailed,
         string? FailureReason,

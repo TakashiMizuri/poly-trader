@@ -68,6 +68,8 @@ public static class DependencyInjection
         services.AddSingleton<IPolymarketCtfRedeemService, PolymarketCtfRedeemService>();
         services.AddSingleton<IPolymarketRedeemService, PolymarketRedeemService>();
         services.AddSingleton<IConnectivityService, ConnectivityService>();
+        services.AddSingleton<IEntryWaitTracker, EntryWaitTracker>();
+        services.AddSingleton<IEntryPatienceExecutor, EntryPatienceExecutor>();
         services.AddScoped<GlobalResetService>();
         services.AddScoped<InProgressWindowSkipService>();
         services.AddScoped<BalanceHistoryService>();

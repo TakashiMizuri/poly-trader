@@ -30,5 +30,16 @@ public interface IPolymarketRestTradingClient
         LiveEntryOrderKey? entryKey = null,
         CancellationToken ct = default);
 
+    /// <summary>Single post-only maker wave (no remainder wave).</summary>
+    Task<LiveMarketBuyOutcome> PlaceMakerLimitBuySingleWaveAsync(
+        string tokenId,
+        double stakeUsd,
+        double bidPriceHint,
+        double? askPriceHint,
+        TimeSpan fillWait,
+        Func<CancellationToken, Task<(double? Bid, double? Ask)>>? refreshQuoteAsync = null,
+        LiveEntryOrderKey? entryKey = null,
+        CancellationToken ct = default);
+
     Task<double?> GetOrderMatchedSharesAsync(string orderId, CancellationToken ct = default);
 }

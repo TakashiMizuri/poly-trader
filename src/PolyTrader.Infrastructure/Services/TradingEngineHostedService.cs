@@ -56,6 +56,8 @@ public sealed class TradingEngineHostedService : BackgroundService
 
     private readonly ILogger<TradingEngineHostedService> _logger;
 
+    private readonly IEntryPatienceExecutor _entryPatience;
+
     private MarketEntity? _activeMarket;
 
     private long? _lastSeenLatestCandleTime;
@@ -93,6 +95,8 @@ public sealed class TradingEngineHostedService : BackgroundService
 
         ITradingEventPublisher publisher,
 
+        IEntryPatienceExecutor entryPatience,
+
         IOptions<PolyTraderOptions> options,
 
         ILogger<TradingEngineHostedService> logger)
@@ -114,6 +118,8 @@ public sealed class TradingEngineHostedService : BackgroundService
         _redeem = redeem;
 
         _publisher = publisher;
+
+        _entryPatience = entryPatience;
 
         _options = options.Value;
 
@@ -613,7 +619,7 @@ public sealed class TradingEngineHostedService : BackgroundService
         foreach (var trade in trades)
         {
             await db.Entry(trade).Reference(t => t.Market).LoadAsync(ct);
-            await _publisher.PublishTradePlacedAsync(ToTradeEventDto(trade), ct);
+            await _publisher.PublishTradePlacedAsync(TradeEventDtoFactory.FromEntity(trade), ct);
         }
 
         if (paperAccount != null && trades.Exists(t => t.Won != null))
@@ -852,25 +858,31 @@ public sealed class TradingEngineHostedService : BackgroundService
                     }
                     else if (!EntryPriceRules.IsAllowed(quoteForPriceGate))
                     {
-                        ReleaseEntryTargetClaim(targetCandleTime);
+                        var windowStartMs = entryMarket.WindowStartUtc is { } ws
+                            ? new DateTimeOffset(DateTime.SpecifyKind(ws, DateTimeKind.Utc)).ToUnixTimeMilliseconds()
+                            : actions.Entry.TargetCandleTime * 1000L;
                         _logger.LogInformation(
-                            "{Mode} entry skipped for candle {CandleTime}: quote {Price:F4} outside allowed (0, {Max:F2}]",
+                            "{Mode} entry quote {Price:F4} outside (0, {Max:F2}] for candle {CandleTime}; waiting up to {WaitSeconds}s for patience band (0, {PatienceMax:F2}]",
                             settings.TradingMode,
-                            actions.Entry.TargetCandleTime,
                             quoteForPriceGate,
-                            EntryPriceRules.MaxEntryPrice);
-                        await TryRecordSkipAsync(
-                            db,
-                            settings,
+                            EntryPriceRules.MaxEntryPrice,
+                            actions.Entry.TargetCandleTime,
+                            EntryPriceRules.PatienceWaitDuration.TotalSeconds,
+                            EntryPriceRules.PatienceMaxEntryPrice);
+                        _entryPatience.Start(new EntryPatienceRequest(
                             actions.Entry.TargetCandleTime,
                             tradeContextId,
-                            "entry_price_out_of_range",
+                            settings.TradingMode,
                             entryMarket.Id,
-                            $"Entry quote {quoteForPriceGate:F4} outside allowed (0, {EntryPriceRules.MaxEntryPrice:F2}]",
-                            side: side.ToString(),
-                            trend: actions.Entry.Trend.ToString(),
-                            entryFailedToPublish: entryFailedToPublish,
-                            ct: ct);
+                            entryMarket.YesTokenId,
+                            entryMarket.NoTokenId,
+                            tokenId,
+                            side,
+                            actions.Entry.Trend,
+                            entryOrderMode,
+                            quoteForPriceGate,
+                            windowStartMs,
+                            () => ReleaseEntryTargetClaim(targetCandleTime)));
                     }
                     else
                     {
@@ -1303,31 +1315,6 @@ public sealed class TradingEngineHostedService : BackgroundService
             settings.TradingMode == TradingMode.Paper ? "Paper" : "Live",
             ct);
     }
-
-    private static object ToTradeEventDto(TradeEntity t) => new
-    {
-        t.Id,
-        t.CandleTime,
-        side = t.Side.ToString(),
-        trend = t.Trend.ToString(),
-        mode = t.Mode.ToString(),
-        t.StakeUsd,
-        t.EntryPrice,
-        t.Won,
-        t.PnlUsd,
-        t.PaperAccountId,
-        t.PolymarketOrderId,
-        market = t.Market == null
-            ? null
-            : new
-            {
-                t.Market.Title,
-                t.Market.Slug,
-                windowStartUtc = t.Market.WindowStartUtc,
-                windowEndUtc = t.Market.WindowEndUtc,
-            },
-        t.CreatedAt,
-    };
 
     private async Task<double> ResolveAskPriceAsync(
         string yesTokenId,

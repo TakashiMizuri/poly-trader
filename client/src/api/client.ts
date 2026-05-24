@@ -160,3 +160,31 @@ export interface LiveStatus {
   liveBalanceUsd: number | null
   canTrade: boolean
 }
+
+export type TradeStatisticsPeriod = 'all' | 'day' | 'week' | 'month' | '90d'
+
+export interface TradeStatisticsSkipBreakdown {
+  reason: string
+  count: number
+  category: 'Skipped' | 'Error' | string
+  shareOfTotal: number
+}
+
+export interface TradeStatistics {
+  period: string
+  fromCandleTime: number | null
+  toCandleTime: number
+  mode: string
+  paperAccountId: number
+  totalEvents: number
+  tradesOpened: number
+  tradesSettled: number
+  tradesOpen: number
+  won: number
+  lost: number
+  winRate: number | null
+  totalPnlUsd: number
+  skippedCount: number
+  errorCount: number
+  skipBreakdown: TradeStatisticsSkipBreakdown[]
+}
