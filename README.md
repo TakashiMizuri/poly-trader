@@ -36,6 +36,8 @@ Set `POLYTRADER_LOG_LEVEL=Debug` for more detail (e.g. CLOB price fetches, redee
 
 ## Run
 
+**Local development (detailed, Russian):** **[DEV.ru.md](DEV.ru.md)** — setup, Paper testing, `dotnet test`, Docker vs native, troubleshooting.
+
 **API** (port 5088):
 
 ```bash
@@ -72,7 +74,8 @@ cp .env.example .env   # set WEB_API_TOKEN, Polymarket keys
 bash deploy/update.sh  # uses docker-compose.prod.yml (API not exposed publicly)
 ```
 
-Day-2 ops (restart, git pull, logs): **[deploy/OPERATIONS.ru.md](deploy/OPERATIONS.ru.md)**
+Day-2 ops (restart, git pull, logs): **[deploy/OPERATIONS.ru.md](deploy/OPERATIONS.ru.md)**  
+Local dev (no VPS deploy per change): **[DEV.ru.md](DEV.ru.md)**
 
 ## API
 

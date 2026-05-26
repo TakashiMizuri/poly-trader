@@ -637,6 +637,13 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                 remainderStake,
                 wave2Bid,
                 wave2Ask?.ToString("F4") ?? "n/a");
+            if (totalMatchedShares < MinMatchedShares)
+            {
+                return LiveMarketBuyOutcome.Fail(
+                    $"Maker entry not filled: limit {wave2Limit.Value:F4} outside allowed entry band (0, {EntryPriceRules.MaxEntryPrice:F2}] "
+                    + $"for remainder ${remainderStake:F2} (bid {wave2Bid:F4}, ask {wave2Ask?.ToString("F4") ?? "n/a"})");
+            }
+
             return BuildAggregatedMakerOutcome(
                 tokenId,
                 requestedStakeUsd,

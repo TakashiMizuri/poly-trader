@@ -1,6 +1,7 @@
 # Эксплуатация на VPS
 
-Краткая шпаргалка для сервера `/opt/poly-trader`. Полный деплой: [DEPLOY.ru.md](../DEPLOY.ru.md).
+Краткая шпаргалка для сервера `/opt/poly-trader`. Полный деплой: [DEPLOY.ru.md](../DEPLOY.ru.md).  
+Локальная разработка (без деплоя на каждый коммит): [DEV.ru.md](../DEV.ru.md).
 
 Все команды — из корня проекта на сервере:
 
@@ -72,6 +73,46 @@ bash deploy/update.sh
 Если менялись только `.env` или конфиги без кода — достаточно `$COMPOSE up -d --force-recreate api`.
 
 Если менялся **frontend** (`client/`) — `update.sh` пересоберёт всё автоматически.
+
+### Автодеплой одной командой с локального ПК (PowerShell + SSH)
+
+В репозитории есть скрипт: [`deploy/remote-deploy.ps1`](remote-deploy.ps1).
+
+Запуск (Windows PowerShell):
+
+```powershell
+cd C:\All\Develop\poly-trader
+powershell -ExecutionPolicy Bypass -File .\deploy\remote-deploy.ps1 -RemoteHost YOUR_SERVER_IP -User root
+```
+
+Что делает скрипт на сервере:
+
+1. `cd /opt/poly-trader` (или путь из `-ProjectDir`)
+2. `git pull --ff-only`
+3. `bash deploy/backup.sh` (по умолчанию)
+4. `bash deploy/update.sh`
+
+Полезные флаги:
+
+- `-ProjectDir /opt/poly-trader`
+- `-SkipBackup` (если не нужен бэкап перед деплоем)
+- `-VerboseRemote` (показывает `docker compose ... ps` после деплоя)
+
+Можно не передавать `-RemoteHost`, если задать в **корневом `.env`** (скрипт читает его при запуске; в git не коммитить):
+
+```env
+POLYTRADER_DEPLOY_HOST=YOUR_SERVER_IP
+POLYTRADER_DEPLOY_USER=root
+POLYTRADER_DEPLOY_DIR=/opt/poly-trader
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deploy\remote-deploy.ps1
+```
+
+Или через переменную сессии PowerShell: `$env:POLYTRADER_DEPLOY_HOST="YOUR_SERVER_IP"`.
+
+> Эти ключи нужны только на вашем ПК для `remote-deploy.ps1`. На VPS в `.env` их можно не добавлять.
 
 ---
 

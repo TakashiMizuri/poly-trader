@@ -1055,7 +1055,7 @@ public sealed class TradingEngineHostedService : BackgroundService
                                     settings,
                                     targetCandleTime,
                                     tradeContextId,
-                                    "order_failed",
+                                    LiveEntryFailureClassifier.ToSkipReason(liveOutcome.FailureReason),
                                     entryMarket.Id,
                                     liveOutcome.FailureReason,
                                     side: side.ToString(),
@@ -1486,8 +1486,7 @@ public sealed class TradingEngineHostedService : BackgroundService
             or "insufficient_balance"
             or "balance_unavailable"
             or "no_market"
-            or "clob_min_order_size"
-            or "entry_price_out_of_range";
+            or "clob_min_order_size";
 
     private async Task<bool> TryRecordSkipAsync(
         PolyTraderDbContext db,

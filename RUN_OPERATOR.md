@@ -59,6 +59,8 @@ When `TELEGRAM_BOT_TOKEN` and `TELEGRAM_ADMIN_CHAT_IDS` are set, the API hosts a
 
 ## Local run
 
+Full guide (Russian): **[DEV.ru.md](DEV.ru.md)** — Paper soak, `dotnet test`, Docker, logs, when to deploy to VPS.
+
 ```bash
 # API
 cd src/PolyTrader.Api && dotnet run
@@ -67,7 +69,7 @@ cd src/PolyTrader.Api && dotnet run
 cd client && npm install && npm run dev
 ```
 
-Open http://localhost:5173
+Open http://localhost:5173 (or http://127.0.0.1:5173 on Windows with VPN)
 
 ## Docker
 
