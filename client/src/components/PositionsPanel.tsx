@@ -418,7 +418,7 @@ function PositionBlock({
             )}
             aria-hidden
           />
-          <div className={cn('min-w-0 flex-1', !isCompact && 'space-y-1')}>
+          <div className="min-w-0 flex-1">
             <div
               className={cn(
                 'flex justify-between gap-2',
@@ -428,6 +428,7 @@ function PositionBlock({
               <MarketCell
                 title={displayMarketTitle}
                 imageUrl={group.marketImageUrl}
+                subtitle={isCompact ? null : statusLine}
                 compact={isCompact}
                 className={cn(
                   'min-w-0 flex-1 [&_p]:transition-colors [&_p]:duration-500 [&_p]:ease-out motion-reduce:[&_p]:transition-none',
@@ -490,25 +491,6 @@ function PositionBlock({
                 ) : null}
               </div>
             </div>
-
-            <ExpandableSection open={!isCompact}>
-              <p
-                className={cn(
-                  'truncate text-xs text-muted-foreground transition-[opacity,color] duration-500 ease-out motion-reduce:transition-none',
-                  !isCompact ? 'opacity-100' : 'opacity-0',
-                )}
-                title={statusLine}
-              >
-                <span
-                  className={cn(
-                    'font-medium transition-colors duration-500 ease-out motion-reduce:transition-none',
-                    showCompleted ? 'text-muted-foreground' : 'text-foreground',
-                  )}
-                >
-                  {statusLine}
-                </span>
-              </p>
-            </ExpandableSection>
           </div>
         </header>
 

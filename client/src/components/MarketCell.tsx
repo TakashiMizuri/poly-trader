@@ -5,13 +5,14 @@ import { cn } from '@/lib/utils'
 export function MarketCell({
   title,
   imageUrl,
-  outcome,
+  subtitle,
   compact = false,
   className,
 }: {
   title: string | null
   imageUrl?: string | null
-  outcome?: string | null
+  /** e.g. `BTC 5m · live` — shown under the market title when not compact. */
+  subtitle?: string | null
   compact?: boolean
   className?: string
 }) {
@@ -52,14 +53,14 @@ export function MarketCell({
         >
           {displayTitle}
         </p>
-        {!compact &&
-          (outcome ? (
-            <p className="truncate text-xs text-muted-foreground" title={outcome}>
-              {outcome}
-            </p>
-          ) : (
-            <p className="truncate text-xs text-muted-foreground">BTC 5m window</p>
-          ))}
+        {!compact && subtitle ? (
+          <p
+            className="truncate text-xs font-medium text-muted-foreground"
+            title={subtitle}
+          >
+            {subtitle}
+          </p>
+        ) : null}
       </div>
     </div>
   )
