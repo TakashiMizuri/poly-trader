@@ -99,6 +99,7 @@ public static class DependencyInjection
         await EnsureEngineStakeSizingColumnsAsync(db, logger);
         await EnsureEngineStakePendingColumnsAsync(db, logger);
         await EnsureTradeRequestedStakeUsdColumnAsync(db, logger);
+        await EnsureTradeStakeSnapshotColumnsAsync(db, logger);
         await EnsureTradeEntryWavesJsonColumnAsync(db, logger);
         await EnsureEngineAutoRedeemEnabledColumnAsync(db, logger);
         var importedEntryModeFromEnv = await EnsureEngineLiveEntryOrderModeColumnAsync(
@@ -262,6 +263,51 @@ public static class DependencyInjection
             """
             INSERT OR IGNORE INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
             VALUES ('20260520160624_EngineStakePending', '10.0.8');
+            """);
+    }
+
+    private static async Task EnsureTradeStakeSnapshotColumnsAsync(
+        PolyTraderDbContext db,
+        ILogger<PolyTraderDbContext>? logger)
+    {
+        if (!await SchemaTableExistsAsync(db, "Trades"))
+        {
+            return;
+        }
+
+        if (await ColumnExistsAsync(db, "Trades", "StakeBalanceUsd"))
+        {
+            return;
+        }
+
+        logger?.LogWarning(
+            "Trades is missing stake snapshot / payout ratio columns; applying schema repair.");
+
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "Trades" ADD COLUMN "StakeBalanceUsd" REAL NULL;
+            """);
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "Trades" ADD COLUMN "BetStakeMode" TEXT NULL;
+            """);
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "Trades" ADD COLUMN "BetStakePercent" REAL NULL;
+            """);
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "Trades" ADD COLUMN "BetStakeFixedUsd" REAL NULL;
+            """);
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "Trades" ADD COLUMN "WinPayoutRatio" REAL NULL;
+            """);
+
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            INSERT OR IGNORE INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+            VALUES ('20260526120000_TradeStakeSnapshot', '10.0.8');
             """);
     }
 
