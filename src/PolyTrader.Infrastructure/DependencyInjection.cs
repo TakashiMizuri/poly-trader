@@ -64,7 +64,9 @@ public static class DependencyInjection
         services.AddSingleton<IPolymarketWalletResolver, PolymarketWalletResolver>();
         services.AddSingleton<IPolymarketRestTradingClient, PolymarketRestTradingClient>();
         services.AddSingleton<IPolymarketClobService, PolymarketClobService>();
+        services.AddSingleton<LiveTradeOutcomeResolver>();
         services.AddSingleton<ILiveTradeSettlementService, LiveTradeSettlementService>();
+        services.AddSingleton<LiveTradeReconciliationService>();
         services.AddSingleton<IPolymarketCtfRedeemService, PolymarketCtfRedeemService>();
         services.AddSingleton<IPolymarketRedeemService, PolymarketRedeemService>();
         services.AddSingleton<IConnectivityService, ConnectivityService>();
@@ -79,6 +81,7 @@ public static class DependencyInjection
         services.AddSingleton<BalanceChartImageBuilder>();
         services.AddHostedService<TradingEngineHostedService>();
         services.AddHostedService<PolymarketRedeemHostedService>();
+        services.AddHostedService<LiveTradeReconciliationHostedService>();
 
         return services;
     }

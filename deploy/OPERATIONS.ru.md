@@ -126,6 +126,39 @@ bash deploy/backup.sh /path/to/backup    # свой путь
 
 ---
 
+## Скачать SQLite на локальный ПК
+
+БД — файл SQLite в Docker volume, внутри контейнера `/app/data/polytrader.db` (+ `-wal`, `-shm`). Через `scp` с хоста **напрямую не скачать** — сначала выгрузить на диск сервера.
+
+**На сервере** (`cd /opt/poly-trader`):
+
+```bash
+mkdir -p db-export
+$COMPOSE stop api
+
+DATA_VOL="$(docker volume ls --format '{{.Name}}' | grep '_polytrader-data$' | head -1)"
+docker run --rm -v "${DATA_VOL}:/data:ro" -v "$PWD/db-export:/out" alpine cp -a /data/. /out/
+
+$COMPOSE start api
+ls -la db-export/    # должны быть polytrader.db, polytrader.db-wal, polytrader.db-shm
+```
+
+**На Windows** (PowerShell), все три файла:
+
+```powershell
+scp root@ВАШ_IP:/opt/poly-trader/db-export/polytrader.db C:\Users\nexte\Desktop\FX_DATA\
+scp root@ВАШ_IP:/opt/poly-trader/db-export/polytrader.db-wal C:\Users\nexte\Desktop\FX_DATA\
+scp root@ВАШ_IP:/opt/poly-trader/db-export/polytrader.db-shm C:\Users\nexte\Desktop\FX_DATA\
+```
+
+Или папку целиком: `scp -r root@ВАШ_IP:/opt/poly-trader/db-export C:\Users\nexte\Desktop\FX_DATA\`
+
+Альтернатива: `bash deploy/backup.sh` → скачать `backups/YYYYMMDD-HHMMSS/polytrader-data.tar.gz`.
+
+Открыть локально: DB Browser for SQLite (все три файла в одной папке). Не коммитить в git.
+
+---
+
 ## Типичные сценарии
 
 **Сменил API-токен:**

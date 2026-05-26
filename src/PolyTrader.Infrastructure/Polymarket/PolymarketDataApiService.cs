@@ -26,6 +26,14 @@ public interface IPolymarketDataApiService
         string userAddress,
         string assetTokenId,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Fetches wallet activity from the Data API (paginated). Requires configured wallet.
+    /// </summary>
+    Task<IReadOnlyList<PolymarketActivityEvent>> FetchActivityAsync(
+        long startUnixSeconds,
+        long? endUnixSeconds = null,
+        CancellationToken ct = default);
 }
 
 /// <summary>
@@ -70,6 +78,72 @@ public sealed class PolymarketDataApiService : IPolymarketDataApiService
                 return (bool?)null;
             },
             ct);
+
+    public async Task<IReadOnlyList<PolymarketActivityEvent>> FetchActivityAsync(
+        long startUnixSeconds,
+        long? endUnixSeconds = null,
+        CancellationToken ct = default)
+    {
+        var wallet = ResolveWalletAddress();
+        if (string.IsNullOrWhiteSpace(wallet))
+        {
+            return [];
+        }
+
+        const int limit = 500;
+        var offset = 0;
+        var results = new List<PolymarketActivityEvent>();
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            while (true)
+            {
+                var url =
+                    $"{DataApiBase}/activity?user={Uri.EscapeDataString(wallet)}&start={startUnixSeconds}&limit={limit}&offset={offset}&sortBy=TIMESTAMP&sortDirection=ASC";
+                if (endUnixSeconds is long end)
+                {
+                    url += $"&end={end}";
+                }
+
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.TryAddWithoutValidation("User-Agent", "PolyTrader/1.0 (activity)");
+
+                using var response = await client.SendAsync(request, ct);
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning(
+                        "Activity API returned {Status} for user {User} offset={Offset}",
+                        (int)response.StatusCode,
+                        wallet,
+                        offset);
+                    break;
+                }
+
+                var json = await response.Content.ReadAsStringAsync(ct);
+                var page = ParseActivityPage(json);
+                if (page.Count == 0)
+                {
+                    break;
+                }
+
+                results.AddRange(page);
+                if (page.Count < limit)
+                {
+                    break;
+                }
+
+                offset += limit;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to fetch Polymarket activity for {User}", wallet);
+            return results;
+        }
+
+        return results;
+    }
 
     public Task<bool?> TryIsOutcomeTokenRedeemableAsync(
         string userAddress,
@@ -160,6 +234,50 @@ public sealed class PolymarketDataApiService : IPolymarketDataApiService
             return onError(ex);
         }
     }
+
+    private static List<PolymarketActivityEvent> ParseActivityPage(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        if (doc.RootElement.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var list = new List<PolymarketActivityEvent>();
+        foreach (var row in doc.RootElement.EnumerateArray())
+        {
+            var ts = row.TryGetProperty("timestamp", out var tsEl) ? ReadLong(tsEl) : 0L;
+            if (ts > 1_000_000_000_000)
+            {
+                ts /= 1000;
+            }
+
+            list.Add(new PolymarketActivityEvent(
+                ts,
+                row.TryGetProperty("type", out var typeEl) ? typeEl.GetString() : null,
+                row.TryGetProperty("side", out var sideEl) ? sideEl.GetString() : null,
+                ReadDouble(row, "usdcSize"),
+                row.TryGetProperty("conditionId", out var condEl) ? condEl.GetString() : null,
+                row.TryGetProperty("eventSlug", out var evSlugEl) ? evSlugEl.GetString() : null,
+                row.TryGetProperty("slug", out var slugEl) ? slugEl.GetString() : null));
+        }
+
+        return list;
+    }
+
+    private static long ReadLong(JsonElement el) =>
+        el.ValueKind switch
+        {
+            JsonValueKind.Number => el.TryGetInt64(out var v) ? v : (long)el.GetDouble(),
+            JsonValueKind.String => long.TryParse(
+                el.GetString(),
+                NumberStyles.Integer,
+                CultureInfo.InvariantCulture,
+                out var v)
+                ? v
+                : 0L,
+            _ => 0L,
+        };
 
     private static double ReadDouble(JsonElement row, string name)
     {

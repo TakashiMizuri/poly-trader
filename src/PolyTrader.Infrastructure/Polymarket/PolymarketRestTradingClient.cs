@@ -6,6 +6,7 @@ using Polymarket.Net.Clients;
 using Polymarket.Net.Enums;
 using Polymarket.Net.Objects.Models;
 using Polymarket.Net;
+using PolyTrader.Core.Strategy;
 using PolyTrader.Infrastructure.Options;
 
 namespace PolyTrader.Infrastructure.Polymarket;
@@ -452,6 +453,13 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                 $"Cannot derive post-only limit on {tokenId} (bid {bid:F4}, ask {ask?.ToString("F4") ?? "n/a"}, stake ${stakeUsd:F2})");
         }
 
+        if (!EntryPriceRules.IsAllowed(limit.Value))
+        {
+            return LiveMarketBuyOutcome.Fail(
+                $"Maker limit {limit.Value:F4} outside allowed entry band (0, {EntryPriceRules.MaxEntryPrice:F2}] "
+                + $"on {tokenId} (bid {bid:F4}, ask {ask?.ToString("F4") ?? "n/a"})");
+        }
+
         LogLimitAdjustment(bidPriceHint, ask, limit.Value, wave: 1, tokenId);
         var wave = await ExecuteMakerLimitWaveAsync(
             client,
@@ -515,6 +523,13 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
         {
             return LiveMarketBuyOutcome.Fail(
                 $"Cannot derive post-only limit for wave 1 on {tokenId} (bid {wave1Bid:F4}, ask {wave1Ask?.ToString("F4") ?? "n/a"}, stake ${requestedStakeUsd:F2})");
+        }
+
+        if (!EntryPriceRules.IsAllowed(wave1Limit.Value))
+        {
+            return LiveMarketBuyOutcome.Fail(
+                $"Maker wave 1 limit {wave1Limit.Value:F4} outside allowed entry band (0, {EntryPriceRules.MaxEntryPrice:F2}] "
+                + $"on {tokenId} (bid {wave1Bid:F4}, ask {wave1Ask?.ToString("F4") ?? "n/a"})");
         }
 
         LogLimitAdjustment(bidPriceHint, wave1Ask, wave1Limit.Value, wave: 1, tokenId);
@@ -598,6 +613,27 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
             _logger.LogWarning(
                 "Skipping maker wave 2 for {TokenId}: no post-only price for remainder ${Remainder:F2} (bid {Bid:F4}, ask {Ask})",
                 tokenId,
+                remainderStake,
+                wave2Bid,
+                wave2Ask?.ToString("F4") ?? "n/a");
+            return BuildAggregatedMakerOutcome(
+                tokenId,
+                requestedStakeUsd,
+                totalMatchedShares,
+                priceNumerator,
+                primaryOrderId,
+                waves,
+                totalFilledStake);
+        }
+
+        if (!EntryPriceRules.IsAllowed(wave2Limit.Value))
+        {
+            _logger.LogWarning(
+                "Skipping maker wave 2 for {TokenId}: limit {Limit:F4} outside allowed entry band (0, {Max:F2}] "
+                + "for remainder ${Remainder:F2} (bid {Bid:F4}, ask {Ask})",
+                tokenId,
+                wave2Limit.Value,
+                EntryPriceRules.MaxEntryPrice,
                 remainderStake,
                 wave2Bid,
                 wave2Ask?.ToString("F4") ?? "n/a");
@@ -763,6 +799,19 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                     FilledStakeUsd: 0);
             }
 
+            if (!EntryPriceRules.IsAllowed((double)price.Value))
+            {
+                return new MakerLimitWaveResult(
+                    PlacementFailed: true,
+                    FailureReason:
+                        $"Post-only limit {price:F4} outside allowed entry band (0, {EntryPriceRules.MaxEntryPrice:F2}] "
+                        + $"(bid {bidHint:F4}, ask {askHint?.ToString("F4") ?? "n/a"})",
+                    OrderId: null,
+                    MatchedShares: 0,
+                    LimitPrice: null,
+                    FilledStakeUsd: 0);
+            }
+
             var shares = PolymarketOrderPricing.ComputeShareQuantity(stakeUsd, price.Value);
             if (shares < PolymarketClobLimits.MinOrderShares)
             {
@@ -869,18 +918,32 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                             stakeUsd);
                         if (repriced is > 0 && repriced != price.Value)
                         {
-                            _logger.LogInformation(
-                                "Re-priced maker limit for {TokenId} after cross: {Old:F4} -> {New:F4} (bid {Bid:F4}, ask {Ask})",
-                                tokenId,
-                                price,
-                                repriced,
-                                freshBid,
-                                freshAsk?.ToString("F4") ?? "n/a");
-                            price = repriced;
-                            bidHint = freshBid;
-                            askHint = freshAsk;
-                            shares = PolymarketOrderPricing.ComputeShareQuantity(stakeUsd, price.Value);
-                            continue;
+                            if (!EntryPriceRules.IsAllowed((double)repriced.Value))
+                            {
+                                _logger.LogWarning(
+                                    "Refusing maker limit re-price for {TokenId} above entry cap: {New:F4} "
+                                    + "(allowed (0, {Max:F2}], bid {Bid:F4}, ask {Ask})",
+                                    tokenId,
+                                    repriced,
+                                    EntryPriceRules.MaxEntryPrice,
+                                    freshBid,
+                                    freshAsk?.ToString("F4") ?? "n/a");
+                            }
+                            else
+                            {
+                                _logger.LogInformation(
+                                    "Re-priced maker limit for {TokenId} after cross: {Old:F4} -> {New:F4} (bid {Bid:F4}, ask {Ask})",
+                                    tokenId,
+                                    price,
+                                    repriced,
+                                    freshBid,
+                                    freshAsk?.ToString("F4") ?? "n/a");
+                                price = repriced;
+                                bidHint = freshBid;
+                                askHint = freshAsk;
+                                shares = PolymarketOrderPricing.ComputeShareQuantity(stakeUsd, price.Value);
+                                continue;
+                            }
                         }
                     }
 

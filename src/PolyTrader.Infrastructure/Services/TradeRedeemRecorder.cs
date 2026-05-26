@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using Microsoft.EntityFrameworkCore;
 using PolyTrader.Core.Models;
 using PolyTrader.Infrastructure.Data;
@@ -98,6 +99,44 @@ public static class TradeRedeemRecorder
         if (marked > 0)
         {
             await db.SaveChangesAsync(ct);
+        }
+
+        return marked;
+    }
+
+    /// <summary>
+    /// Sets <see cref="Entities.TradeEntity.RedeemedAt"/> when Activity shows a REDEEM for the trade condition
+    /// (including $0 redeems on losses).
+    /// </summary>
+    public static int ApplyRedeemedAtFromActivity(
+        IEnumerable<Entities.TradeEntity> trades,
+        FrozenDictionary<string, PolymarketMarketCashSummary> activityByCondition)
+    {
+        if (activityByCondition.Count == 0)
+        {
+            return 0;
+        }
+
+        var marked = 0;
+        foreach (var trade in trades)
+        {
+            if (trade.RedeemedAt != null || trade.Market == null)
+            {
+                continue;
+            }
+
+            var key = PolymarketConditionId.Normalize(trade.Market.ConditionId);
+            if (key == null
+                || !activityByCondition.TryGetValue(key, out var summary)
+                || !summary.HasRedeem)
+            {
+                continue;
+            }
+
+            trade.RedeemedAt = summary.LastRedeemTimestampUnix is long ts and > 0
+                ? DateTimeOffset.FromUnixTimeSeconds(ts).UtcDateTime
+                : DateTime.UtcNow;
+            marked++;
         }
 
         return marked;

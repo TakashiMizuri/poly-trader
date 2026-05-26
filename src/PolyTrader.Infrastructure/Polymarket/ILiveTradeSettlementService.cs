@@ -6,7 +6,7 @@ namespace PolyTrader.Infrastructure.Polymarket;
 public interface ILiveTradeSettlementService
 {
     /// <summary>
-    /// Resolves win/loss from Polymarket (Gamma / Data API). Binance OHLC only as last resort.
+    /// Resolves win/loss from Polymarket (Gamma / Data API / Activity). Does not use Binance OHLC.
     /// </summary>
     Task<bool?> TryResolveOutcomeAsync(
         TradeEntity trade,
