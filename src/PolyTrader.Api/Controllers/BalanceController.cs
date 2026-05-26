@@ -87,6 +87,13 @@ public sealed class BalanceController : ControllerBase
             initialBalance = result.InitialBalance,
             actual = result.Actual.Select(p => new { time = p.Time, value = p.Value }),
             expected = result.Expected.Select(p => new { time = p.Time, value = p.Value }),
+            payoutRatios = result.PayoutRatios.Select(p => new
+            {
+                time = p.Time,
+                ratio = p.Ratio,
+                won = p.Won,
+                tradeId = p.TradeId,
+            }),
             mode = resolvedMode.ToString(),
             commissionPercent = settings.CommissionPercent,
             clobConfigured = _clob.IsConfigured,

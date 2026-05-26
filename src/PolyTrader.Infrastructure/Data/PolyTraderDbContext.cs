@@ -49,6 +49,7 @@ public sealed class PolyTraderDbContext(DbContextOptions<PolyTraderDbContext> op
             e.Property(x => x.Side).HasConversion<string>();
             e.Property(x => x.Trend).HasConversion<string>();
             e.Property(x => x.Mode).HasConversion<string>();
+            e.Property(x => x.BetStakeMode).HasConversion<string>();
         });
 
         modelBuilder.Entity<PositionEntity>(e =>

@@ -207,6 +207,12 @@ scp .\docker-compose.yml .\docker-compose.prod.yml root@62.3.12.207:/opt/poly-tr
 
 ---
 
+## Документация
+
+- [Механизм входа в сделку (волны, patience, коридоры цен)](../docs/ENTRY_MECHANISM.ru.md)
+
+---
+
 ## Полезные переменные `.env` (prod)
 
 ```env
@@ -215,6 +221,10 @@ WEB_PUBLISH=127.0.0.1:8081:80
 VITE_API_URL=
 VITE_API_TOKEN=
 POLYMARKET_PRIVATE_KEY=0x...
+POLYTRADER_LIVE_MAKER_FILL_WAIT_SECONDS=45
+POLYTRADER_LIVE_MAKER_REMAINDER_FILL_WAIT_SECONDS=20
 ```
 
 `VITE_*` в prod **всегда пустые** — UI ходит на `/api` через nginx.
+
+Тайминги maker-волн: см. [ENTRY_MECHANISM.ru.md](../docs/ENTRY_MECHANISM.ru.md).

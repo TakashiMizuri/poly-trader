@@ -2,7 +2,6 @@ using System.Collections.Frozen;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PolyTrader.Core.Models;
-using PolyTrader.Core.Strategy;
 using PolyTrader.Infrastructure.Entities;
 using PolyTrader.Infrastructure.Options;
 
@@ -56,16 +55,8 @@ public sealed class LiveTradeOutcomeResolver
             ct);
     }
 
-    public static void ApplyOutcome(TradeEntity trade, bool won, double commissionPercent)
-    {
-        trade.Won = won;
-        var (pnl, _) = TrendBetStrategySimulator.ComputeBetPnl(
-            won,
-            trade.StakeUsd,
-            commissionPercent,
-            trade.EntryPrice);
-        trade.PnlUsd = pnl;
-    }
+    public static void ApplyOutcome(TradeEntity trade, bool won, double commissionPercent) =>
+        TradeRecording.ApplySettlement(trade, won, commissionPercent);
 
     private async Task<bool?> TryResolveFromGammaAsync(TradeEntity trade, CancellationToken ct)
     {

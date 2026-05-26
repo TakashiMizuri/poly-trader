@@ -15,10 +15,13 @@ internal static class BalanceHistoryIdealEntry
 
 public sealed record BalanceHistoryPoint(long Time, double Value);
 
+public sealed record TradePayoutPoint(long Time, double Ratio, bool Won, int TradeId);
+
 public sealed record BalanceHistoryResult(
     double InitialBalance,
     IReadOnlyList<BalanceHistoryPoint> Actual,
-    IReadOnlyList<BalanceHistoryPoint> Expected);
+    IReadOnlyList<BalanceHistoryPoint> Expected,
+    IReadOnlyList<TradePayoutPoint> PayoutRatios);
 
 public sealed class BalanceHistoryService(IPolymarketClobService clob)
 {
@@ -39,14 +42,14 @@ public sealed class BalanceHistoryService(IPolymarketClobService clob)
             var id = paperAccountId ?? settings.ActivePaperAccountId;
             if (id is not int accountId)
             {
-                return new BalanceHistoryResult(0, [], []);
+                return new BalanceHistoryResult(0, [], [], []);
             }
 
             account = await db.PaperAccounts.AsNoTracking()
                 .FirstOrDefaultAsync(a => a.Id == accountId, ct);
             if (account == null)
             {
-                return new BalanceHistoryResult(0, [], []);
+                return new BalanceHistoryResult(0, [], [], []);
             }
 
             contextId = account.Id;
@@ -82,8 +85,54 @@ public sealed class BalanceHistoryService(IPolymarketClobService clob)
             actual,
             ct);
 
-        return new BalanceHistoryResult(initialBalance, actual, expected);
+        var payoutRatios = await BuildPayoutRatioSeriesAsync(
+            db,
+            mode,
+            contextId,
+            limit,
+            ct);
+
+        return new BalanceHistoryResult(initialBalance, actual, expected, payoutRatios);
     }
+
+    private static async Task<IReadOnlyList<TradePayoutPoint>> BuildPayoutRatioSeriesAsync(
+        PolyTraderDbContext db,
+        TradingMode mode,
+        int tradeContextId,
+        int limit,
+        CancellationToken ct)
+    {
+        var trades = await db.Trades.AsNoTracking()
+            .Where(t => t.Mode == mode
+                && t.PaperAccountId == tradeContextId
+                && t.Won != null)
+            .OrderByDescending(t => t.CandleTime)
+            .ThenByDescending(t => t.Id)
+            .Take(limit)
+            .ToListAsync(ct);
+
+        trades.Reverse();
+
+        var points = new List<TradePayoutPoint>(trades.Count);
+        foreach (var trade in trades)
+        {
+            if (TradeRecording.ResolvePayoutRatio(trade) is not double ratio)
+            {
+                continue;
+            }
+
+            points.Add(new TradePayoutPoint(
+                CandleTimeToChartTime(trade.CandleTime),
+                ratio,
+                trade.Won!.Value,
+                trade.Id));
+        }
+
+        return points;
+    }
+
+    private static long CandleTimeToChartTime(long candleTime) =>
+        candleTime >= 1_000_000_000_000L ? candleTime / 1000L : candleTime;
 
     /// <summary>
     /// Optional live tail point. Uses DB snapshots only when CLOB is slow/unavailable —

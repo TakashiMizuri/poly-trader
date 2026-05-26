@@ -100,6 +100,23 @@ public static class TrendBetStrategySimulator
         return stakeUsd / price;
     }
 
+    /// <summary>Gross $1/share payout on a winning bet (before entry fee).</summary>
+    public static double ComputeGrossWinPayoutUsd(double stakeUsd, double entryPrice)
+    {
+        return ComputeEntryShares(stakeUsd, entryPrice);
+    }
+
+    /// <summary>|PnL| ÷ entry stake (e.g. +$3.3 on $3 → 1.1; −$3 on $3 → 1).</summary>
+    public static double ComputePayoutRatio(double pnlUsd, double stakeUsd)
+    {
+        if (stakeUsd <= 0)
+        {
+            return 0;
+        }
+
+        return Math.Abs(pnlUsd) / stakeUsd;
+    }
+
     /// <summary>
     /// Backtest: bet only when blend_fade2 signals at bar open (Polymarket 1:1 model).
     /// </summary>

@@ -72,10 +72,15 @@ public static class TradeMapper
         t.RequestedStakeUsd,
         isPartialFill = t.RequestedStakeUsd is > 0
             && t.RequestedStakeUsd.Value > t.StakeUsd + 0.01,
+        t.StakeBalanceUsd,
+        betStakeMode = t.BetStakeMode?.ToString(),
+        t.BetStakePercent,
+        t.BetStakeFixedUsd,
         t.EntryPrice,
         entryShares = TrendBetStrategySimulator.ComputeEntryShares(t.StakeUsd, t.EntryPrice),
         t.Won,
         t.PnlUsd,
+        t.WinPayoutRatio,
         t.PaperAccountId,
         t.PolymarketOrderId,
         entryWaves = TradeEntryWavesJson.Deserialize(t.EntryWavesJson)?.Select(w => new

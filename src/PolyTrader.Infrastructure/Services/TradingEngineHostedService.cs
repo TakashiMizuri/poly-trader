@@ -693,14 +693,9 @@ public sealed class TradingEngineHostedService : BackgroundService
                     else
                     {
                         won = liveWon.Value;
-                        openTrade.Won = won;
-                        var (pnl, _) = TrendBetStrategySimulator.ComputeBetPnl(
-                            won,
-                            openTrade.StakeUsd,
-                            LiveTradeCommissionPercent,
-                            openTrade.EntryPrice);
-                        openTrade.PnlUsd = pnl;
+                        TradeRecording.ApplySettlement(openTrade, won, LiveTradeCommissionPercent);
                         db.Trades.Update(openTrade);
+                        var pnl = openTrade.PnlUsd ?? 0;
                         tradesToPublish.Add(openTrade);
                         LogTradeClosed(openTrade, won, pnl, paperAccount?.Balance);
 
@@ -717,13 +712,8 @@ public sealed class TradingEngineHostedService : BackgroundService
                 else
                 {
                     won = actions.Settlement.Won;
-                    openTrade.Won = won;
-                    var (pnl, _) = TrendBetStrategySimulator.ComputeBetPnl(
-                        won,
-                        openTrade.StakeUsd,
-                        settings.CommissionPercent,
-                        openTrade.EntryPrice);
-                    openTrade.PnlUsd = pnl;
+                    TradeRecording.ApplySettlement(openTrade, won, settings.CommissionPercent);
+                    var pnl = openTrade.PnlUsd ?? 0;
 
                     if (isPaper && paperAccount != null)
                     {
@@ -1130,6 +1120,7 @@ public sealed class TradingEngineHostedService : BackgroundService
                                 EntryWavesJson = entryWavesJson,
                                 MarketId = entryMarket.Id,
                             };
+                            TradeRecording.ApplyStakeSnapshot(trade, balanceAtOpen, settings);
 
                             db.Trades.Add(trade);
                             tradesToPublish.Add(trade);
@@ -1821,13 +1812,8 @@ public sealed class TradingEngineHostedService : BackgroundService
         var commission = trade.Mode == TradingMode.Live
             ? LiveTradeCommissionPercent
             : settings.CommissionPercent;
-        trade.Won = won.Value;
-        var (pnl, _) = TrendBetStrategySimulator.ComputeBetPnl(
-            won.Value,
-            trade.StakeUsd,
-            commission,
-            trade.EntryPrice);
-        trade.PnlUsd = pnl;
+        TradeRecording.ApplySettlement(trade, won.Value, commission);
+        var pnl = trade.PnlUsd ?? 0;
 
         if (paperAccount != null)
         {

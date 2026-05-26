@@ -64,6 +64,11 @@ function formatPnlUsd(value: number | null | undefined): string {
   return `-$${abs}`
 }
 
+function formatPayoutRatio(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return '—'
+  return `${value.toFixed(2)}×`
+}
+
 function formatShare(count: number, total: number): string {
   if (total <= 0) return '0%'
   return `${Math.round((count / total) * 100)}%`
@@ -282,7 +287,7 @@ export function TradeStatisticsDialog({
             </div>
           ) : stats ? (
             <>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <Stat
                   label="Win rate"
                   value={formatWinRate(stats.winRate)}
@@ -290,6 +295,15 @@ export function TradeStatisticsDialog({
                     stats.tradesSettled > 0
                       ? `${stats.won}W / ${stats.lost}L settled`
                       : 'No settled trades'
+                  }
+                />
+                <Stat
+                  label="Avg win ratio"
+                  value={formatPayoutRatio(stats.avgWinPayoutRatio)}
+                  hint={
+                    stats.won > 0
+                      ? `|PnL|/stake · ${stats.won} wins`
+                      : 'No winning trades'
                   }
                 />
                 <Stat
@@ -305,7 +319,6 @@ export function TradeStatisticsDialog({
                       ? `${stats.tradesSettled} settled`
                       : undefined
                   }
-                  className="col-span-2 sm:col-span-1"
                 />
               </div>
 

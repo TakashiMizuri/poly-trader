@@ -293,6 +293,15 @@ namespace PolyTrader.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<double?>("BetStakeFixedUsd")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("BetStakeMode")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("BetStakePercent")
+                        .HasColumnType("REAL");
+
                     b.Property<long>("CandleTime")
                         .HasColumnType("INTEGER");
 
@@ -331,6 +340,9 @@ namespace PolyTrader.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<double?>("StakeBalanceUsd")
+                        .HasColumnType("REAL");
+
                     b.Property<double>("StakeUsd")
                         .HasColumnType("REAL");
 
@@ -340,6 +352,9 @@ namespace PolyTrader.Infrastructure.Migrations
 
                     b.Property<bool?>("Won")
                         .HasColumnType("INTEGER");
+
+                    b.Property<double?>("WinPayoutRatio")
+                        .HasColumnType("REAL");
 
                     b.HasKey("Id");
 

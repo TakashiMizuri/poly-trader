@@ -66,6 +66,13 @@ public class StrategyGoldenTests
     }
 
     [Fact]
+    public void ComputePayoutRatio_IsAbsPnlOverEntryStake()
+    {
+        Assert.Equal(1.1, TrendBetStrategySimulator.ComputePayoutRatio(3.3, 3), 3);
+        Assert.Equal(1.0, TrendBetStrategySimulator.ComputePayoutRatio(-3, 3), 3);
+    }
+
+    [Fact]
     public void ForLiveEngine_UsesStrategyMdStakeAndFeeDefaults()
     {
         var p = TrendBetStrategyParams.ForLiveEngine(

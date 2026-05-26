@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PolyTrader.Core.Models;
+using PolyTrader.Core.Strategy;
 using PolyTrader.Infrastructure.Data;
 
 namespace PolyTrader.Api.Services;
@@ -63,6 +64,14 @@ public static class TradeStatisticsService
             .Where(t => t.PnlUsd is double pnl)
             .Sum(t => t.PnlUsd!.Value);
 
+        var winPayoutRatios = trades
+            .Where(t => t.Won == true && t.PnlUsd is double && t.StakeUsd > 0)
+            .Select(t => TrendBetStrategySimulator.ComputePayoutRatio(t.PnlUsd!.Value, t.StakeUsd))
+            .ToList();
+        double? avgWinPayoutRatio = winPayoutRatios.Count > 0
+            ? winPayoutRatios.Average()
+            : null;
+
         var skipGroups = skips
             .GroupBy(s => s.SkipReason, StringComparer.OrdinalIgnoreCase)
             .Select(g => new
@@ -97,6 +106,7 @@ public static class TradeStatisticsService
             won,
             lost,
             winRate = settled > 0 ? (double)won / settled : (double?)null,
+            avgWinPayoutRatio,
             totalPnlUsd,
             skippedCount,
             errorCount,

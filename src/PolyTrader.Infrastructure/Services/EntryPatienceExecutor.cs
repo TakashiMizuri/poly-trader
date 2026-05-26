@@ -213,6 +213,8 @@ public sealed class EntryPatienceExecutor : IEntryPatienceExecutor
                     return;
                 }
 
+                TradeRecording.ApplyStakeSnapshot(filled, balanceAtOpen, settings);
+
                 try
                 {
                     db.Trades.Add(filled);
@@ -586,9 +588,14 @@ internal static class TradeEventDtoFactory
         trend = t.Trend.ToString(),
         mode = t.Mode.ToString(),
         t.StakeUsd,
+        t.StakeBalanceUsd,
+        betStakeMode = t.BetStakeMode?.ToString(),
+        t.BetStakePercent,
+        t.BetStakeFixedUsd,
         t.EntryPrice,
         t.Won,
         t.PnlUsd,
+        t.WinPayoutRatio,
         t.PaperAccountId,
         t.PolymarketOrderId,
         market = t.Market == null

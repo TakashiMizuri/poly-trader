@@ -183,6 +183,8 @@ export interface TradeStatistics {
   won: number
   lost: number
   winRate: number | null
+  /** Mean |PnL|/stake on winning settled trades. */
+  avgWinPayoutRatio: number | null
   totalPnlUsd: number
   skippedCount: number
   errorCount: number
