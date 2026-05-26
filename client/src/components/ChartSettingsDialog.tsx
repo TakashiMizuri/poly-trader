@@ -1,15 +1,20 @@
-import type { ChartBacktestParams, ChartDisplayPrefs } from '@/lib/chartDisplayPrefs'
+import type {
+  ChartBacktestParams,
+  ChartCandleRangeMode,
+  ChartDisplayPrefs,
+} from '@/lib/chartDisplayPrefs'
 
 import {
-
+  CHART_CANDLE_RANGE_LABELS,
+  chartRangeFromMsToDatetimeLocal,
+  parseChartRangeDatetimeLocal,
+} from '@/lib/chartCandleRange'
+import {
   CHART_MAX_CANDLES_MAX,
-
   CHART_MAX_CANDLES_MIN,
-
+  normalizeCandleRangeFromMs,
   normalizeChartBacktestParams,
-
   normalizeMaxCandles,
-
 } from '@/lib/chartDisplayPrefs'
 
 import type { BetStakeMode } from '@/types/trendBetStrategy'
@@ -52,7 +57,16 @@ import {
 
 } from '@/components/ui/select'
 
+import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+
+const CHART_RANGE_SELECT_OPTIONS: ChartCandleRangeMode[] = [
+  '1h',
+  '1d',
+  '1w',
+  'fromDate',
+  'count',
+]
 
 
 
@@ -166,43 +180,155 @@ export function ChartSettingsDialog({
 
               <h3 className="text-sm font-medium text-foreground">Chart data</h3>
 
-              <div className="mt-2 space-y-1.5">
+              <div className="mt-2 space-y-3">
 
-                <Label htmlFor="chart-max-candles">Candles on chart</Label>
+                <div className="space-y-1.5">
 
-                <DraftNumberInput
+                  <Label htmlFor="chart-candle-range">Visible period</Label>
 
-                  id="chart-max-candles"
+                  <Select
 
-                  integer
+                    value={prefs.candleRangeMode}
 
-                  value={prefs.maxCandles}
+                    onValueChange={(v) =>
 
-                  onCommit={(next) => {
+                      onPrefsChange({
 
-                    if (next == null) return
+                        ...prefs,
 
-                    const normalized = normalizeMaxCandles(next)
+                        candleRangeMode: v as ChartCandleRangeMode,
 
-                    if (normalized !== prefs.maxCandles) {
-
-                      onPrefsChange({ ...prefs, maxCandles: normalized })
+                      })
 
                     }
 
-                  }}
+                  >
 
-                />
+                    <SelectTrigger id="chart-candle-range">
 
-                <p className="text-sm text-muted-foreground">
+                      <SelectValue />
 
-                  Recent BTCUSDT bars loaded from Binance ({CHART_MAX_CANDLES_MIN}–
+                    </SelectTrigger>
 
-                  {CHART_MAX_CANDLES_MAX.toLocaleString()}). Press Enter or click
+                    <SelectContent align="start">
 
-                  away to apply; changing this reloads history.
+                      {CHART_RANGE_SELECT_OPTIONS.map((mode) => (
 
-                </p>
+                        <SelectItem key={mode} value={mode}>
+
+                          {CHART_CANDLE_RANGE_LABELS[mode]}
+
+                        </SelectItem>
+
+                      ))}
+
+                    </SelectContent>
+
+                  </Select>
+
+                  <p className="text-sm text-muted-foreground">
+
+                    BTCUSDT 5m candles loaded from Binance. Changing the period
+
+                    reloads history.
+
+                  </p>
+
+                </div>
+
+
+
+                {prefs.candleRangeMode === 'fromDate' && (
+
+                  <div className="space-y-1.5">
+
+                    <Label htmlFor="chart-range-from">Start date & time</Label>
+
+                    <Input
+
+                      id="chart-range-from"
+
+                      type="datetime-local"
+
+                      value={chartRangeFromMsToDatetimeLocal(
+
+                        prefs.candleRangeFromMs ?? Date.now() - 86_400_000,
+
+                      )}
+
+                      onChange={(e) => {
+
+                        const ms = parseChartRangeDatetimeLocal(e.target.value)
+
+                        if (ms == null) return
+
+                        onPrefsChange({
+
+                          ...prefs,
+
+                          candleRangeFromMs: normalizeCandleRangeFromMs(ms),
+
+                        })
+
+                      }}
+
+                    />
+
+                    <p className="text-sm text-muted-foreground">
+
+                      Local timezone. Shows all bars from this moment through now.
+
+                    </p>
+
+                  </div>
+
+                )}
+
+
+
+                {prefs.candleRangeMode === 'count' && (
+
+                  <div className="space-y-1.5">
+
+                    <Label htmlFor="chart-max-candles">Bar count</Label>
+
+                    <DraftNumberInput
+
+                      id="chart-max-candles"
+
+                      integer
+
+                      value={prefs.maxCandles}
+
+                      onCommit={(next) => {
+
+                        if (next == null) return
+
+                        const normalized = normalizeMaxCandles(next)
+
+                        if (normalized !== prefs.maxCandles) {
+
+                          onPrefsChange({ ...prefs, maxCandles: normalized })
+
+                        }
+
+                      }}
+
+                    />
+
+                    <p className="text-sm text-muted-foreground">
+
+                      Most recent bars ({CHART_MAX_CANDLES_MIN}–
+
+                      {CHART_MAX_CANDLES_MAX.toLocaleString()}). Press Enter or
+
+                      click away to apply.
+
+                    </p>
+
+                  </div>
+
+                )}
 
               </div>
 

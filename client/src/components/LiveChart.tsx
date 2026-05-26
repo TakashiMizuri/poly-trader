@@ -10,7 +10,6 @@ import {
 } from 'lightweight-charts'
 import type { ChartCandle } from '@/types/candle'
 import type { Timeframe } from '@/types/timeframe'
-import { lastMarketDataCandles } from '@/constants/marketData'
 import { analyzeTrendAndBos } from '@/utils/chart/detectBreakOfStructure'
 import { simulateTrendBetStrategy } from '@/utils/chart/simulateTrendBetStrategy'
 import {
@@ -29,6 +28,7 @@ import {
 import { useTheme } from '@/context/ThemeContext'
 import { ChartContextMenu, type ChartContextMenuAnchor } from '@/components/ChartContextMenu'
 import { ChartSettingsDialog } from '@/components/ChartSettingsDialog'
+import { filterCandlesForChartRange } from '@/lib/chartCandleRange'
 import {
   chartBacktestToStrategyParams,
   DEFAULT_CHART_DISPLAY_PREFS,
@@ -89,8 +89,13 @@ export function LiveChart({
   const [isLayoutReady, setIsLayoutReady] = useState(false)
 
   const chartCandles = useMemo(
-    () => lastMarketDataCandles(candles, displayPrefs.maxCandles),
-    [candles, displayPrefs.maxCandles],
+    () => filterCandlesForChartRange(candles, displayPrefs),
+    [
+      candles,
+      displayPrefs.candleRangeMode,
+      displayPrefs.candleRangeFromMs,
+      displayPrefs.maxCandles,
+    ],
   )
 
   const strategyParams = useMemo(

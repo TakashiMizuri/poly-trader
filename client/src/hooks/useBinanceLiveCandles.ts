@@ -9,8 +9,15 @@ import {
 	writeCandleCache,
 } from '@/lib/candleCache';
 import type { ChartCandle } from '@/types/candle';
+import type { ChartDisplayPrefs } from '@/lib/chartDisplayPrefs';
+import {
+	chartRangeHistoryLimit,
+	filterCandlesForChartRange,
+	shouldFetchKlinesSince,
+} from '@/lib/chartCandleRange';
 import {
 	fetchBinanceKlines,
+	fetchBinanceKlinesSince,
 	getBinanceCombinedStreamUrl,
 	getBinanceKlineStreamUrl,
 	getBinanceTradeStreamName,
@@ -29,11 +36,18 @@ const DEFAULT_HISTORY_LIMIT = MARKET_DATA_MAX_CANDLES;
 const DEFAULT_LIVE_REFRESH_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 30_000;
 
+export type ChartCandleRangePrefs = Pick<
+	ChartDisplayPrefs,
+	'candleRangeMode' | 'candleRangeFromMs' | 'maxCandles'
+>;
+
 export interface UseBinanceLiveCandlesOptions {
 	symbol?: string;
 	interval?: BinanceKlineInterval;
 	/** How many recent closed bars to load on connect (default: 1000). */
 	historyLimit?: number;
+	/** Time window for history load and in-memory trim (overrides historyLimit). */
+	chartRange?: ChartCandleRangePrefs;
 	/** Poll latest trade into the forming bar (e.g. every 1s on 5m). */
 	liveRefreshMs?: number;
 	enabled?: boolean;
@@ -45,10 +59,23 @@ export function useBinanceLiveCandles(
 	const {
 		symbol = DEFAULT_SYMBOL,
 		interval = DEFAULT_INTERVAL,
-		historyLimit = DEFAULT_HISTORY_LIMIT,
+		historyLimit: historyLimitOption = DEFAULT_HISTORY_LIMIT,
+		chartRange,
 		liveRefreshMs = DEFAULT_LIVE_REFRESH_MS,
 		enabled = true,
 	} = options;
+
+	const historyLimit = chartRange
+		? chartRangeHistoryLimit(chartRange, interval)
+		: historyLimitOption;
+
+	const trimCandles = useCallback(
+		(candles: ChartCandle[]) =>
+			chartRange
+				? filterCandlesForChartRange(candles, chartRange)
+				: lastMarketDataCandles(candles, historyLimit),
+		[chartRange, historyLimit],
+	);
 
 	const [candles, setCandles] = useState<ChartCandle[]>(
 		() => readCandleCache(symbol, interval) ?? [],
@@ -108,13 +135,15 @@ export function useBinanceLiveCandles(
 	const applyKline = useCallback(
 		(candle: ChartCandle) => {
 			setCandles((prev) =>
-				lastMarketDataCandles(mergeKlineUpdate(prev, candle), historyLimit),
+				trimCandles(
+					lastMarketDataCandles(mergeKlineUpdate(prev, candle), historyLimit),
+				),
 			);
 			setLastPrice(candle.close);
 			setLastEventTime(Date.now());
 			latestTradePriceRef.current = candle.close;
 		},
-		[historyLimit],
+		[historyLimit, trimCandles],
 	);
 
 	const applyTradePrice = useCallback((price: number) => {
@@ -264,14 +293,29 @@ export function useBinanceLiveCandles(
 			setStatus('loading');
 			setError(null);
 			try {
-				const history = await fetchBinanceKlines(
-					symbol,
-					interval,
-					historyLimit,
-				);
+				let history: ChartCandle[];
+				if (
+					chartRange &&
+					shouldFetchKlinesSince(chartRange) &&
+					chartRange.candleRangeFromMs != null
+				) {
+					history = await fetchBinanceKlinesSince(
+						symbol,
+						interval,
+						chartRange.candleRangeFromMs,
+					);
+				} else {
+					history = await fetchBinanceKlines(
+						symbol,
+						interval,
+						historyLimit,
+					);
+				}
 				if (cancelled) return;
 
-				const trimmed = lastMarketDataCandles(history, historyLimit);
+				const trimmed = trimCandles(
+					lastMarketDataCandles(history, historyLimit),
+				);
 				setCandles(trimmed);
 				writeCandleCache(symbol, interval, trimmed);
 				const last = trimmed[trimmed.length - 1];
@@ -304,6 +348,8 @@ export function useBinanceLiveCandles(
 		symbol,
 		interval,
 		historyLimit,
+		chartRange,
+		trimCandles,
 		liveRefreshMs,
 		useTradeTick,
 		enabled,

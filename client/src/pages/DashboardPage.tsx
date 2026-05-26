@@ -105,11 +105,24 @@ export function DashboardPage() {
 
   const [chartDisplayPrefs] = useChartDisplayPrefs()
 
+  const chartRange = useMemo(
+    () => ({
+      candleRangeMode: chartDisplayPrefs.candleRangeMode,
+      candleRangeFromMs: chartDisplayPrefs.candleRangeFromMs,
+      maxCandles: chartDisplayPrefs.maxCandles,
+    }),
+    [
+      chartDisplayPrefs.candleRangeMode,
+      chartDisplayPrefs.candleRangeFromMs,
+      chartDisplayPrefs.maxCandles,
+    ],
+  )
+
   const { candles, status: candleStatus } = useBinanceLiveCandles({
     symbol: 'BTCUSDT',
     interval: '5m',
     liveRefreshMs: 1000,
-    historyLimit: chartDisplayPrefs.maxCandles,
+    chartRange,
   })
 
   const chartLoading =

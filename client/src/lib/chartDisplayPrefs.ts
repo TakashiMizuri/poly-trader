@@ -1,4 +1,7 @@
 import { MARKET_DATA_MAX_CANDLES } from '@/constants/marketData'
+
+/** Default start when switching to “from date” (last 24h). */
+export const DEFAULT_CHART_RANGE_FROM_MS = Date.now() - 86_400 * 1000
 import {
   DEFAULT_TREND_BET_STRATEGY_PARAMS,
   type BetStakeMode,
@@ -11,6 +14,16 @@ export const DEFAULT_CHART_MAX_CANDLES = MARKET_DATA_MAX_CANDLES
 
 export const CHART_DISPLAY_PREFS_CHANGED_EVENT =
   'poly-trader-chart-display-changed'
+
+export type ChartCandleRangeMode = '1h' | '1d' | '1w' | 'fromDate' | 'count'
+
+const CHART_CANDLE_RANGE_MODES: ChartCandleRangeMode[] = [
+  '1h',
+  '1d',
+  '1w',
+  'fromDate',
+  'count',
+]
 
 export interface ChartBacktestParams {
   startBalance: number
@@ -29,7 +42,11 @@ export interface ChartDisplayPrefs {
   showEquityCurve: boolean
   /** Max DD / WR / PnL panel on the chart pane. */
   showBacktestStats: boolean
-  /** How many recent BTC candles to load and render. */
+  /** Visible window: last hour/day/week, from a date, or a fixed bar count. */
+  candleRangeMode: ChartCandleRangeMode
+  /** UTC ms when {@link candleRangeMode} is `fromDate`. */
+  candleRangeFromMs: number | null
+  /** How many recent BTC candles to load when {@link candleRangeMode} is `count`. */
   maxCandles: number
   backtest: ChartBacktestParams
 }
@@ -49,6 +66,8 @@ export const DEFAULT_CHART_DISPLAY_PREFS: ChartDisplayPrefs = {
   showBosOverlay: true,
   showEquityCurve: true,
   showBacktestStats: true,
+  candleRangeMode: '1d',
+  candleRangeFromMs: DEFAULT_CHART_RANGE_FROM_MS,
   maxCandles: DEFAULT_CHART_MAX_CANDLES,
   backtest: { ...DEFAULT_CHART_BACKTEST_PARAMS },
 }
@@ -59,6 +78,35 @@ const LEGACY_STRATEGY_PARAMS_KEY = 'poly-trader-trend-bet-strategy-params'
 function clampNumber(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min
   return Math.min(max, Math.max(min, value))
+}
+
+export function normalizeCandleRangeMode(
+  value: unknown,
+): ChartCandleRangeMode {
+  if (
+    typeof value === 'string' &&
+    CHART_CANDLE_RANGE_MODES.includes(value as ChartCandleRangeMode)
+  ) {
+    return value as ChartCandleRangeMode
+  }
+  return DEFAULT_CHART_DISPLAY_PREFS.candleRangeMode
+}
+
+export function normalizeCandleRangeFromMs(
+  value: unknown,
+  nowMs = Date.now(),
+): number | null {
+  const n =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? Number.parseInt(value, 10)
+        : null
+  if (n == null || !Number.isFinite(n)) {
+    return DEFAULT_CHART_RANGE_FROM_MS
+  }
+  const clamped = Math.min(n, nowMs)
+  return clamped > 0 ? clamped : DEFAULT_CHART_RANGE_FROM_MS
 }
 
 export function normalizeMaxCandles(value: unknown): number {
@@ -102,6 +150,8 @@ export function normalizeChartDisplayPrefs(
       typeof raw.showBacktestStats === 'boolean'
         ? raw.showBacktestStats
         : base.showBacktestStats,
+    candleRangeMode: normalizeCandleRangeMode(raw.candleRangeMode),
+    candleRangeFromMs: normalizeCandleRangeFromMs(raw.candleRangeFromMs),
     maxCandles: normalizeMaxCandles(raw.maxCandles),
     backtest: normalizeChartBacktestParams(raw.backtest),
   }
@@ -175,7 +225,13 @@ export function loadChartDisplayPrefs(): ChartDisplayPrefs {
       }
     }
     const parsed = JSON.parse(raw) as Partial<ChartDisplayPrefs>
-    const merged: Partial<ChartDisplayPrefs> = { ...parsed }
+    const merged: Partial<ChartDisplayPrefs> = {
+      ...parsed,
+      // Legacy installs only stored maxCandles — keep that behavior.
+      candleRangeMode:
+        parsed.candleRangeMode ??
+        (parsed.maxCandles != null ? 'count' : undefined),
+    }
     if (parsed.backtest == null && legacyBacktest) {
       merged.backtest = normalizeChartBacktestParams(legacyBacktest)
     }
