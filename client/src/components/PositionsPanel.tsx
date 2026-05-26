@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -274,7 +275,7 @@ function PositionBlock({
   allGroups: PositionFeedGroup[]
   engineRunning?: boolean
 }) {
-  const { timeFormat } = useTimeFormat()
+  const { timeFormat, useLocalTime } = useTimeFormat()
   const eventWindow =
     group.windowStartMs && group.windowEndMs && group.windowEndMs > group.windowStartMs
       ? { startMs: group.windowStartMs, endMs: group.windowEndMs }
@@ -312,9 +313,9 @@ function PositionBlock({
       ? formatWindowProgressLabel(progressPct, remainingMs, phase)
       : null
   const progressTitle = showCompleted
-    ? `Ended · ${formatGroupTimeRange(group, timeFormat)}`
+    ? `Ended · ${formatGroupTimeRange(group, timeFormat, useLocalTime)}`
     : progressLabel
-      ? `${progressLabel} · ${formatGroupTimeRange(group, timeFormat)}`
+      ? `${progressLabel} · ${formatGroupTimeRange(group, timeFormat, useLocalTime)}`
       : undefined
   const marketUrl = polymarketMarketUrl(group.marketSlug)
   const displayMarketTitle = formatPositionMarketTitle(
@@ -322,6 +323,7 @@ function PositionBlock({
     group.windowStartMs,
     group.windowEndMs,
     timeFormat,
+    useLocalTime,
   )
   const playEnterAnim =
     isCompact && isUpcoming && shouldPlayPositionEnterAnim(group.key)
@@ -587,7 +589,10 @@ export function PositionsPanel({
     void feedPoll.refresh()
   }, [feedPoll.refresh])
 
+  const prevRefreshKeyRef = useRef(refreshKey)
   useEffect(() => {
+    if (prevRefreshKeyRef.current === refreshKey) return
+    prevRefreshKeyRef.current = refreshKey
     void feedPoll.refresh()
   }, [refreshKey, feedPoll.refresh])
 

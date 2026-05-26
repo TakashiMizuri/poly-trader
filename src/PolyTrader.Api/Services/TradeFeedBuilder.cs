@@ -10,6 +10,8 @@ namespace PolyTrader.Api.Services;
 
 public static class TradeFeedBuilder
 {
+    private const long DefaultWindowDurationMs = 5 * 60 * 1000L;
+
     private static readonly HashSet<string> EntryErrorSkipReasons = new(StringComparer.OrdinalIgnoreCase)
     {
         "order_failed",
@@ -132,7 +134,10 @@ public static class TradeFeedBuilder
             return 1;
         }
 
-        var completed = g.WindowEndMs > g.WindowStartMs && nowMs >= g.WindowEndMs;
+        var endMs = g.WindowEndMs > g.WindowStartMs
+            ? g.WindowEndMs
+            : g.WindowStartMs + DefaultWindowDurationMs;
+        var completed = endMs > g.WindowStartMs && nowMs >= endMs;
         return completed ? 3 : 2;
     }
 
@@ -350,6 +355,11 @@ public static class TradeFeedBuilder
     private static MarketEntity NormalizeMarketWindow(MarketEntity source, long windowStartMs)
     {
         var startUtc = DateTimeOffset.FromUnixTimeMilliseconds(windowStartMs).UtcDateTime;
+        var endUtc = source.WindowEndUtc;
+        if (endUtc == null || endUtc.Value <= startUtc)
+        {
+            endUtc = startUtc.AddMinutes(5);
+        }
         return new MarketEntity
         {
             Id = source.Id,
@@ -360,7 +370,7 @@ public static class TradeFeedBuilder
             YesTokenId = source.YesTokenId,
             NoTokenId = source.NoTokenId,
             WindowStartUtc = startUtc,
-            WindowEndUtc = source.WindowEndUtc ?? startUtc.AddMinutes(5),
+            WindowEndUtc = endUtc,
             IsActive = source.IsActive,
             UpdatedAt = source.UpdatedAt,
         };
@@ -468,7 +478,9 @@ public static class TradeFeedBuilder
         public object ToDto()
         {
             var startMs = WindowStartMs;
-            var endMs = WindowEndMs > startMs ? WindowEndMs : startMs;
+            var endMs = WindowEndMs > startMs
+                ? WindowEndMs
+                : (startMs > 0 ? startMs + DefaultWindowDurationMs : startMs);
             var nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             var completed = endMs > startMs && nowMs >= endMs;
             var windowStarted = startMs > 0 && nowMs >= startMs && !completed;

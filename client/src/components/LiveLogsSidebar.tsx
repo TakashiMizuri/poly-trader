@@ -18,6 +18,8 @@ import {
   writeLevelFilterPreference,
   type LogLevelFilter,
 } from '@/lib/liveLogLevelFilter'
+import { useTimeFormat } from '@/context/TimeFormatContext'
+import { formatDisplayLogTime } from '@/lib/displayLocale'
 import { cn } from '@/lib/utils'
 import type { LiveLogEntry } from '@/types/liveLog'
 
@@ -43,19 +45,6 @@ function levelClass(level: string): string {
     return 'text-muted-foreground'
   }
   return 'text-foreground/90'
-}
-
-function formatLogTime(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) {
-    return iso
-  }
-  return d.toLocaleTimeString(undefined, {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    fractionalSecondDigits: 3,
-  })
 }
 
 const LEVEL_FILTER_CHIP_CLASS: Record<LogLevelFilter, string> = {
@@ -102,6 +91,7 @@ function LogLevelFilterBar({
 }
 
 function LogLine({ entry }: { entry: LiveLogEntry }) {
+  const { timeFormat, useLocalTime } = useTimeFormat()
   const shortLevel = entry.level.length > 3 ? entry.level.slice(0, 3).toUpperCase() : entry.level.toUpperCase()
   const isWarning = classifyLogLevel(entry.level) === 'WRN'
   return (
@@ -113,7 +103,7 @@ function LogLine({ entry }: { entry: LiveLogEntry }) {
     >
       <div className="flex gap-1.5">
         <span className="shrink-0 tabular-nums text-muted-foreground">
-          {formatLogTime(entry.timestamp)}
+          {formatDisplayLogTime(entry.timestamp, timeFormat, useLocalTime)}
         </span>
         <span className={cn('shrink-0 font-semibold tabular-nums', levelClass(entry.level))}>
           {shortLevel}

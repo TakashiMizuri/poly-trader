@@ -9,7 +9,7 @@ import { formatDisplayDate, formatDisplayTime } from '@/lib/displayLocale'
 import { useTimeFormat } from '@/context/TimeFormatContext'
 
 export function Layout() {
-  const { timeFormat } = useTimeFormat()
+  const { timeFormat, useLocalTime } = useTimeFormat()
   const [now, setNow] = useState(() => new Date())
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -44,8 +44,8 @@ export function Layout() {
               <Settings className="size-[18px]" aria-hidden />
             </Button>
             <div className="hidden shrink-0 self-center text-right text-xs tabular-nums text-muted-foreground lg:block">
-              <div>{formatDisplayDate(now)}</div>
-              <div>{formatDisplayTime(now, timeFormat)}</div>
+              <div>{formatDisplayDate(now, useLocalTime)}</div>
+              <div>{formatDisplayTime(now, timeFormat, useLocalTime)}</div>
             </div>
           </div>
         </div>

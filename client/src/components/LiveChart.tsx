@@ -26,6 +26,8 @@ import {
   getInitialVisibleBarCount,
 } from '@/utils/chart/futureWhitespaceSeries'
 import { useTheme } from '@/context/ThemeContext'
+import { useTimeFormat } from '@/context/TimeFormatContext'
+import { buildChartTimeLocalization } from '@/lib/displayLocale'
 import { ChartContextMenu, type ChartContextMenuAnchor } from '@/components/ChartContextMenu'
 import { ChartSettingsDialog } from '@/components/ChartSettingsDialog'
 import { filterCandlesForChartRange } from '@/lib/chartCandleRange'
@@ -69,6 +71,7 @@ export function LiveChart({
   className,
 }: LiveChartProps) {
   const { theme } = useTheme()
+  const { timeFormat, useLocalTime } = useTimeFormat()
   const surfaceRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [contextMenu, setContextMenu] = useState<ChartContextMenuAnchor | null>(
@@ -350,6 +353,12 @@ export function LiveChart({
       wickDownColor: palette.down,
     })
   }, [theme])
+
+  useEffect(() => {
+    const chart = chartRef.current
+    if (!chart || !isInitializedRef.current) return
+    chart.applyOptions(buildChartTimeLocalization(timeFormat, useLocalTime))
+  }, [timeFormat, useLocalTime])
 
   useEffect(() => {
     const chart = chartRef.current

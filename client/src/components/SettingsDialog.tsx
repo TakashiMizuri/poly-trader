@@ -72,7 +72,7 @@ function Segmented<T extends string>({
 
 export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const { theme, setTheme } = useTheme()
-  const { timeFormat, setTimeFormat } = useTimeFormat()
+  const { timeFormat, setTimeFormat, useLocalTime, setUseLocalTime } = useTimeFormat()
   const { paperTradingEnabled, setPaperTradingEnabled } = usePaperTrading()
   const [resetBusy, setResetBusy] = useState(false)
   const [resetError, setResetError] = useState<string | null>(null)
@@ -202,6 +202,14 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
               onChange={setTimeFormat}
             />
           </div>
+
+          <Label className="cursor-pointer items-center gap-2.5 py-1">
+            <Checkbox
+              checked={useLocalTime}
+              onCheckedChange={(checked) => setUseLocalTime(checked === true)}
+            />
+            <span className="text-sm">Show times in local timezone</span>
+          </Label>
 
           <div className="space-y-2 border-t border-border pt-3">
             <p className="text-xs font-medium text-foreground">Trading</p>

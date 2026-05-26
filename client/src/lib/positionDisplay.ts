@@ -206,9 +206,13 @@ export function skipLabel(reason: string | null | undefined): string | null {
   return SKIP_LABELS[reason] ?? reason.replaceAll('_', ' ')
 }
 
-export function fmtTs(tsMs: number | null | undefined, timeFormat: TimeFormat) {
+export function fmtTs(
+  tsMs: number | null | undefined,
+  timeFormat: TimeFormat,
+  useLocalTime: boolean,
+) {
   if (tsMs == null || !Number.isFinite(tsMs)) return '—'
-  return formatDisplayDateTime(tsMs, timeFormat)
+  return formatDisplayDateTime(tsMs, timeFormat, useLocalTime)
 }
 
 /** Prefix before the ET slot in Gamma titles, e.g. `Bitcoin Up or Down`. */
@@ -223,6 +227,7 @@ export function formatPositionMarketTitle(
   windowStartMs: number | null | undefined,
   windowEndMs: number | null | undefined,
   timeFormat: TimeFormat,
+  useLocalTime: boolean,
 ): string {
   const trimmed = rawTitle?.trim()
   if (!trimmed) return 'Unknown market'
@@ -233,7 +238,7 @@ export function formatPositionMarketTitle(
   if (start != null && end != null && end > start) {
     const prefixMatch = UP_DOWN_TITLE_PREFIX_RE.exec(trimmed)
     const prefix = prefixMatch?.[1]?.trim() ?? trimmed.split(/\s*[-–—]\s/)[0]?.trim() ?? trimmed
-    const slot = formatDisplayMarketWindowSlot(start, end, timeFormat)
+    const slot = formatDisplayMarketWindowSlot(start, end, timeFormat, useLocalTime)
     return `${prefix} - ${slot}`
   }
 
@@ -427,20 +432,21 @@ export function resolveDisplayedFills(
 export function formatGroupTimeRange(
   group: PositionFeedGroup,
   timeFormat: TimeFormat,
+  useLocalTime: boolean,
 ): string {
   const { windowStartMs, windowEndMs } = group
   if (windowStartMs && windowEndMs && windowEndMs > windowStartMs) {
     return windowStartMs === windowEndMs
-      ? fmtTs(windowStartMs, timeFormat)
-      : `${fmtTs(windowStartMs, timeFormat)} – ${fmtTs(windowEndMs, timeFormat)}`
+      ? fmtTs(windowStartMs, timeFormat, useLocalTime)
+      : `${fmtTs(windowStartMs, timeFormat, useLocalTime)} – ${fmtTs(windowEndMs, timeFormat, useLocalTime)}`
   }
   const times = group.fills.map((f) => f.timeMs)
   if (times.length === 0) return '—'
   const max = Math.max(...times)
   const min = Math.min(...times)
   return max === min
-    ? fmtTs(max, timeFormat)
-    : `${fmtTs(min, timeFormat)} – ${fmtTs(max, timeFormat)}`
+    ? fmtTs(max, timeFormat, useLocalTime)
+    : `${fmtTs(min, timeFormat, useLocalTime)} – ${fmtTs(max, timeFormat, useLocalTime)}`
 }
 
 export function formatGroupSides(fills: PositionFeedFill[]): string {

@@ -14,7 +14,9 @@ import { useTradingLiveEvent } from '@/api/tradingLive'
 import { PageCard, Skeleton } from '@/components/app-ui'
 import { Button } from '@/components/ui/button'
 import { useTheme } from '@/context/ThemeContext'
+import { useTimeFormat } from '@/context/TimeFormatContext'
 import { GLOBAL_RESET_EVENT } from '@/lib/appReset'
+import { buildChartTimeLocalization } from '@/lib/displayLocale'
 import { getChartPalette } from '@/lib/chartTheme'
 import { cn } from '@/lib/utils'
 
@@ -188,6 +190,7 @@ export function DashboardBalanceChart({
   className,
 }: Props) {
   const { theme } = useTheme()
+  const { timeFormat, useLocalTime } = useTimeFormat()
   const [chartView, setChartView] = useState<ChartView>('equity')
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
@@ -294,6 +297,12 @@ export function DashboardBalanceChart({
       payoutRef.current = null
     }
   }, [theme, tradingMode])
+
+  useEffect(() => {
+    const chart = chartRef.current
+    if (!chart) return
+    chart.applyOptions(buildChartTimeLocalization(timeFormat, useLocalTime))
+  }, [timeFormat, useLocalTime])
 
   const isPaper = tradingMode === 'Paper'
   const currentBalance =

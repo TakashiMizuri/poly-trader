@@ -55,7 +55,7 @@ export function TradeHistoryTable({
   tradingMode,
   className,
 }: Props) {
-  const { timeFormat } = useTimeFormat()
+  const { timeFormat, useLocalTime } = useTimeFormat()
   const [trades, setTrades] = useState<TradeRow[]>([])
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export function TradeHistoryTable({
       {trades.map((t) => (
         <Card key={t.id} className="p-3">
           <p className="text-xs text-muted-foreground">
-            {formatDisplayDateTime(t.candleTime * 1000, timeFormat)}
+            {formatDisplayDateTime(t.candleTime * 1000, timeFormat, useLocalTime)}
           </p>
           <dl className="mt-2 space-y-1.5 text-sm">
             <TradeField label="Side" value={t.side} />

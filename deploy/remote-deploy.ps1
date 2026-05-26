@@ -78,22 +78,42 @@ echo '==> Working dir:' \$PWD
 echo '==> Current branch:' \$(git rev-parse --abbrev-ref HEAD)
 echo '==> Pull latest changes'
 git pull --ff-only
+
+echo '==> Normalize line endings (safety)'
+# If core.autocrlf is enabled on the VPS, .sh files may get CRLF and break bash.
+if command -v sed >/dev/null 2>&1; then
+  sed -i 's/\r$//' deploy/*.sh 2>/dev/null || true
+fi
 "@
 
+function Add-RemoteBlock {
+    param(
+        [string]$Script,
+        [string]$Block
+    )
+    if ([string]::IsNullOrEmpty($Script)) {
+        return $Block
+    }
+    if ($Script[-1] -ne "`n") {
+        return $Script + "`n" + $Block
+    }
+    return $Script + $Block
+}
+
 if (-not $SkipBackup) {
-    $remoteScript += @"
+    $remoteScript = Add-RemoteBlock -Script $remoteScript -Block @"
 echo '==> Backup DB'
 bash deploy/backup.sh
 "@
 }
 
-$remoteScript += @"
+$remoteScript = Add-RemoteBlock -Script $remoteScript -Block @"
 echo '==> Deploy update'
 bash deploy/update.sh
 "@
 
 if ($VerboseRemote) {
-    $remoteScript += @"
+    $remoteScript = Add-RemoteBlock -Script $remoteScript -Block @"
 echo '==> Docker status'
 docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
 "@

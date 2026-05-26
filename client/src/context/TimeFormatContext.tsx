@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { getStoredUseLocalTime, LOCAL_TIME_STORAGE_KEY } from '@/lib/localTimeDisplay'
 import {
   getStoredTimeFormat,
   TIME_FORMAT_STORAGE_KEY,
@@ -15,12 +16,15 @@ import {
 interface TimeFormatContextValue {
   timeFormat: TimeFormat
   setTimeFormat: (format: TimeFormat) => void
+  useLocalTime: boolean
+  setUseLocalTime: (enabled: boolean) => void
 }
 
 const TimeFormatContext = createContext<TimeFormatContextValue | null>(null)
 
 export function TimeFormatProvider({ children }: { children: ReactNode }) {
   const [timeFormat, setTimeFormatState] = useState<TimeFormat>(() => getStoredTimeFormat())
+  const [useLocalTime, setUseLocalTimeState] = useState<boolean>(() => getStoredUseLocalTime())
 
   const setTimeFormat = useCallback((next: TimeFormat) => {
     setTimeFormatState(next)
@@ -31,7 +35,19 @@ export function TimeFormatProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const value = useMemo(() => ({ timeFormat, setTimeFormat }), [timeFormat, setTimeFormat])
+  const setUseLocalTime = useCallback((enabled: boolean) => {
+    setUseLocalTimeState(enabled)
+    try {
+      localStorage.setItem(LOCAL_TIME_STORAGE_KEY, enabled ? '1' : '0')
+    } catch {
+      /* ignore */
+    }
+  }, [])
+
+  const value = useMemo(
+    () => ({ timeFormat, setTimeFormat, useLocalTime, setUseLocalTime }),
+    [timeFormat, setTimeFormat, useLocalTime, setUseLocalTime],
+  )
 
   return (
     <TimeFormatContext.Provider value={value}>{children}</TimeFormatContext.Provider>
