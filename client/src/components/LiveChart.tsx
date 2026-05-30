@@ -353,7 +353,10 @@ export const LiveChart = forwardRef<LiveChartHandle, LiveChartProps>(function Li
       rightPriceScale: { borderColor: palette.border },
       timeScale: { borderColor: palette.border },
     })
-    chart.priceScale('left').applyOptions({ borderColor: palette.border })
+    chart.priceScale('left').applyOptions({
+      borderColor: palette.border,
+      visible: displayPrefs.showEquityCurve,
+    })
     equitySeriesRef.current?.applyOptions({
       color: chartEquityLineColor(palette.equity),
     })
@@ -363,7 +366,7 @@ export const LiveChart = forwardRef<LiveChartHandle, LiveChartProps>(function Li
       wickUpColor: palette.up,
       wickDownColor: palette.down,
     })
-  }, [theme])
+  }, [theme, displayPrefs.showEquityCurve])
 
   useEffect(() => {
     const chart = chartRef.current
@@ -386,10 +389,16 @@ export const LiveChart = forwardRef<LiveChartHandle, LiveChartProps>(function Li
   }, [displayBosAnalysis])
 
   useEffect(() => {
+    const chart = chartRef.current
     const equitySeries = equitySeriesRef.current
-    if (!equitySeries) return
+    if (!chart || !equitySeries) return
+
+    const showEquity = displayPrefs.showEquityCurve
+    chart.priceScale('left').applyOptions({ visible: showEquity })
+    equitySeries.applyOptions({ visible: showEquity })
+
     if (
-      !displayPrefs.showEquityCurve ||
+      !showEquity ||
       !strategySimulation ||
       strategySimulation.equityCurve.length === 0
     ) {
