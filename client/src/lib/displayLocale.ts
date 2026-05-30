@@ -150,22 +150,9 @@ export function formatDisplayMarketWindowSlot(
   return `${datePart}, ${startTime} – ${endDatePart}, ${endTime}`
 }
 
-/**
- * lightweight-charts treats bar times as UTC. When showing local labels, map UTC
- * components to a Date the formatter can render in the browser timezone.
- */
-export function chartHorzTimeToDisplayDate(tsSec: number, useLocalTime: boolean): Date {
-  const utc = new Date(tsSec * 1000)
-  if (!useLocalTime) return utc
-  return new Date(
-    utc.getUTCFullYear(),
-    utc.getUTCMonth(),
-    utc.getUTCDate(),
-    utc.getUTCHours(),
-    utc.getUTCMinutes(),
-    utc.getUTCSeconds(),
-    utc.getUTCMilliseconds(),
-  )
+/** Unix chart bar time → Date for axis/crosshair labels (same instant as position titles). */
+export function chartHorzTimeToDisplayDate(tsSec: number, _useLocalTime: boolean): Date {
+  return new Date(tsSec * 1000)
 }
 
 function horzTimeToUnixSeconds(time: Time): number | null {
@@ -211,25 +198,21 @@ export function buildChartTimeLocalization(
 ): {
   localization: {
     locale: string
-    timeFormatter?: (time: Time) => string
+    timeFormatter: (time: Time) => string
   }
   timeScale: {
-    tickMarkFormatter?: (time: Time) => string
+    tickMarkFormatter: (time: Time) => string
   }
 } {
-  if (!useLocalTime) {
-    return {
-      localization: { locale: DISPLAY_LOCALE, timeFormatter: undefined },
-      timeScale: { tickMarkFormatter: undefined },
-    }
-  }
   return {
     localization: {
       locale: DISPLAY_LOCALE,
-      timeFormatter: (time: Time) => formatChartHorzTimeLabel(time, timeFormat, true),
+      timeFormatter: (time: Time) =>
+        formatChartHorzTimeLabel(time, timeFormat, useLocalTime),
     },
     timeScale: {
-      tickMarkFormatter: (time: Time) => formatChartHorzTickLabel(time, timeFormat, true),
+      tickMarkFormatter: (time: Time) =>
+        formatChartHorzTickLabel(time, timeFormat, useLocalTime),
     },
   }
 }

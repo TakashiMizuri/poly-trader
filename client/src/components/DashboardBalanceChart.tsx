@@ -247,6 +247,7 @@ export function DashboardBalanceChart({
       timeScale: { borderColor: palette.border, timeVisible: true },
       width: Math.max(1, Math.floor(container.clientWidth)),
       height: Math.max(1, Math.floor(container.clientHeight)),
+      ...buildChartTimeLocalization(timeFormat, useLocalTime),
     })
 
     const actualSeries = chart.addSeries(LineSeries, {
@@ -296,7 +297,7 @@ export function DashboardBalanceChart({
       expectedRef.current = null
       payoutRef.current = null
     }
-  }, [theme, tradingMode])
+  }, [theme, tradingMode, timeFormat, useLocalTime])
 
   useEffect(() => {
     const chart = chartRef.current
