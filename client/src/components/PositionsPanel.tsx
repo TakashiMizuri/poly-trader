@@ -184,7 +184,12 @@ function PositionFillRow({
           <StatusBadge
             tone={resultTone(fill)}
             title={resultTitle(fill)}
-            className="max-w-[9rem] min-w-0 shrink overflow-hidden text-ellipsis whitespace-nowrap font-mono tabular-nums"
+            className={cn(
+              'font-mono tabular-nums',
+              waiting
+                ? 'max-w-none shrink-0 whitespace-nowrap'
+                : 'max-w-[9rem] min-w-0 shrink overflow-hidden text-ellipsis whitespace-nowrap',
+            )}
           >
             {statusLabel}
           </StatusBadge>
@@ -336,9 +341,7 @@ function PositionBlock({
   const statusLine =
     showLiveChrome && openFill
       ? `BTC 5m · ${openFill.side ?? 'open'} ${formatStake(openFill)}`
-      : showLiveChrome && waitingFill
-        ? `BTC 5m · ${waitingEntryLabel(patience.remainingSeconds)}`
-        : showLiveChrome
+      : showLiveChrome
           ? 'BTC 5m · live'
           : isCompact
             ? 'BTC 5m · up next'
@@ -446,14 +449,6 @@ function PositionBlock({
                 )}
               />
               <div className="flex shrink-0 items-center justify-end gap-1">
-                {!showCompleted && waitingFill ? (
-                  <span
-                    className="shrink-0 whitespace-nowrap rounded-md bg-amber-500/15 px-1.5 py-0.5 font-mono text-[11px] font-medium tabular-nums text-amber-700 dark:text-amber-400 sm:px-2"
-                    title={waitingEntryLabel(patience.remainingSeconds)}
-                  >
-                    {waitingEntryLabel(patience.remainingSeconds)}
-                  </span>
-                ) : null}
                 {!showCompleted && !waitingFill && progressLabel ? (
                   <span
                     className={cn(
@@ -518,7 +513,7 @@ function PositionBlock({
                 )}
               >
                 {waitingFill
-                  ? `${waitingEntryLabel(patience.remainingSeconds)} (limit ≤ 0.50)`
+                  ? 'Limit entry ≤ 0.52 when price allows'
                   : awaitingEntry
                   ? 'Awaiting entry (decision at bar open)…'
                   : !engineRunning && isLiveCard && openFill == null && skipFill == null

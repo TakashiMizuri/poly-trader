@@ -94,7 +94,8 @@ public sealed class LiveTradeReconciliationService
                 TradeRecording.ConfirmExistingSettlement(trade, "polymarket");
                 db.Trades.Update(trade);
                 corrected++;
-                publishList.Add(trade);
+                // Outcome unchanged (provisional → confirmed only). Do not PublishTradePlaced:
+                // engine already sent Telegram/UI on provisional settle at candle close.
                 continue;
             }
 

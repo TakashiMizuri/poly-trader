@@ -177,7 +177,7 @@ const SKIP_LABELS: Record<string, string> = {
   engine_stopped: 'Engine stopped',
   no_signal: 'Skip',
   no_market: 'No active market',
-  waiting_for_entry: 'Waiting for entry',
+  waiting_for_entry: 'Entry',
   entry_price_out_of_range: 'No entry',
   order_failed: 'Live order failed',
   insufficient_balance: 'Insufficient balance',
@@ -206,8 +206,8 @@ export function isNoEntryFill(fill: PositionFeedFill): boolean {
 }
 
 export function waitingEntryLabel(remainingSeconds: number | null): string {
-  if (remainingSeconds == null) return 'Waiting for entry'
-  return `Waiting for entry · ${Math.max(0, remainingSeconds)}s`
+  if (remainingSeconds == null) return 'Entry'
+  return `Entry · ${Math.max(0, remainingSeconds)}s`
 }
 
 export function skipLabel(reason: string | null | undefined): string | null {
