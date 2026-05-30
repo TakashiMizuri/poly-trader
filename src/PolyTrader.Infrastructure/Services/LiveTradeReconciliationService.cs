@@ -81,10 +81,20 @@ public sealed class LiveTradeReconciliationService
                 continue;
             }
 
-            var wasOpen = trade.Won == null;
             var priorWon = trade.Won;
-            if (priorWon == resolved)
+            if (priorWon == resolved
+                && trade.SettlementStatus == TradeSettlementStatus.Confirmed)
             {
+                continue;
+            }
+
+            if (priorWon == resolved
+                && trade.SettlementStatus == TradeSettlementStatus.Provisional)
+            {
+                TradeRecording.ConfirmExistingSettlement(trade, "polymarket");
+                db.Trades.Update(trade);
+                corrected++;
+                publishList.Add(trade);
                 continue;
             }
 
@@ -104,7 +114,16 @@ public sealed class LiveTradeReconciliationService
                 }
             }
 
+            var wasOpen = trade.Won == null;
             LiveTradeOutcomeResolver.ApplyOutcome(trade, resolved.Value, LiveTradeCommissionPercent);
+            trade.SettlementStatus = TradeSettlementStatus.Confirmed;
+            trade.SettlementSource = "polymarket";
+            trade.ConfirmedSettledAt = DateTime.UtcNow;
+            if (trade.ProvisionalSettledAt == null)
+            {
+                trade.ProvisionalSettledAt = trade.ConfirmedSettledAt;
+            }
+
             db.Trades.Update(trade);
             corrected++;
             publishList.Add(trade);

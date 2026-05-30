@@ -25,6 +25,10 @@ public sealed class TradeEntity
     public double EntryPrice { get; set; }
     public bool? Won { get; set; }
     public double? PnlUsd { get; set; }
+    public TradeSettlementStatus SettlementStatus { get; set; } = TradeSettlementStatus.Open;
+    public string? SettlementSource { get; set; }
+    public DateTime? ProvisionalSettledAt { get; set; }
+    public DateTime? ConfirmedSettledAt { get; set; }
     /// <summary>|PnL| ÷ entry stake (cached at settlement).</summary>
     public double? WinPayoutRatio { get; set; }
     public string? PolymarketOrderId { get; set; }

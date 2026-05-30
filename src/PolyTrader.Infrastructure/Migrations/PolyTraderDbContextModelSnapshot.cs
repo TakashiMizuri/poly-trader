@@ -277,6 +277,10 @@ namespace PolyTrader.Infrastructure.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("SkipDetail")
+                        .HasMaxLength(512)
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.HasIndex("MarketId");

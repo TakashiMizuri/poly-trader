@@ -24,6 +24,9 @@ public sealed class CompositeTradingEventPublisher : ITradingEventPublisher
     public Task PublishEntryFailedAsync(EntryFailedEvent entryFailed, CancellationToken ct = default) =>
         Task.WhenAll(_publishers.Select(p => p.PublishEntryFailedAsync(entryFailed, ct)));
 
+    public Task PublishPositionsFeedChangedAsync(CancellationToken ct = default) =>
+        Task.WhenAll(_publishers.Select(p => p.PublishPositionsFeedChangedAsync(ct)));
+
     public Task PublishBalanceUpdatedAsync(double balance, int paperAccountId = 0, CancellationToken ct = default) =>
         Task.WhenAll(_publishers.Select(p => p.PublishBalanceUpdatedAsync(balance, paperAccountId, ct)));
 

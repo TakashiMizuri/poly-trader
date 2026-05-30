@@ -1,3 +1,4 @@
+using PolyTrader.Core.Models;
 using PolyTrader.Core.Strategy;
 using PolyTrader.Infrastructure.Entities;
 
@@ -37,6 +38,41 @@ internal static class TradeRecording
             trade.EntryPrice);
         trade.PnlUsd = pnl;
         trade.WinPayoutRatio = TrendBetStrategySimulator.ComputePayoutRatio(pnl, trade.StakeUsd);
+    }
+
+    public static void ApplyProvisionalSettlement(
+        TradeEntity trade,
+        bool won,
+        double commissionPercent,
+        string source)
+    {
+        ApplySettlement(trade, won, commissionPercent);
+        trade.SettlementStatus = TradeSettlementStatus.Provisional;
+        trade.SettlementSource = source;
+        trade.ProvisionalSettledAt = DateTime.UtcNow;
+    }
+
+    public static void ApplyConfirmedSettlement(
+        TradeEntity trade,
+        bool won,
+        double commissionPercent,
+        string source)
+    {
+        ApplySettlement(trade, won, commissionPercent);
+        trade.SettlementStatus = TradeSettlementStatus.Confirmed;
+        trade.SettlementSource = source;
+        trade.ConfirmedSettledAt = DateTime.UtcNow;
+        if (trade.ProvisionalSettledAt == null)
+        {
+            trade.ProvisionalSettledAt = trade.ConfirmedSettledAt;
+        }
+    }
+
+    public static void ConfirmExistingSettlement(TradeEntity trade, string source)
+    {
+        trade.SettlementStatus = TradeSettlementStatus.Confirmed;
+        trade.SettlementSource = source;
+        trade.ConfirmedSettledAt = DateTime.UtcNow;
     }
 
     public static double? ResolvePayoutRatio(TradeEntity trade)

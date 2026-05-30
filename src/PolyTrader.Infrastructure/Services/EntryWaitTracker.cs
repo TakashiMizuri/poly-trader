@@ -10,7 +10,8 @@ public sealed record EntryWaitState(
     string Side,
     string Trend,
     long WindowStartMs,
-    DateTime StartedUtc);
+    DateTime StartedUtc,
+    DateTime ExpiresUtc);
 
 public interface IEntryWaitTracker
 {

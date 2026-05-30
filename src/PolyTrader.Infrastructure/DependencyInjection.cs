@@ -4,7 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using PolyTrader.Core.Abstractions;
 using PolyTrader.Core.Models;
+using PolyTrader.Core.Strategy;
 using PolyTrader.Infrastructure.Binance;
+using PolyTrader.Infrastructure.Logging;
 using PolyTrader.Infrastructure.Data;
 using PolyTrader.Infrastructure.Options;
 using PolyTrader.Infrastructure.Polymarket;
@@ -47,6 +49,61 @@ public static class DependencyInjection
             {
                 opts.LiveMakerRemainderFillWaitSeconds = remainderWait;
             }
+
+            if (int.TryParse(configuration["POLYTRADER_ENTRY_MAX_WAIT_SECONDS"], out var entryWait)
+                && entryWait >= 1)
+            {
+                opts.EntryMaxWaitSeconds = EntryExecutionSettings.ClampMaxWaitSeconds(entryWait);
+            }
+
+            if (double.TryParse(configuration["POLYTRADER_PATIENCE_MAX_ENTRY_PRICE"], out var patienceMax)
+                && patienceMax is > 0 and <= 1)
+            {
+                opts.PatienceMaxEntryPrice = patienceMax;
+            }
+
+            if (int.TryParse(configuration["POLYTRADER_POST_ONLY_ASK_TICK_MARGIN"], out var tickMargin)
+                && tickMargin is >= 1 and <= 5)
+            {
+                opts.PostOnlyAskTickMargin = tickMargin;
+            }
+
+            if (int.TryParse(configuration["POLYTRADER_POST_ONLY_CROSS_TICK_RETRIES"], out var crossRetries)
+                && crossRetries is >= 1 and <= 12)
+            {
+                opts.PostOnlyCrossTickRetries = crossRetries;
+            }
+
+            if (int.TryParse(configuration["POLYTRADER_ENTRY_OPEN_DELAY_MS"], out var openDelay)
+                && openDelay is >= 0 and <= 5000)
+            {
+                opts.EntryOpenDelayMs = openDelay;
+            }
+
+            if (int.TryParse(configuration["POLYTRADER_WS_QUOTE_MAX_AGE_MS"], out var wsAge)
+                && wsAge is >= 100 and <= 5000)
+            {
+                opts.WebSocketQuoteMaxAgeMs = wsAge;
+            }
+
+            if (int.TryParse(configuration["POLYTRADER_MAKER_FILL_POLL_MS"], out var pollMs)
+                && pollMs is >= 100 and <= 2000)
+            {
+                opts.MakerFillPollIntervalMs = pollMs;
+            }
+        });
+
+        services.AddSingleton(sp =>
+        {
+            var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<PolyTraderOptions>>().Value;
+            var patienceMax = opts.PatienceMaxEntryPrice is > 0 and <= 1
+                ? opts.PatienceMaxEntryPrice
+                : EntryPriceRules.MaxEntryPrice;
+            return new EntryExecutionSettings
+            {
+                MaxWaitSeconds = EntryExecutionSettings.ClampMaxWaitSeconds(opts.EntryMaxWaitSeconds),
+                PatienceMaxEntryPrice = patienceMax,
+            };
         });
 
         services.AddHttpClient();
@@ -61,6 +118,8 @@ public static class DependencyInjection
         services.AddSingleton<IPolymarketGammaService, PolymarketGammaService>();
         services.AddSingleton<IPolymarketDataApiService, PolymarketDataApiService>();
         services.AddSingleton<IPolymarketMarketWebSocket, PolymarketMarketWebSocket>();
+        services.AddSingleton<IPolymarketOrderFillNotifier, PolymarketOrderFillNotifier>();
+        services.AddSingleton<IPolymarketUserWebSocket, PolymarketUserWebSocket>();
         services.AddSingleton<IPolymarketWalletResolver, PolymarketWalletResolver>();
         services.AddSingleton<IPolymarketRestTradingClient, PolymarketRestTradingClient>();
         services.AddSingleton<IPolymarketClobService, PolymarketClobService>();
@@ -71,6 +130,7 @@ public static class DependencyInjection
         services.AddSingleton<IPolymarketRedeemService, PolymarketRedeemService>();
         services.AddSingleton<IConnectivityService, ConnectivityService>();
         services.AddSingleton<IEntryWaitTracker, EntryWaitTracker>();
+        services.AddSingleton<ITradeExecutionLogger, TradeExecutionLogger>();
         services.AddSingleton<IEntryPatienceExecutor, EntryPatienceExecutor>();
         services.AddSingleton<IDatabaseExportService, DatabaseExportService>();
         services.AddScoped<GlobalResetService>();
@@ -102,6 +162,9 @@ public static class DependencyInjection
         await EnsureTradeRequestedStakeUsdColumnAsync(db, logger);
         await EnsureTradeStakeSnapshotColumnsAsync(db, logger);
         await EnsureTradeEntryWavesJsonColumnAsync(db, logger);
+        await EnsureTradeSettlementColumnsAsync(db, logger);
+        await EnsureSkippedBetMetadataColumnsAsync(db, logger);
+        await EnsureSkippedBetSkipDetailColumnAsync(db, logger);
         await EnsureEngineAutoRedeemEnabledColumnAsync(db, logger);
         var importedEntryModeFromEnv = await EnsureEngineLiveEntryOrderModeColumnAsync(
             db,
@@ -486,5 +549,88 @@ public static class DependencyInjection
         {
             await connection.CloseAsync();
         }
+    }
+
+    private static async Task EnsureTradeSettlementColumnsAsync(
+        PolyTraderDbContext db,
+        ILogger<PolyTraderDbContext>? logger)
+    {
+        if (!await SchemaTableExistsAsync(db, "Trades"))
+        {
+            return;
+        }
+
+        if (!await ColumnExistsAsync(db, "Trades", "SettlementStatus"))
+        {
+            logger?.LogWarning(
+                "Trades is missing settlement columns; applying schema repair.");
+
+            await db.Database.ExecuteSqlRawAsync(
+                """
+                ALTER TABLE "Trades" ADD COLUMN "SettlementStatus" TEXT NOT NULL DEFAULT 'Open';
+                ALTER TABLE "Trades" ADD COLUMN "SettlementSource" TEXT NULL;
+                ALTER TABLE "Trades" ADD COLUMN "ProvisionalSettledAt" TEXT NULL;
+                ALTER TABLE "Trades" ADD COLUMN "ConfirmedSettledAt" TEXT NULL;
+                """);
+
+            await db.Database.ExecuteSqlRawAsync(
+                """
+                UPDATE "Trades"
+                SET "SettlementStatus" = 'Confirmed',
+                    "ConfirmedSettledAt" = COALESCE("ConfirmedSettledAt", datetime('now'))
+                WHERE "Won" IS NOT NULL
+                  AND ("SettlementStatus" IS NULL OR "SettlementStatus" = 'Open');
+                """);
+        }
+    }
+
+    private static async Task EnsureSkippedBetMetadataColumnsAsync(
+        PolyTraderDbContext db,
+        ILogger<PolyTraderDbContext>? logger)
+    {
+        if (!await SchemaTableExistsAsync(db, "SkippedBets"))
+        {
+            return;
+        }
+
+        if (await ColumnExistsAsync(db, "SkippedBets", "Side"))
+        {
+            return;
+        }
+
+        logger?.LogWarning(
+            "SkippedBets is missing metadata columns; applying schema repair.");
+
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "SkippedBets" ADD COLUMN "Side" TEXT NULL;
+            ALTER TABLE "SkippedBets" ADD COLUMN "Trend" TEXT NULL;
+            ALTER TABLE "SkippedBets" ADD COLUMN "InitialBid" REAL NULL;
+            ALTER TABLE "SkippedBets" ADD COLUMN "InitialAsk" REAL NULL;
+            ALTER TABLE "SkippedBets" ADD COLUMN "SignalPresent" INTEGER NULL;
+            """);
+    }
+
+    private static async Task EnsureSkippedBetSkipDetailColumnAsync(
+        PolyTraderDbContext db,
+        ILogger<PolyTraderDbContext>? logger)
+    {
+        if (!await SchemaTableExistsAsync(db, "SkippedBets"))
+        {
+            return;
+        }
+
+        if (await ColumnExistsAsync(db, "SkippedBets", "SkipDetail"))
+        {
+            return;
+        }
+
+        logger?.LogWarning(
+            "SkippedBets is missing SkipDetail column; applying schema repair.");
+
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE "SkippedBets" ADD COLUMN "SkipDetail" TEXT NULL;
+            """);
     }
 }

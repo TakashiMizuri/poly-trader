@@ -286,7 +286,8 @@ public static class TradeFeedBuilder
 
             var startedMs = new DateTimeOffset(
                 DateTime.SpecifyKind(wait.StartedUtc, DateTimeKind.Utc)).ToUnixTimeMilliseconds();
-            var waitMs = (long)EntryPriceRules.PatienceWaitDuration.TotalMilliseconds;
+            var expiresMs = new DateTimeOffset(
+                DateTime.SpecifyKind(wait.ExpiresUtc, DateTimeKind.Utc)).ToUnixTimeMilliseconds();
             liveGroup.Fills.Add(new FeedFill
             {
                 Id = $"entry-wait-{wait.CandleTime}-{wait.Mode}-{wait.PaperAccountId}",
@@ -295,7 +296,7 @@ public static class TradeFeedBuilder
                 Result = "Pending",
                 SkipReason = "waiting_for_entry",
                 EntryWaitStartedMs = startedMs,
-                EntryWaitExpiresMs = startedMs + waitMs,
+                EntryWaitExpiresMs = expiresMs,
             });
             break;
         }
@@ -419,6 +420,8 @@ public static class TradeFeedBuilder
             PnlUsd = pnlUsd,
             PolymarketOrderId = t.PolymarketOrderId,
             AwaitingRedeem = awaitingRedeem,
+            SettlementStatus = t.SettlementStatus.ToString().ToLowerInvariant(),
+            SettlementSource = t.SettlementSource,
             EntryWaves = TradeEntryWavesJson.Deserialize(t.EntryWavesJson),
         };
     }
@@ -427,8 +430,14 @@ public static class TradeFeedBuilder
     {
         Id = $"skip-{s.Id}",
         TimeMs = s.CandleTime * 1000L,
+        Side = s.Side,
         Result = EntryErrorSkipReasons.Contains(s.SkipReason) ? "Error" : "Skipped",
         SkipReason = s.SkipReason,
+        SkipDetail = s.SkipDetail,
+        Trend = s.Trend,
+        InitialBid = s.InitialBid,
+        InitialAsk = s.InitialAsk,
+        SignalPresent = s.SignalPresent,
     };
 
     private static long? ToMs(DateTime? dt) =>
@@ -516,12 +525,19 @@ public static class TradeFeedBuilder
                     f.Mode,
                     f.Result,
                     f.SkipReason,
+                    skipDetail = f.SkipDetail,
                     f.Won,
                     f.PnlUsd,
                     f.PolymarketOrderId,
                     awaitingRedeem = f.AwaitingRedeem,
+                    settlementStatus = f.SettlementStatus,
+                    settlementSource = f.SettlementSource,
                     entryWaitStartedMs = f.EntryWaitStartedMs,
                     entryWaitExpiresMs = f.EntryWaitExpiresMs,
+                    trend = f.Trend,
+                    initialBid = f.InitialBid,
+                    initialAsk = f.InitialAsk,
+                    signalPresent = f.SignalPresent,
                     entryWaves = f.EntryWaves?.Select(w => new
                     {
                         wave = w.Wave,
@@ -549,10 +565,17 @@ public static class TradeFeedBuilder
         public string? Mode { get; init; }
         public required string Result { get; init; }
         public string? SkipReason { get; init; }
+        public string? SkipDetail { get; init; }
         public bool? Won { get; init; }
         public double? PnlUsd { get; init; }
         public string? PolymarketOrderId { get; init; }
         public bool AwaitingRedeem { get; init; }
+        public string? SettlementStatus { get; init; }
+        public string? SettlementSource { get; init; }
+        public string? Trend { get; init; }
+        public double? InitialBid { get; init; }
+        public double? InitialAsk { get; init; }
+        public bool? SignalPresent { get; init; }
         public long? EntryWaitStartedMs { get; init; }
         public long? EntryWaitExpiresMs { get; init; }
         public IReadOnlyList<TradeEntryWaveDto>? EntryWaves { get; init; }

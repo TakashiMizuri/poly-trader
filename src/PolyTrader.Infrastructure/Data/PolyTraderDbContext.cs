@@ -50,6 +50,7 @@ public sealed class PolyTraderDbContext(DbContextOptions<PolyTraderDbContext> op
             e.Property(x => x.Trend).HasConversion<string>();
             e.Property(x => x.Mode).HasConversion<string>();
             e.Property(x => x.BetStakeMode).HasConversion<string>();
+            e.Property(x => x.SettlementStatus).HasConversion<string>();
         });
 
         modelBuilder.Entity<PositionEntity>(e =>
@@ -76,6 +77,7 @@ public sealed class PolyTraderDbContext(DbContextOptions<PolyTraderDbContext> op
             e.HasIndex(x => new { x.CandleTime, x.Mode, x.PaperAccountId, x.MarketId }).IsUnique();
             e.Property(x => x.Mode).HasConversion<string>();
             e.Property(x => x.SkipReason).HasMaxLength(64);
+            e.Property(x => x.SkipDetail).HasMaxLength(512);
             e.HasOne(x => x.Market)
                 .WithMany()
                 .HasForeignKey(x => x.MarketId)

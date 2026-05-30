@@ -26,6 +26,8 @@ interface TradeRow {
   entryWaves?: PositionEntryWave[] | null
   won?: boolean | null
   pnlUsd?: number | null
+  settlementStatus?: string | null
+  settlementSource?: string | null
   paperAccountId?: number
   createdAt: string
 }
@@ -38,6 +40,8 @@ interface Props {
 }
 
 function tradeAsFeedFill(t: TradeRow): PositionFeedFill {
+  const result =
+    t.won == null ? 'Open' : t.won ? 'Won' : 'Lost'
   return {
     id: String(t.id),
     timeMs: t.candleTime * 1000,
@@ -45,8 +49,21 @@ function tradeAsFeedFill(t: TradeRow): PositionFeedFill {
     requestedStakeUsd: t.requestedStakeUsd ?? null,
     isPartialFill: t.isPartialFill,
     entryWaves: t.entryWaves,
-    result: 'Open',
+    settlementStatus: t.settlementStatus ?? null,
+    settlementSource: t.settlementSource ?? null,
+    won: t.won,
+    pnlUsd: t.pnlUsd ?? null,
+    result,
   }
+}
+
+function formatWonLabel(t: TradeRow): string {
+  if (t.won == null) return '—'
+  const fill = tradeAsFeedFill(t)
+  if (t.won) {
+    return fill.settlementStatus === 'provisional' ? 'Yes (unconfirmed)' : 'Yes'
+  }
+  return fill.settlementStatus === 'provisional' ? 'No (unconfirmed)' : 'No'
 }
 
 export function TradeHistoryTable({
@@ -110,7 +127,7 @@ export function TradeHistoryTable({
             ) : null}
             <TradeField
               label="Won"
-              value={t.won == null ? '—' : t.won ? 'Yes' : 'No'}
+              value={formatWonLabel(t)}
             />
             <TradeField
               label="PnL"

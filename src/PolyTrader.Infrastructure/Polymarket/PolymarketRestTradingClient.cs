@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polymarket.Net.Clients;
@@ -7,6 +8,7 @@ using Polymarket.Net.Enums;
 using Polymarket.Net.Objects.Models;
 using Polymarket.Net;
 using PolyTrader.Core.Strategy;
+using PolyTrader.Infrastructure.Logging;
 using PolyTrader.Infrastructure.Options;
 
 namespace PolyTrader.Infrastructure.Polymarket;
@@ -21,7 +23,10 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
 
     private readonly PolyTraderOptions _options;
     private readonly IPolymarketWalletResolver _wallet;
+    private readonly IPolymarketOrderFillNotifier _fillNotifier;
+    private readonly ITradeExecutionLogger _tradeLog;
     private readonly ILogger<PolymarketRestTradingClient> _logger;
+    private PolymarketWsApiAuth? _wsAuth;
     private readonly SemaphoreSlim _initLock = new(1, 1);
     private readonly SemaphoreSlim _balanceLock = new(1, 1);
     private PolymarketRestClient? _client;
@@ -35,11 +40,26 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
     public PolymarketRestTradingClient(
         IOptions<PolyTraderOptions> options,
         IPolymarketWalletResolver wallet,
+        IPolymarketOrderFillNotifier fillNotifier,
+        ITradeExecutionLogger tradeLog,
         ILogger<PolymarketRestTradingClient> logger)
     {
         _options = options.Value;
         _wallet = wallet;
+        _fillNotifier = fillNotifier;
+        _tradeLog = tradeLog;
         _logger = logger;
+    }
+
+    public Task<PolymarketWsApiAuth?> TryGetWsAuthAsync(CancellationToken ct = default) =>
+        _wsAuth != null
+            ? Task.FromResult<PolymarketWsApiAuth?>(_wsAuth)
+            : GetWsAuthFromClientAsync(ct);
+
+    private async Task<PolymarketWsApiAuth?> GetWsAuthFromClientAsync(CancellationToken ct)
+    {
+        await GetClientAsync(ct);
+        return _wsAuth;
     }
 
     public bool IsConfigured => _wallet.IsPrivateKeyConfigured;
@@ -440,24 +460,28 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
         }
 
         var tickSize = await ResolveTickSizeAsync(client, tokenId, ct);
-        var (bid, ask) = await ResolveQuoteAsync(
+        var (bid, ask, quoteError) = await TryResolveFreshMakerQuoteAsync(
             bidPriceHint,
             askPriceHint,
             refreshQuoteAsync,
-            refreshFromApi: false,
             ct);
+        if (quoteError != null)
+        {
+            return LiveMarketBuyOutcome.Fail(quoteError);
+        }
+
         var limit = ResolvePostOnlyLimit(bid, ask, tickSize, stakeUsd);
         if (limit == null)
         {
             return LiveMarketBuyOutcome.Fail(
-                $"Cannot derive post-only limit on {tokenId} (bid {bid:F4}, ask {ask?.ToString("F4") ?? "n/a"}, stake ${stakeUsd:F2})");
+                $"Cannot derive post-only limit on {tokenId} (bid {bid:F4}, ask {ask:F4}, stake ${stakeUsd:F2})");
         }
 
         if (!EntryPriceRules.IsAllowed(limit.Value))
         {
             return LiveMarketBuyOutcome.Fail(
                 $"Maker limit {limit.Value:F4} outside allowed entry band (0, {EntryPriceRules.MaxEntryPrice:F2}] "
-                + $"on {tokenId} (bid {bid:F4}, ask {ask?.ToString("F4") ?? "n/a"})");
+                + $"on {tokenId} (bid {bid:F4}, ask {ask:F4})");
         }
 
         LogLimitAdjustment(bidPriceHint, ask, limit.Value, wave: 1, tokenId);
@@ -512,27 +536,41 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
         CancellationToken ct)
     {
         var tickSize = await ResolveTickSizeAsync(client, tokenId, ct);
-        var (wave1Bid, wave1Ask) = await ResolveQuoteAsync(
+        var (wave1Bid, wave1Ask, wave1QuoteError) = await TryResolveFreshMakerQuoteAsync(
             bidPriceHint,
             askPriceHint,
             refreshQuoteAsync,
-            refreshFromApi: false,
             ct);
+        if (wave1QuoteError != null)
+        {
+            return LiveMarketBuyOutcome.Fail(wave1QuoteError);
+        }
+
         var wave1Limit = ResolvePostOnlyLimit(wave1Bid, wave1Ask, tickSize, requestedStakeUsd);
         if (wave1Limit == null)
         {
             return LiveMarketBuyOutcome.Fail(
-                $"Cannot derive post-only limit for wave 1 on {tokenId} (bid {wave1Bid:F4}, ask {wave1Ask?.ToString("F4") ?? "n/a"}, stake ${requestedStakeUsd:F2})");
+                $"Cannot derive post-only limit for wave 1 on {tokenId} (bid {wave1Bid:F4}, ask {wave1Ask:F4}, stake ${requestedStakeUsd:F2})");
         }
 
         if (!EntryPriceRules.IsAllowed(wave1Limit.Value))
         {
             return LiveMarketBuyOutcome.Fail(
                 $"Maker wave 1 limit {wave1Limit.Value:F4} outside allowed entry band (0, {EntryPriceRules.MaxEntryPrice:F2}] "
-                + $"on {tokenId} (bid {wave1Bid:F4}, ask {wave1Ask?.ToString("F4") ?? "n/a"})");
+                + $"on {tokenId} (bid {wave1Bid:F4}, ask {wave1Ask:F4})");
         }
 
         LogLimitAdjustment(bidPriceHint, wave1Ask, wave1Limit.Value, wave: 1, tokenId);
+
+        _tradeLog.Information(
+            "MAKER_TWO_WAVE_START token={TokenId} stake=${Stake:F2} bid={Bid:F4} ask={Ask:F4} limit1={Limit:F4} w1Wait={W1}s w2Wait={W2}s",
+            tokenId,
+            requestedStakeUsd,
+            wave1Bid,
+            wave1Ask,
+            wave1Limit.Value,
+            firstWaveFillWait.TotalSeconds,
+            remainderFillWait.TotalSeconds);
 
         _logger.LogInformation(
             "Maker entry wave 1 for {TokenId}: ${Stake:F2} @ {Price:F4}, wait {WaitSeconds}s",
@@ -555,8 +593,20 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
 
         if (wave1.PlacementFailed)
         {
+            _tradeLog.Warning(
+                "MAKER_WAVE1_FAIL token={TokenId} reason={Reason}",
+                tokenId,
+                wave1.FailureReason ?? "(none)");
             return LiveMarketBuyOutcome.Fail(wave1.FailureReason ?? "Maker wave 1 placement failed");
         }
+
+        _tradeLog.Information(
+            "MAKER_WAVE1_DONE token={TokenId} filledUsd=${Filled:F2} shares={Shares:F4} limit={Limit:F4} order={OrderId}",
+            tokenId,
+            wave1.FilledStakeUsd,
+            wave1.MatchedShares,
+            wave1.LimitPrice,
+            wave1.OrderId ?? "(none)");
 
         var waves = new List<LiveEntryWaveFill>
         {
@@ -601,12 +651,27 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                 remainderStake);
         }
 
-        var (wave2Bid, wave2Ask) = await ResolveQuoteAsync(
+        var (wave2Bid, wave2Ask, wave2QuoteError) = await TryResolveFreshMakerQuoteAsync(
             bidPriceHint,
             askPriceHint,
             refreshQuoteAsync,
-            refreshFromApi: true,
             ct);
+        if (wave2QuoteError != null)
+        {
+            _logger.LogWarning(
+                "Skipping maker wave 2 for {TokenId}: {Reason}",
+                tokenId,
+                wave2QuoteError);
+            return BuildAggregatedMakerOutcome(
+                tokenId,
+                requestedStakeUsd,
+                totalMatchedShares,
+                priceNumerator,
+                primaryOrderId,
+                waves,
+                totalFilledStake);
+        }
+
         var wave2Limit = ResolvePostOnlyLimit(wave2Bid, wave2Ask, tickSize, remainderStake);
         if (wave2Limit == null)
         {
@@ -615,7 +680,7 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                 tokenId,
                 remainderStake,
                 wave2Bid,
-                wave2Ask?.ToString("F4") ?? "n/a");
+                wave2Ask);
             return BuildAggregatedMakerOutcome(
                 tokenId,
                 requestedStakeUsd,
@@ -636,12 +701,12 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                 EntryPriceRules.MaxEntryPrice,
                 remainderStake,
                 wave2Bid,
-                wave2Ask?.ToString("F4") ?? "n/a");
+                wave2Ask);
             if (totalMatchedShares < MinMatchedShares)
             {
                 return LiveMarketBuyOutcome.Fail(
                     $"Maker entry not filled: limit {wave2Limit.Value:F4} outside allowed entry band (0, {EntryPriceRules.MaxEntryPrice:F2}] "
-                    + $"for remainder ${remainderStake:F2} (bid {wave2Bid:F4}, ask {wave2Ask?.ToString("F4") ?? "n/a"})");
+                    + $"for remainder ${remainderStake:F2} (bid {wave2Bid:F4}, ask {wave2Ask:F4})");
             }
 
             return BuildAggregatedMakerOutcome(
@@ -779,6 +844,9 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
         return LiveMarketBuyOutcome.Ok(result);
     }
 
+    private const string MissingAskForPostOnlyReason =
+        "Best ask unavailable from CLOB; refusing post-only maker placement without a book ask";
+
     private async Task<MakerLimitWaveResult> ExecuteMakerLimitWaveAsync(
         PolymarketRestClient client,
         string tokenId,
@@ -793,53 +861,49 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
     {
         try
         {
-            var price = MakerLimitPricing.ComputePostOnlyBuyLimit(bidHint, askHint, tickSize, stakeUsd);
-            if (price is not > 0)
-            {
-                return new MakerLimitWaveResult(
-                    PlacementFailed: true,
-                    FailureReason:
-                        $"No valid post-only limit for ${stakeUsd:F2} (bid {bidHint:F4}, ask {askHint?.ToString("F4") ?? "n/a"})",
-                    OrderId: null,
-                    MatchedShares: 0,
-                    LimitPrice: null,
-                    FilledStakeUsd: 0);
-            }
-
-            if (!EntryPriceRules.IsAllowed((double)price.Value))
-            {
-                return new MakerLimitWaveResult(
-                    PlacementFailed: true,
-                    FailureReason:
-                        $"Post-only limit {price:F4} outside allowed entry band (0, {EntryPriceRules.MaxEntryPrice:F2}] "
-                        + $"(bid {bidHint:F4}, ask {askHint?.ToString("F4") ?? "n/a"})",
-                    OrderId: null,
-                    MatchedShares: 0,
-                    LimitPrice: null,
-                    FilledStakeUsd: 0);
-            }
-
-            var shares = PolymarketOrderPricing.ComputeShareQuantity(stakeUsd, price.Value);
-            if (shares < PolymarketClobLimits.MinOrderShares)
-            {
-                return new MakerLimitWaveResult(
-                    PlacementFailed: true,
-                    FailureReason:
-                        $"Share quantity {shares:F4} below Polymarket minimum ({PolymarketClobLimits.MinOrderShares}) "
-                        + $"for ${stakeUsd:F2} at {price:F4} (need ≥ ${PolymarketClobLimits.MinStakeUsd(price.Value):F2})",
-                    OrderId: null,
-                    MatchedShares: 0,
-                    LimitPrice: null,
-                    FilledStakeUsd: 0);
-            }
-
-            const int maxPostOnlyTickRetries = 2;
+            var maxPostOnlyTickRetries = Math.Clamp(_options.PostOnlyCrossTickRetries, 1, 12);
+            var askTickMargin = Math.Clamp(_options.PostOnlyAskTickMargin, 1, 5);
             string? lastPlaceReason = null;
             var repricedFromBook = false;
+            decimal? price = null;
+            decimal shares = 0;
 
             for (var tickStep = 0; tickStep <= maxPostOnlyTickRetries; tickStep++)
             {
-                if (tickStep > 0)
+                var (freshBid, freshAsk, quoteError) = await TryResolveFreshMakerQuoteAsync(
+                    bidHint,
+                    askHint,
+                    refreshQuoteAsync,
+                    ct);
+                if (quoteError != null)
+                {
+                    _tradeLog.Warning(
+                        "MAKER_QUOTE_FAIL token={TokenId} step={Step} reason={Reason}",
+                        tokenId,
+                        tickStep,
+                        quoteError);
+                    return new MakerLimitWaveResult(
+                        PlacementFailed: true,
+                        FailureReason: quoteError,
+                        OrderId: null,
+                        MatchedShares: 0,
+                        LimitPrice: null,
+                        FilledStakeUsd: 0);
+                }
+
+                bidHint = freshBid;
+                askHint = freshAsk;
+
+                if (tickStep == 0)
+                {
+                    price = MakerLimitPricing.ComputePostOnlyBuyLimit(
+                        bidHint,
+                        askHint,
+                        tickSize,
+                        stakeUsd,
+                        askTickMargin);
+                }
+                else if (price is > 0)
                 {
                     var stepped = PolymarketOrderPricing.RoundDownToTick(price.Value - tickSize, tickSize);
                     if (stepped <= 0 || stepped >= price.Value)
@@ -861,19 +925,51 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                         tickStep,
                         maxPostOnlyTickRetries);
                     price = stepped;
-                    shares = PolymarketOrderPricing.ComputeShareQuantity(stakeUsd, price.Value);
-                    if (shares < PolymarketClobLimits.MinOrderShares)
-                    {
-                        return new MakerLimitWaveResult(
-                            PlacementFailed: true,
-                            FailureReason:
-                                $"Share quantity {shares:F4} below Polymarket minimum ({PolymarketClobLimits.MinOrderShares}) "
-                                + $"after tick-down to {price:F4}",
-                            OrderId: null,
-                            MatchedShares: 0,
-                            LimitPrice: null,
-                            FilledStakeUsd: 0);
-                    }
+                }
+
+                if (price is not > 0)
+                {
+                    return new MakerLimitWaveResult(
+                        PlacementFailed: true,
+                        FailureReason:
+                            $"No valid post-only limit for ${stakeUsd:F2} (bid {bidHint:F4}, ask {askHint:F4})",
+                        OrderId: null,
+                        MatchedShares: 0,
+                        LimitPrice: null,
+                        FilledStakeUsd: 0);
+                }
+
+                price = MakerLimitPricing.CapPostOnlyAgainstAsk(
+                    price.Value,
+                    askHint!.Value,
+                    tickSize,
+                    askTickMargin);
+
+                if (!EntryPriceRules.IsAllowed((double)price.Value))
+                {
+                    return new MakerLimitWaveResult(
+                        PlacementFailed: true,
+                        FailureReason:
+                            $"Post-only limit {price:F4} outside allowed entry band (0, {EntryPriceRules.MaxEntryPrice:F2}] "
+                            + $"(bid {bidHint:F4}, ask {askHint:F4})",
+                        OrderId: null,
+                        MatchedShares: 0,
+                        LimitPrice: null,
+                        FilledStakeUsd: 0);
+                }
+
+                shares = PolymarketOrderPricing.ComputeShareQuantity(stakeUsd, price.Value);
+                if (shares < PolymarketClobLimits.MinOrderShares)
+                {
+                    return new MakerLimitWaveResult(
+                        PlacementFailed: true,
+                        FailureReason:
+                            $"Share quantity {shares:F4} below Polymarket minimum ({PolymarketClobLimits.MinOrderShares}) "
+                            + $"for ${stakeUsd:F2} at {price:F4} (need ≥ ${PolymarketClobLimits.MinStakeUsd(price.Value):F2})",
+                        OrderId: null,
+                        MatchedShares: 0,
+                        LimitPrice: null,
+                        FilledStakeUsd: 0);
                 }
 
                 var place = await client.ClobApi.Trading.PlaceOrderAsync(
@@ -907,49 +1003,77 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                 if (placeReason != null)
                 {
                     lastPlaceReason = placeReason;
+                    if (IsPostOnlyWouldCross(placeReason))
+                    {
+                        _tradeLog.Warning(
+                            "MAKER_POST_ONLY_CROSS token={TokenId} limit={Limit:F4} bid={Bid:F4} ask={Ask:F4} step={Step} msg={Msg}",
+                            tokenId,
+                            price,
+                            bidHint,
+                            askHint,
+                            tickStep,
+                            placeReason);
+                    }
+
                     if (IsPostOnlyWouldCross(placeReason)
                         && !repricedFromBook
                         && refreshQuoteAsync != null)
                     {
                         repricedFromBook = true;
-                        var (freshBid, freshAsk) = await ResolveQuoteAsync(
+                        var (reBid, reAsk, requoteError) = await TryResolveFreshMakerQuoteAsync(
                             bidHint,
                             askHint,
                             refreshQuoteAsync,
-                            refreshFromApi: true,
                             ct);
-                        var repriced = MakerLimitPricing.ComputePostOnlyBuyLimit(
-                            freshBid,
-                            freshAsk,
-                            tickSize,
-                            stakeUsd);
-                        if (repriced is > 0 && repriced != price.Value)
+                        if (requoteError != null)
                         {
-                            if (!EntryPriceRules.IsAllowed((double)repriced.Value))
+                            lastPlaceReason = requoteError;
+                        }
+                        else
+                        {
+                            bidHint = reBid;
+                            askHint = reAsk;
+                            var repriced = MakerLimitPricing.ComputePostOnlyBuyLimit(
+                                reBid,
+                                reAsk,
+                                tickSize,
+                                stakeUsd,
+                                askTickMargin);
+                            if (repriced is > 0)
                             {
-                                _logger.LogWarning(
-                                    "Refusing maker limit re-price for {TokenId} above entry cap: {New:F4} "
-                                    + "(allowed (0, {Max:F2}], bid {Bid:F4}, ask {Ask})",
-                                    tokenId,
-                                    repriced,
-                                    EntryPriceRules.MaxEntryPrice,
-                                    freshBid,
-                                    freshAsk?.ToString("F4") ?? "n/a");
+                                repriced = MakerLimitPricing.CapPostOnlyAgainstAsk(
+                                    repriced.Value,
+                                    reAsk,
+                                    tickSize,
+                                    askTickMargin);
                             }
-                            else
+
+                            if (repriced is > 0 && repriced != price.Value)
                             {
-                                _logger.LogInformation(
-                                    "Re-priced maker limit for {TokenId} after cross: {Old:F4} -> {New:F4} (bid {Bid:F4}, ask {Ask})",
-                                    tokenId,
-                                    price,
-                                    repriced,
-                                    freshBid,
-                                    freshAsk?.ToString("F4") ?? "n/a");
-                                price = repriced;
-                                bidHint = freshBid;
-                                askHint = freshAsk;
-                                shares = PolymarketOrderPricing.ComputeShareQuantity(stakeUsd, price.Value);
-                                continue;
+                                if (!EntryPriceRules.IsAllowed((double)repriced.Value))
+                                {
+                                    _logger.LogWarning(
+                                        "Refusing maker limit re-price for {TokenId} above entry cap: {New:F4} "
+                                        + "(allowed (0, {Max:F2}], bid {Bid:F4}, ask {Ask:F4})",
+                                        tokenId,
+                                        repriced,
+                                        EntryPriceRules.MaxEntryPrice,
+                                        reBid,
+                                        reAsk);
+                                }
+                                else
+                                {
+                                    _logger.LogInformation(
+                                        "Re-priced maker limit for {TokenId} after cross: {Old:F4} -> {New:F4} (bid {Bid:F4}, ask {Ask:F4})",
+                                        tokenId,
+                                        price,
+                                        repriced,
+                                        reBid,
+                                        reAsk);
+                                    price = repriced;
+                                    shares = PolymarketOrderPricing.ComputeShareQuantity(stakeUsd, price.Value);
+                                    continue;
+                                }
                             }
                         }
                     }
@@ -1050,6 +1174,58 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
         }
     }
 
+    private static async Task<(double Bid, double Ask, string? Error)> TryResolveFreshMakerQuoteAsync(
+        double bidHint,
+        double? askHint,
+        Func<CancellationToken, Task<(double? Bid, double? Ask)>>? refreshQuoteAsync,
+        CancellationToken ct)
+    {
+        if (refreshQuoteAsync == null)
+        {
+            if (!PolymarketOrderPricing.IsValidOutcomePrice(bidHint))
+            {
+                return (bidHint, 0, "Invalid bid hint for maker buy (must be in (0, 1])");
+            }
+
+            if (!PolymarketOrderPricing.IsValidOutcomePrice(askHint))
+            {
+                return (bidHint, 0, MissingAskForPostOnlyReason);
+            }
+
+            return (bidHint, askHint!.Value, null);
+        }
+
+        try
+        {
+            var refreshed = await refreshQuoteAsync(ct);
+            if (PolymarketOrderPricing.IsValidOutcomePrice(refreshed.Bid))
+            {
+                bidHint = refreshed.Bid!.Value;
+            }
+
+            if (PolymarketOrderPricing.IsValidOutcomePrice(refreshed.Ask))
+            {
+                askHint = refreshed.Ask;
+            }
+        }
+        catch (Exception ex)
+        {
+            return (bidHint, 0, $"CLOB quote refresh failed: {ex.Message}");
+        }
+
+        if (!PolymarketOrderPricing.IsValidOutcomePrice(bidHint))
+        {
+            return (bidHint, 0, "Best bid unavailable from CLOB for maker entry");
+        }
+
+        if (!PolymarketOrderPricing.IsValidOutcomePrice(askHint))
+        {
+            return (bidHint, 0, MissingAskForPostOnlyReason);
+        }
+
+        return (bidHint, askHint!.Value, null);
+    }
+
     private static async Task<(double Bid, double? Ask)> ResolveQuoteAsync(
         double bidHint,
         double? askHint,
@@ -1059,35 +1235,21 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
     {
         if (refreshFromApi && refreshQuoteAsync != null)
         {
-            try
-            {
-                var refreshed = await refreshQuoteAsync(ct);
-                if (PolymarketOrderPricing.IsValidOutcomePrice(refreshed.Bid))
-                {
-                    bidHint = refreshed.Bid!.Value;
-                }
-
-                if (PolymarketOrderPricing.IsValidOutcomePrice(refreshed.Ask))
-                {
-                    askHint = refreshed.Ask;
-                }
-            }
-            catch
-            {
-                // keep hints
-            }
+            var (bid, ask, _) = await TryResolveFreshMakerQuoteAsync(bidHint, askHint, refreshQuoteAsync, ct);
+            return (bid, ask > 0 ? ask : askHint);
         }
 
         return (bidHint, askHint);
     }
 
-    private static double? ResolvePostOnlyLimit(
+    private double? ResolvePostOnlyLimit(
         double bid,
         double? ask,
         decimal tickSize,
         double stakeUsd)
     {
-        var limit = MakerLimitPricing.ComputePostOnlyBuyLimit(bid, ask, tickSize, stakeUsd);
+        var margin = Math.Clamp(_options.PostOnlyAskTickMargin, 1, 5);
+        var limit = MakerLimitPricing.ComputePostOnlyBuyLimit(bid, ask, tickSize, stakeUsd, margin);
         return limit is > 0 ? (double)limit.Value : null;
     }
 
@@ -1162,6 +1324,12 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
             targetShares);
         var deadline = DateTime.UtcNow + fillWait;
         OrderStatus? terminalStatus = null;
+        var pollMs = Math.Clamp(_options.MakerFillPollIntervalMs, 100, 2000);
+        var wsFillWait = _fillNotifier.WaitForOrderFillAsync(
+            orderId,
+            targetShares,
+            fillWait,
+            ct);
 
         while (DateTime.UtcNow < deadline)
         {
@@ -1178,10 +1346,20 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                 return await ReadOrderFillSnapshotAsync(client, orderId, ct);
             }
 
+            if (wsFillWait.IsCompleted)
+            {
+                var refreshed = await ReadOrderFillSnapshotAsync(client, orderId, ct);
+                if (refreshed.MatchedShares >= targetShares * 0.999)
+                {
+                    await TryCancelOpenOrderAsync(client, orderId, ct);
+                    return await ReadOrderFillSnapshotAsync(client, orderId, ct);
+                }
+            }
+
             terminalStatus = snapshot.TerminalStatus;
             try
             {
-                await Task.Delay(500, ct);
+                await Task.Delay(pollMs, ct);
             }
             catch (OperationCanceledException)
             {
@@ -1701,6 +1879,7 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                 }
 
                 client.UpdateL2Credentials(l2.Data);
+                _wsAuth = TryMapWsAuth(l2.Data);
                 _client = client;
                 return _client;
             }
@@ -1737,4 +1916,45 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
             3 => SignType.Poly1271,
             _ => SignType.EOA,
         };
+
+    private static PolymarketWsApiAuth? TryMapWsAuth(object? data)
+    {
+        if (data == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var root = JsonSerializer.SerializeToElement(data);
+            var apiKey = ReadStringProperty(root, "apiKey", "key", "Key", "ApiKey");
+            var secret = ReadStringProperty(root, "secret", "apiSecret", "Secret", "ApiSecret");
+            var passphrase = ReadStringProperty(root, "passphrase", "Passphrase");
+            if (string.IsNullOrWhiteSpace(apiKey)
+                || string.IsNullOrWhiteSpace(secret)
+                || string.IsNullOrWhiteSpace(passphrase))
+            {
+                return null;
+            }
+
+            return new PolymarketWsApiAuth(apiKey, secret, passphrase);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string? ReadStringProperty(JsonElement root, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            if (root.TryGetProperty(name, out var prop))
+            {
+                return prop.GetString();
+            }
+        }
+
+        return null;
+    }
 }

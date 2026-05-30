@@ -213,3 +213,24 @@ export interface TradeStatistics {
   errorCount: number
   skipBreakdown: TradeStatisticsSkipBreakdown[]
 }
+
+export interface ExecutionGapAnalytics {
+  period: string
+  fromCandleTime: number | null
+  toCandleTime: number
+  mode: string
+  paperAccountId: number
+  signalBars: number
+  tradedBars: number
+  executionSkipSignalBars: number
+  coveragePct: number | null
+  skipBreakdown: Array<{
+    reason: string
+    count: number
+    isExecution: boolean
+  }>
+  counterfactualPnlUsd: number
+  entryEdgeUsd: number
+  startBalanceUsd: number
+  reportCommand: string
+}

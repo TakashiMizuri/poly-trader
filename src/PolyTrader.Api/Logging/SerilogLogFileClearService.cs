@@ -16,7 +16,8 @@ public sealed class SerilogLogFileClearService(IConfiguration configuration) : I
 
         if (Directory.Exists(directory))
         {
-            foreach (var path in Directory.EnumerateFiles(directory, "polytrader-*.log"))
+            foreach (var path in Directory.EnumerateFiles(directory, "polytrader-*.log")
+                .Concat(Directory.EnumerateFiles(directory, "trade-execution-*.log")))
             {
                 try
                 {

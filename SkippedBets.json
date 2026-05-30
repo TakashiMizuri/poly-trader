@@ -1,0 +1,6770 @@
+[
+    {
+        "CandleTime": 1779798900,
+        "CreatedAt": "2026-05-26 12:36:50.1461548",
+        "Id": 670,
+        "MarketId": 955,
+        "Mode": "Paper",
+        "PaperAccountId": 5,
+        "SkipReason": "engine_stopped"
+    },
+    {
+        "CandleTime": 1779798900,
+        "CreatedAt": "2026-05-26 12:37:05.5320042",
+        "Id": 671,
+        "MarketId": 955,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "engine_stopped"
+    },
+    {
+        "CandleTime": 1779799200,
+        "CreatedAt": "2026-05-26 12:40:00.4635731",
+        "Id": 672,
+        "MarketId": 956,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779799500,
+        "CreatedAt": "2026-05-26 12:45:00.5160497",
+        "Id": 673,
+        "MarketId": 957,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779799800,
+        "CreatedAt": "2026-05-26 12:50:00.6014859",
+        "Id": 674,
+        "MarketId": 958,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779800100,
+        "CreatedAt": "2026-05-26 12:55:00.4544334",
+        "Id": 675,
+        "MarketId": 959,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779800400,
+        "CreatedAt": "2026-05-26 13:00:00.9269028",
+        "Id": 676,
+        "MarketId": 960,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779800700,
+        "CreatedAt": "2026-05-26 13:05:00.6352427",
+        "Id": 677,
+        "MarketId": 961,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779801000,
+        "CreatedAt": "2026-05-26 13:10:00.4093154",
+        "Id": 678,
+        "MarketId": 962,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779801300,
+        "CreatedAt": "2026-05-26 13:15:00.5085415",
+        "Id": 679,
+        "MarketId": 963,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779801600,
+        "CreatedAt": "2026-05-26 13:20:00.2626687",
+        "Id": 680,
+        "MarketId": 964,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779801900,
+        "CreatedAt": "2026-05-26 13:25:00.2917203",
+        "Id": 681,
+        "MarketId": 965,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779802800,
+        "CreatedAt": "2026-05-26 13:40:01.2725952",
+        "Id": 682,
+        "MarketId": 968,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779803100,
+        "CreatedAt": "2026-05-26 13:45:00.9841958",
+        "Id": 683,
+        "MarketId": 969,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779803700,
+        "CreatedAt": "2026-05-26 13:55:01.0037313",
+        "Id": 684,
+        "MarketId": 971,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779804000,
+        "CreatedAt": "2026-05-26 14:00:00.3680544",
+        "Id": 685,
+        "MarketId": 972,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779804300,
+        "CreatedAt": "2026-05-26 14:05:00.5302866",
+        "Id": 686,
+        "MarketId": 973,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779804600,
+        "CreatedAt": "2026-05-26 14:10:00.4862015",
+        "Id": 687,
+        "MarketId": 974,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779804900,
+        "CreatedAt": "2026-05-26 14:15:33.0920518",
+        "Id": 688,
+        "MarketId": 975,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779807000,
+        "CreatedAt": "2026-05-26 14:50:01.3289404",
+        "Id": 689,
+        "MarketId": 982,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779807300,
+        "CreatedAt": "2026-05-26 14:55:01.1278957",
+        "Id": 690,
+        "MarketId": 983,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779807600,
+        "CreatedAt": "2026-05-26 15:01:38.6723238",
+        "Id": 691,
+        "MarketId": 984,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "engine_stopped"
+    },
+    {
+        "CandleTime": 1779807900,
+        "CreatedAt": "2026-05-26 15:05:10.6088687",
+        "Id": 692,
+        "MarketId": 985,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779808500,
+        "CreatedAt": "2026-05-26 15:15:01.6493908",
+        "Id": 693,
+        "MarketId": 987,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779809700,
+        "CreatedAt": "2026-05-26 15:35:04.2477678",
+        "Id": 694,
+        "MarketId": 991,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779810900,
+        "CreatedAt": "2026-05-26 15:55:59.8535852",
+        "Id": 695,
+        "MarketId": 995,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1779812700,
+        "CreatedAt": "2026-05-26 16:25:01.6358107",
+        "Id": 696,
+        "MarketId": 1001,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779813000,
+        "CreatedAt": "2026-05-26 16:30:00.8069905",
+        "Id": 697,
+        "MarketId": 1002,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779813300,
+        "CreatedAt": "2026-05-26 16:35:00.5272995",
+        "Id": 698,
+        "MarketId": 1003,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779813600,
+        "CreatedAt": "2026-05-26 16:40:00.4392863",
+        "Id": 699,
+        "MarketId": 1004,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779813900,
+        "CreatedAt": "2026-05-26 16:45:00.5077613",
+        "Id": 700,
+        "MarketId": 1005,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779814200,
+        "CreatedAt": "2026-05-26 16:50:05.5428396",
+        "Id": 701,
+        "MarketId": 1006,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779814500,
+        "CreatedAt": "2026-05-26 16:55:01.0344008",
+        "Id": 702,
+        "MarketId": 1007,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779814800,
+        "CreatedAt": "2026-05-26 17:00:00.5532896",
+        "Id": 703,
+        "MarketId": 1008,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779815100,
+        "CreatedAt": "2026-05-26 17:05:00.4398864",
+        "Id": 704,
+        "MarketId": 1009,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779815400,
+        "CreatedAt": "2026-05-26 17:10:00.3724591",
+        "Id": 705,
+        "MarketId": 1010,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779815700,
+        "CreatedAt": "2026-05-26 17:15:00.570247",
+        "Id": 706,
+        "MarketId": 1011,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779816000,
+        "CreatedAt": "2026-05-26 17:20:00.3754828",
+        "Id": 707,
+        "MarketId": 1011,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_market"
+    },
+    {
+        "CandleTime": 1779816600,
+        "CreatedAt": "2026-05-26 17:30:03.1441354",
+        "Id": 708,
+        "MarketId": 1013,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1779817800,
+        "CreatedAt": "2026-05-26 17:50:06.6722301",
+        "Id": 709,
+        "MarketId": 1017,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779819600,
+        "CreatedAt": "2026-05-26 18:20:01.0663265",
+        "Id": 710,
+        "MarketId": 1023,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779819900,
+        "CreatedAt": "2026-05-26 18:25:00.8787671",
+        "Id": 711,
+        "MarketId": 1024,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779820200,
+        "CreatedAt": "2026-05-26 18:30:01.3530473",
+        "Id": 712,
+        "MarketId": 1025,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779820500,
+        "CreatedAt": "2026-05-26 18:35:00.6957289",
+        "Id": 713,
+        "MarketId": 1026,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779820800,
+        "CreatedAt": "2026-05-26 18:40:00.6139443",
+        "Id": 714,
+        "MarketId": 1027,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779822300,
+        "CreatedAt": "2026-05-26 19:05:32.8224184",
+        "Id": 715,
+        "MarketId": 1032,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779822600,
+        "CreatedAt": "2026-05-26 19:10:32.5494795",
+        "Id": 716,
+        "MarketId": 1033,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779823200,
+        "CreatedAt": "2026-05-26 19:20:54.3414689",
+        "Id": 717,
+        "MarketId": 1035,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779823500,
+        "CreatedAt": "2026-05-26 19:25:33.4775434",
+        "Id": 718,
+        "MarketId": 1036,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779823800,
+        "CreatedAt": "2026-05-26 19:30:00.5456432",
+        "Id": 719,
+        "MarketId": 1037,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779824100,
+        "CreatedAt": "2026-05-26 19:35:00.5907471",
+        "Id": 720,
+        "MarketId": 1038,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779824400,
+        "CreatedAt": "2026-05-26 19:40:00.8621766",
+        "Id": 721,
+        "MarketId": 1039,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779824700,
+        "CreatedAt": "2026-05-26 19:45:04.4729884",
+        "Id": 722,
+        "MarketId": 1040,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779825000,
+        "CreatedAt": "2026-05-26 19:50:00.5933855",
+        "Id": 723,
+        "MarketId": 1041,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779825300,
+        "CreatedAt": "2026-05-26 19:55:00.4997327",
+        "Id": 724,
+        "MarketId": 1042,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779825600,
+        "CreatedAt": "2026-05-26 20:00:02.2655043",
+        "Id": 725,
+        "MarketId": 1043,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779825900,
+        "CreatedAt": "2026-05-26 20:05:02.3396154",
+        "Id": 726,
+        "MarketId": 1044,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779826200,
+        "CreatedAt": "2026-05-26 20:10:00.4664862",
+        "Id": 727,
+        "MarketId": 1045,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779826500,
+        "CreatedAt": "2026-05-26 20:15:02.371557",
+        "Id": 728,
+        "MarketId": 1046,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779826800,
+        "CreatedAt": "2026-05-26 20:20:02.7059137",
+        "Id": 729,
+        "MarketId": 1047,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779827100,
+        "CreatedAt": "2026-05-26 20:25:02.9266091",
+        "Id": 730,
+        "MarketId": 1048,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779827400,
+        "CreatedAt": "2026-05-26 20:30:04.1546942",
+        "Id": 731,
+        "MarketId": 1049,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779827700,
+        "CreatedAt": "2026-05-26 20:35:04.7080389",
+        "Id": 732,
+        "MarketId": 1050,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779828000,
+        "CreatedAt": "2026-05-26 20:40:00.5200346",
+        "Id": 733,
+        "MarketId": 1051,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779828300,
+        "CreatedAt": "2026-05-26 20:45:00.7560744",
+        "Id": 734,
+        "MarketId": 1052,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779828600,
+        "CreatedAt": "2026-05-26 20:50:00.7656084",
+        "Id": 735,
+        "MarketId": 1053,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779828900,
+        "CreatedAt": "2026-05-26 20:55:01.5408007",
+        "Id": 736,
+        "MarketId": 1054,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779829200,
+        "CreatedAt": "2026-05-26 21:00:01.4709937",
+        "Id": 737,
+        "MarketId": 1055,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779829500,
+        "CreatedAt": "2026-05-26 21:05:00.5280572",
+        "Id": 738,
+        "MarketId": 1056,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779829800,
+        "CreatedAt": "2026-05-26 21:10:00.9826076",
+        "Id": 739,
+        "MarketId": 1057,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779830400,
+        "CreatedAt": "2026-05-26 21:20:01.1575789",
+        "Id": 740,
+        "MarketId": 1059,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779830700,
+        "CreatedAt": "2026-05-26 21:25:00.6744228",
+        "Id": 741,
+        "MarketId": 1060,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779831000,
+        "CreatedAt": "2026-05-26 21:30:01.2115798",
+        "Id": 742,
+        "MarketId": 1061,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779831300,
+        "CreatedAt": "2026-05-26 21:35:00.6224127",
+        "Id": 743,
+        "MarketId": 1062,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779831600,
+        "CreatedAt": "2026-05-26 21:40:00.6395899",
+        "Id": 744,
+        "MarketId": 1063,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779831900,
+        "CreatedAt": "2026-05-26 21:45:00.804224",
+        "Id": 745,
+        "MarketId": 1064,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779832200,
+        "CreatedAt": "2026-05-26 21:50:00.5891801",
+        "Id": 746,
+        "MarketId": 1065,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779832500,
+        "CreatedAt": "2026-05-26 21:55:00.4908642",
+        "Id": 747,
+        "MarketId": 1066,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779833100,
+        "CreatedAt": "2026-05-26 22:05:01.1575209",
+        "Id": 748,
+        "MarketId": 1068,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779834300,
+        "CreatedAt": "2026-05-26 22:25:32.0614538",
+        "Id": 749,
+        "MarketId": 1072,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779836400,
+        "CreatedAt": "2026-05-26 23:00:32.6078873",
+        "Id": 750,
+        "MarketId": 1079,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779836700,
+        "CreatedAt": "2026-05-26 23:05:00.4087217",
+        "Id": 751,
+        "MarketId": 1080,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779837000,
+        "CreatedAt": "2026-05-26 23:10:00.4026421",
+        "Id": 752,
+        "MarketId": 1081,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779837300,
+        "CreatedAt": "2026-05-26 23:15:00.5927671",
+        "Id": 753,
+        "MarketId": 1082,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779837600,
+        "CreatedAt": "2026-05-26 23:20:01.1577202",
+        "Id": 754,
+        "MarketId": 1083,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779837900,
+        "CreatedAt": "2026-05-26 23:25:00.5598342",
+        "Id": 755,
+        "MarketId": 1084,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779838200,
+        "CreatedAt": "2026-05-26 23:30:00.5773525",
+        "Id": 756,
+        "MarketId": 1085,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779838500,
+        "CreatedAt": "2026-05-26 23:35:00.4957371",
+        "Id": 757,
+        "MarketId": 1086,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779838800,
+        "CreatedAt": "2026-05-26 23:40:00.3949531",
+        "Id": 758,
+        "MarketId": 1087,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779839100,
+        "CreatedAt": "2026-05-26 23:45:04.4535155",
+        "Id": 759,
+        "MarketId": 1088,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779839400,
+        "CreatedAt": "2026-05-26 23:50:01.8365263",
+        "Id": 760,
+        "MarketId": 1089,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779839700,
+        "CreatedAt": "2026-05-26 23:55:00.8152142",
+        "Id": 761,
+        "MarketId": 1090,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779840000,
+        "CreatedAt": "2026-05-27 00:00:00.6644169",
+        "Id": 762,
+        "MarketId": 1091,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779840300,
+        "CreatedAt": "2026-05-27 00:05:00.1991798",
+        "Id": 763,
+        "MarketId": 1092,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779840600,
+        "CreatedAt": "2026-05-27 00:10:00.2270457",
+        "Id": 764,
+        "MarketId": 1093,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779840900,
+        "CreatedAt": "2026-05-27 00:15:00.5285053",
+        "Id": 765,
+        "MarketId": 1094,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779841200,
+        "CreatedAt": "2026-05-27 00:20:00.4926959",
+        "Id": 766,
+        "MarketId": 1095,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779841500,
+        "CreatedAt": "2026-05-27 00:25:02.5265451",
+        "Id": 767,
+        "MarketId": 1096,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779841800,
+        "CreatedAt": "2026-05-27 00:30:00.7920295",
+        "Id": 768,
+        "MarketId": 1097,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779842100,
+        "CreatedAt": "2026-05-27 00:35:00.4010741",
+        "Id": 769,
+        "MarketId": 1098,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779842400,
+        "CreatedAt": "2026-05-27 00:40:00.3613729",
+        "Id": 770,
+        "MarketId": 1099,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779842700,
+        "CreatedAt": "2026-05-27 00:45:01.5007548",
+        "Id": 771,
+        "MarketId": 1100,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779843000,
+        "CreatedAt": "2026-05-27 00:50:00.324596",
+        "Id": 772,
+        "MarketId": 1101,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779843900,
+        "CreatedAt": "2026-05-27 01:05:48.8588926",
+        "Id": 773,
+        "MarketId": 1104,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779844500,
+        "CreatedAt": "2026-05-27 01:15:47.2304274",
+        "Id": 774,
+        "MarketId": 1106,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779844800,
+        "CreatedAt": "2026-05-27 01:20:02.650695",
+        "Id": 775,
+        "MarketId": 1107,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779845100,
+        "CreatedAt": "2026-05-27 01:25:00.3919312",
+        "Id": 776,
+        "MarketId": 1108,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779845400,
+        "CreatedAt": "2026-05-27 01:30:00.5044646",
+        "Id": 777,
+        "MarketId": 1109,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779845700,
+        "CreatedAt": "2026-05-27 01:35:00.5446254",
+        "Id": 778,
+        "MarketId": 1110,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779846000,
+        "CreatedAt": "2026-05-27 01:40:05.4917039",
+        "Id": 779,
+        "MarketId": 1111,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779846300,
+        "CreatedAt": "2026-05-27 01:45:00.6688942",
+        "Id": 780,
+        "MarketId": 1112,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779846600,
+        "CreatedAt": "2026-05-27 01:50:00.4098426",
+        "Id": 781,
+        "MarketId": 1113,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779846900,
+        "CreatedAt": "2026-05-27 01:55:00.3572475",
+        "Id": 782,
+        "MarketId": 1114,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779847200,
+        "CreatedAt": "2026-05-27 02:00:00.4687438",
+        "Id": 783,
+        "MarketId": 1115,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779847500,
+        "CreatedAt": "2026-05-27 02:05:00.3896288",
+        "Id": 784,
+        "MarketId": 1116,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779848100,
+        "CreatedAt": "2026-05-27 02:15:03.6619289",
+        "Id": 785,
+        "MarketId": 1118,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779848400,
+        "CreatedAt": "2026-05-27 02:20:47.0498794",
+        "Id": 786,
+        "MarketId": 1119,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779848700,
+        "CreatedAt": "2026-05-27 02:25:31.6768515",
+        "Id": 787,
+        "MarketId": 1120,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779849300,
+        "CreatedAt": "2026-05-27 02:35:33.6976427",
+        "Id": 788,
+        "MarketId": 1122,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779849600,
+        "CreatedAt": "2026-05-27 02:41:07.8164306",
+        "Id": 789,
+        "MarketId": 1123,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779849900,
+        "CreatedAt": "2026-05-27 02:45:32.1568229",
+        "Id": 790,
+        "MarketId": 1124,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779850200,
+        "CreatedAt": "2026-05-27 02:50:46.5641555",
+        "Id": 791,
+        "MarketId": 1125,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779850500,
+        "CreatedAt": "2026-05-27 02:55:00.2953769",
+        "Id": 792,
+        "MarketId": 1126,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779850800,
+        "CreatedAt": "2026-05-27 03:00:00.3770629",
+        "Id": 793,
+        "MarketId": 1127,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779851100,
+        "CreatedAt": "2026-05-27 03:05:00.7965321",
+        "Id": 794,
+        "MarketId": 1128,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779851400,
+        "CreatedAt": "2026-05-27 03:10:00.4418684",
+        "Id": 795,
+        "MarketId": 1129,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779851700,
+        "CreatedAt": "2026-05-27 03:15:00.4086591",
+        "Id": 796,
+        "MarketId": 1130,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779852000,
+        "CreatedAt": "2026-05-27 03:20:00.3763484",
+        "Id": 797,
+        "MarketId": 1131,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779852300,
+        "CreatedAt": "2026-05-27 03:25:00.5019942",
+        "Id": 798,
+        "MarketId": 1132,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779852600,
+        "CreatedAt": "2026-05-27 03:30:00.2806628",
+        "Id": 799,
+        "MarketId": 1133,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779852900,
+        "CreatedAt": "2026-05-27 03:35:00.2967201",
+        "Id": 800,
+        "MarketId": 1134,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779853800,
+        "CreatedAt": "2026-05-27 03:50:03.8434481",
+        "Id": 801,
+        "MarketId": 1137,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1779854100,
+        "CreatedAt": "2026-05-27 03:56:03.8353418",
+        "Id": 802,
+        "MarketId": 1138,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779854400,
+        "CreatedAt": "2026-05-27 04:00:44.3704697",
+        "Id": 803,
+        "MarketId": 1139,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779855900,
+        "CreatedAt": "2026-05-27 04:25:43.5432304",
+        "Id": 804,
+        "MarketId": 1144,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779856500,
+        "CreatedAt": "2026-05-27 04:35:33.3340578",
+        "Id": 805,
+        "MarketId": 1146,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779857100,
+        "CreatedAt": "2026-05-27 04:45:31.8736759",
+        "Id": 806,
+        "MarketId": 1148,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779857700,
+        "CreatedAt": "2026-05-27 04:55:00.7445958",
+        "Id": 807,
+        "MarketId": 1150,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779858000,
+        "CreatedAt": "2026-05-27 05:00:00.5243052",
+        "Id": 808,
+        "MarketId": 1151,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779858300,
+        "CreatedAt": "2026-05-27 05:05:00.3689558",
+        "Id": 809,
+        "MarketId": 1152,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779858600,
+        "CreatedAt": "2026-05-27 05:10:00.4147947",
+        "Id": 810,
+        "MarketId": 1153,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779858900,
+        "CreatedAt": "2026-05-27 05:15:00.6186902",
+        "Id": 811,
+        "MarketId": 1154,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779859200,
+        "CreatedAt": "2026-05-27 05:20:00.4929231",
+        "Id": 812,
+        "MarketId": 1155,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779859500,
+        "CreatedAt": "2026-05-27 05:25:00.4212494",
+        "Id": 813,
+        "MarketId": 1156,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779859800,
+        "CreatedAt": "2026-05-27 05:30:00.4590241",
+        "Id": 814,
+        "MarketId": 1157,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779860100,
+        "CreatedAt": "2026-05-27 05:35:00.4384696",
+        "Id": 815,
+        "MarketId": 1158,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779860400,
+        "CreatedAt": "2026-05-27 05:40:00.4846522",
+        "Id": 816,
+        "MarketId": 1159,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779860700,
+        "CreatedAt": "2026-05-27 05:45:00.4803675",
+        "Id": 817,
+        "MarketId": 1160,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779861000,
+        "CreatedAt": "2026-05-27 05:50:00.4327951",
+        "Id": 818,
+        "MarketId": 1161,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779861300,
+        "CreatedAt": "2026-05-27 05:55:00.6507136",
+        "Id": 819,
+        "MarketId": 1162,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779861600,
+        "CreatedAt": "2026-05-27 06:00:00.709035",
+        "Id": 820,
+        "MarketId": 1163,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779861900,
+        "CreatedAt": "2026-05-27 06:05:00.7560453",
+        "Id": 821,
+        "MarketId": 1164,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779862200,
+        "CreatedAt": "2026-05-27 06:10:00.6529109",
+        "Id": 822,
+        "MarketId": 1165,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779862500,
+        "CreatedAt": "2026-05-27 06:15:00.414757",
+        "Id": 823,
+        "MarketId": 1166,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779862800,
+        "CreatedAt": "2026-05-27 06:20:00.2154015",
+        "Id": 824,
+        "MarketId": 1167,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779863100,
+        "CreatedAt": "2026-05-27 06:25:00.319766",
+        "Id": 825,
+        "MarketId": 1168,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779863400,
+        "CreatedAt": "2026-05-27 06:30:03.3016165",
+        "Id": 826,
+        "MarketId": 1169,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779863700,
+        "CreatedAt": "2026-05-27 06:35:19.1202753",
+        "Id": 827,
+        "MarketId": 1170,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779864000,
+        "CreatedAt": "2026-05-27 06:40:00.6785114",
+        "Id": 828,
+        "MarketId": 1171,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779864300,
+        "CreatedAt": "2026-05-27 06:45:00.3569883",
+        "Id": 829,
+        "MarketId": 1172,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779865200,
+        "CreatedAt": "2026-05-27 07:00:01.4804743",
+        "Id": 830,
+        "MarketId": 1175,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779865800,
+        "CreatedAt": "2026-05-27 07:10:06.3239804",
+        "Id": 831,
+        "MarketId": 1177,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779866100,
+        "CreatedAt": "2026-05-27 07:15:00.8106452",
+        "Id": 832,
+        "MarketId": 1178,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779866400,
+        "CreatedAt": "2026-05-27 07:20:00.4418307",
+        "Id": 833,
+        "MarketId": 1179,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779866700,
+        "CreatedAt": "2026-05-27 07:25:47.6799629",
+        "Id": 834,
+        "MarketId": 1180,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779868800,
+        "CreatedAt": "2026-05-27 08:00:37.1049445",
+        "Id": 835,
+        "MarketId": 1187,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779870000,
+        "CreatedAt": "2026-05-27 08:20:10.1949818",
+        "Id": 836,
+        "MarketId": 1191,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779870900,
+        "CreatedAt": "2026-05-27 08:35:49.5168122",
+        "Id": 837,
+        "MarketId": 1194,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779871200,
+        "CreatedAt": "2026-05-27 08:40:58.7969992",
+        "Id": 838,
+        "MarketId": 1195,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779872100,
+        "CreatedAt": "2026-05-27 08:55:00.814416",
+        "Id": 839,
+        "MarketId": 1198,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779872400,
+        "CreatedAt": "2026-05-27 09:00:00.393855",
+        "Id": 840,
+        "MarketId": 1199,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779872700,
+        "CreatedAt": "2026-05-27 09:05:00.4654388",
+        "Id": 841,
+        "MarketId": 1200,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779873000,
+        "CreatedAt": "2026-05-27 09:10:00.6540684",
+        "Id": 842,
+        "MarketId": 1201,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779873600,
+        "CreatedAt": "2026-05-27 09:20:06.9530023",
+        "Id": 843,
+        "MarketId": 1203,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779873900,
+        "CreatedAt": "2026-05-27 09:25:00.8146221",
+        "Id": 844,
+        "MarketId": 1204,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779874200,
+        "CreatedAt": "2026-05-27 09:30:13.3634704",
+        "Id": 845,
+        "MarketId": 1205,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779874500,
+        "CreatedAt": "2026-05-27 09:35:00.5874129",
+        "Id": 846,
+        "MarketId": 1206,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779874800,
+        "CreatedAt": "2026-05-27 09:40:31.9155372",
+        "Id": 847,
+        "MarketId": 1207,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779875100,
+        "CreatedAt": "2026-05-27 09:45:02.3693131",
+        "Id": 848,
+        "MarketId": 1208,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779875400,
+        "CreatedAt": "2026-05-27 09:51:02.496886",
+        "Id": 849,
+        "MarketId": 1209,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779876300,
+        "CreatedAt": "2026-05-27 10:05:01.845035",
+        "Id": 850,
+        "MarketId": 1210,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779876600,
+        "CreatedAt": "2026-05-27 10:10:00.7032498",
+        "Id": 851,
+        "MarketId": 1211,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779876900,
+        "CreatedAt": "2026-05-27 10:15:03.8907359",
+        "Id": 852,
+        "MarketId": 1212,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779878100,
+        "CreatedAt": "2026-05-27 10:35:00.7829223",
+        "Id": 853,
+        "MarketId": 1216,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779878400,
+        "CreatedAt": "2026-05-27 10:40:00.4450295",
+        "Id": 854,
+        "MarketId": 1217,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779878700,
+        "CreatedAt": "2026-05-27 10:45:00.4320355",
+        "Id": 855,
+        "MarketId": 1218,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779879000,
+        "CreatedAt": "2026-05-27 10:50:00.8303128",
+        "Id": 856,
+        "MarketId": 1219,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779879600,
+        "CreatedAt": "2026-05-27 11:00:00.4580586",
+        "Id": 857,
+        "MarketId": 1221,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779879900,
+        "CreatedAt": "2026-05-27 11:05:00.4076052",
+        "Id": 858,
+        "MarketId": 1222,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779880200,
+        "CreatedAt": "2026-05-27 11:10:23.49908",
+        "Id": 859,
+        "MarketId": 1223,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779880500,
+        "CreatedAt": "2026-05-27 11:15:02.6072263",
+        "Id": 860,
+        "MarketId": 1224,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779880800,
+        "CreatedAt": "2026-05-27 11:20:05.0186435",
+        "Id": 861,
+        "MarketId": 1225,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779881400,
+        "CreatedAt": "2026-05-27 11:30:04.6215651",
+        "Id": 862,
+        "MarketId": 1227,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779881700,
+        "CreatedAt": "2026-05-27 11:35:48.2728261",
+        "Id": 863,
+        "MarketId": 1228,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779882000,
+        "CreatedAt": "2026-05-27 11:40:02.6398846",
+        "Id": 864,
+        "MarketId": 1229,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779882600,
+        "CreatedAt": "2026-05-27 11:50:25.736283",
+        "Id": 865,
+        "MarketId": 1231,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779883200,
+        "CreatedAt": "2026-05-27 12:00:39.9634538",
+        "Id": 866,
+        "MarketId": 1233,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779884100,
+        "CreatedAt": "2026-05-27 12:15:44.4036579",
+        "Id": 867,
+        "MarketId": 1236,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779884400,
+        "CreatedAt": "2026-05-27 12:20:02.4210889",
+        "Id": 868,
+        "MarketId": 1237,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779884700,
+        "CreatedAt": "2026-05-27 12:25:05.954624",
+        "Id": 869,
+        "MarketId": 1238,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779885000,
+        "CreatedAt": "2026-05-27 12:30:04.9620753",
+        "Id": 870,
+        "MarketId": 1239,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779885600,
+        "CreatedAt": "2026-05-27 12:40:00.7598649",
+        "Id": 871,
+        "MarketId": 1241,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779885900,
+        "CreatedAt": "2026-05-27 12:45:00.8804798",
+        "Id": 872,
+        "MarketId": 1242,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779886200,
+        "CreatedAt": "2026-05-27 12:50:01.2117733",
+        "Id": 873,
+        "MarketId": 1243,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779886500,
+        "CreatedAt": "2026-05-27 12:55:00.4115504",
+        "Id": 874,
+        "MarketId": 1244,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779886800,
+        "CreatedAt": "2026-05-27 13:00:40.4896908",
+        "Id": 875,
+        "MarketId": 1245,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779887400,
+        "CreatedAt": "2026-05-27 13:10:34.1772742",
+        "Id": 876,
+        "MarketId": 1247,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779888900,
+        "CreatedAt": "2026-05-27 13:35:11.5136369",
+        "Id": 877,
+        "MarketId": 1252,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779890400,
+        "CreatedAt": "2026-05-27 14:00:50.65143",
+        "Id": 878,
+        "MarketId": 1257,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779891300,
+        "CreatedAt": "2026-05-27 14:15:32.8164083",
+        "Id": 879,
+        "MarketId": 1260,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779891600,
+        "CreatedAt": "2026-05-27 14:20:00.7197308",
+        "Id": 880,
+        "MarketId": 1261,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779891900,
+        "CreatedAt": "2026-05-27 14:25:32.8492492",
+        "Id": 881,
+        "MarketId": 1262,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779892200,
+        "CreatedAt": "2026-05-27 14:30:38.1012159",
+        "Id": 882,
+        "MarketId": 1263,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779892800,
+        "CreatedAt": "2026-05-27 14:40:01.5179217",
+        "Id": 883,
+        "MarketId": 1265,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779893100,
+        "CreatedAt": "2026-05-27 14:45:00.6027106",
+        "Id": 884,
+        "MarketId": 1266,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779893400,
+        "CreatedAt": "2026-05-27 14:50:00.7156961",
+        "Id": 885,
+        "MarketId": 1267,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779893700,
+        "CreatedAt": "2026-05-27 14:55:00.692062",
+        "Id": 886,
+        "MarketId": 1268,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779894000,
+        "CreatedAt": "2026-05-27 15:00:00.6729104",
+        "Id": 887,
+        "MarketId": 1269,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779894300,
+        "CreatedAt": "2026-05-27 15:05:00.5730353",
+        "Id": 888,
+        "MarketId": 1270,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779894600,
+        "CreatedAt": "2026-05-27 15:10:00.5419787",
+        "Id": 889,
+        "MarketId": 1271,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779894900,
+        "CreatedAt": "2026-05-27 15:15:00.9625506",
+        "Id": 890,
+        "MarketId": 1272,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779895200,
+        "CreatedAt": "2026-05-27 15:20:00.3436653",
+        "Id": 891,
+        "MarketId": 1273,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779895500,
+        "CreatedAt": "2026-05-27 15:25:00.9188998",
+        "Id": 892,
+        "MarketId": 1274,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779895800,
+        "CreatedAt": "2026-05-27 15:30:00.7595047",
+        "Id": 893,
+        "MarketId": 1275,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779896100,
+        "CreatedAt": "2026-05-27 15:35:00.4146293",
+        "Id": 894,
+        "MarketId": 1276,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779896400,
+        "CreatedAt": "2026-05-27 15:40:00.4901773",
+        "Id": 895,
+        "MarketId": 1277,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779896700,
+        "CreatedAt": "2026-05-27 15:45:01.9654375",
+        "Id": 896,
+        "MarketId": 1278,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779897000,
+        "CreatedAt": "2026-05-27 15:50:00.4948841",
+        "Id": 897,
+        "MarketId": 1279,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779897300,
+        "CreatedAt": "2026-05-27 15:55:00.7579899",
+        "Id": 898,
+        "MarketId": 1280,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779897600,
+        "CreatedAt": "2026-05-27 16:00:00.4231618",
+        "Id": 899,
+        "MarketId": 1281,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779897900,
+        "CreatedAt": "2026-05-27 16:05:00.5210221",
+        "Id": 900,
+        "MarketId": 1282,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779898200,
+        "CreatedAt": "2026-05-27 16:10:00.3898305",
+        "Id": 901,
+        "MarketId": 1283,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779898500,
+        "CreatedAt": "2026-05-27 16:15:10.567",
+        "Id": 902,
+        "MarketId": 1284,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779898800,
+        "CreatedAt": "2026-05-27 16:20:04.3995502",
+        "Id": 903,
+        "MarketId": 1285,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779899100,
+        "CreatedAt": "2026-05-27 16:25:01.0937836",
+        "Id": 904,
+        "MarketId": 1286,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779899400,
+        "CreatedAt": "2026-05-27 16:30:00.5704764",
+        "Id": 905,
+        "MarketId": 1287,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779899700,
+        "CreatedAt": "2026-05-27 16:35:00.4907135",
+        "Id": 906,
+        "MarketId": 1288,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779900000,
+        "CreatedAt": "2026-05-27 16:40:00.5481367",
+        "Id": 907,
+        "MarketId": 1289,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779900300,
+        "CreatedAt": "2026-05-27 16:45:00.3817332",
+        "Id": 908,
+        "MarketId": 1290,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779900600,
+        "CreatedAt": "2026-05-27 16:50:00.4408337",
+        "Id": 909,
+        "MarketId": 1291,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779900900,
+        "CreatedAt": "2026-05-27 16:55:00.4630121",
+        "Id": 910,
+        "MarketId": 1292,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779901200,
+        "CreatedAt": "2026-05-27 17:00:02.7055268",
+        "Id": 911,
+        "MarketId": 1293,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779901500,
+        "CreatedAt": "2026-05-27 17:05:00.5997744",
+        "Id": 912,
+        "MarketId": 1294,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779901800,
+        "CreatedAt": "2026-05-27 17:10:00.86636",
+        "Id": 913,
+        "MarketId": 1295,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779902400,
+        "CreatedAt": "2026-05-27 17:20:31.9975208",
+        "Id": 914,
+        "MarketId": 1297,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779902700,
+        "CreatedAt": "2026-05-27 17:25:00.5175976",
+        "Id": 915,
+        "MarketId": 1298,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779903000,
+        "CreatedAt": "2026-05-27 17:30:05.5719942",
+        "Id": 916,
+        "MarketId": 1299,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779903300,
+        "CreatedAt": "2026-05-27 17:35:00.3958327",
+        "Id": 917,
+        "MarketId": 1300,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779903600,
+        "CreatedAt": "2026-05-27 17:40:00.4549528",
+        "Id": 918,
+        "MarketId": 1301,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779905400,
+        "CreatedAt": "2026-05-27 18:10:38.0827436",
+        "Id": 919,
+        "MarketId": 1307,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779906600,
+        "CreatedAt": "2026-05-27 18:30:00.9936971",
+        "Id": 920,
+        "MarketId": 1311,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779906900,
+        "CreatedAt": "2026-05-27 18:35:01.6616455",
+        "Id": 921,
+        "MarketId": 1312,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779907200,
+        "CreatedAt": "2026-05-27 18:40:02.1976659",
+        "Id": 922,
+        "MarketId": 1313,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779907500,
+        "CreatedAt": "2026-05-27 18:45:00.2215381",
+        "Id": 923,
+        "MarketId": 1314,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779907800,
+        "CreatedAt": "2026-05-27 18:50:00.8085517",
+        "Id": 924,
+        "MarketId": 1315,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779908100,
+        "CreatedAt": "2026-05-27 18:55:00.4824478",
+        "Id": 925,
+        "MarketId": 1316,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779908400,
+        "CreatedAt": "2026-05-27 19:00:00.3880731",
+        "Id": 926,
+        "MarketId": 1317,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779908700,
+        "CreatedAt": "2026-05-27 19:05:00.5405501",
+        "Id": 927,
+        "MarketId": 1318,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779909000,
+        "CreatedAt": "2026-05-27 19:10:00.4286203",
+        "Id": 928,
+        "MarketId": 1319,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779909300,
+        "CreatedAt": "2026-05-27 19:15:01.8160627",
+        "Id": 929,
+        "MarketId": 1320,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779909600,
+        "CreatedAt": "2026-05-27 19:20:01.5892161",
+        "Id": 930,
+        "MarketId": 1321,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779909900,
+        "CreatedAt": "2026-05-27 19:25:00.8965508",
+        "Id": 931,
+        "MarketId": 1322,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779910200,
+        "CreatedAt": "2026-05-27 19:30:00.447939",
+        "Id": 932,
+        "MarketId": 1323,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779910500,
+        "CreatedAt": "2026-05-27 19:35:00.4889919",
+        "Id": 933,
+        "MarketId": 1324,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779910800,
+        "CreatedAt": "2026-05-27 19:40:00.7297143",
+        "Id": 934,
+        "MarketId": 1325,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779911100,
+        "CreatedAt": "2026-05-27 19:45:00.6059483",
+        "Id": 935,
+        "MarketId": 1326,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779911400,
+        "CreatedAt": "2026-05-27 19:50:00.4984982",
+        "Id": 936,
+        "MarketId": 1327,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779911700,
+        "CreatedAt": "2026-05-27 19:55:00.6445586",
+        "Id": 937,
+        "MarketId": 1328,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779912000,
+        "CreatedAt": "2026-05-27 20:00:00.3752706",
+        "Id": 938,
+        "MarketId": 1329,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779912600,
+        "CreatedAt": "2026-05-27 20:10:49.7540885",
+        "Id": 939,
+        "MarketId": 1331,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779915000,
+        "CreatedAt": "2026-05-27 20:50:35.1648456",
+        "Id": 940,
+        "MarketId": 1339,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779915600,
+        "CreatedAt": "2026-05-27 21:00:33.2568933",
+        "Id": 941,
+        "MarketId": 1341,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779915900,
+        "CreatedAt": "2026-05-27 21:05:00.3117799",
+        "Id": 942,
+        "MarketId": 1342,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779916200,
+        "CreatedAt": "2026-05-27 21:10:01.537827",
+        "Id": 943,
+        "MarketId": 1343,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779916500,
+        "CreatedAt": "2026-05-27 21:15:00.404775",
+        "Id": 944,
+        "MarketId": 1344,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779916800,
+        "CreatedAt": "2026-05-27 21:20:01.8129617",
+        "Id": 945,
+        "MarketId": 1345,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779917100,
+        "CreatedAt": "2026-05-27 21:25:00.4216231",
+        "Id": 946,
+        "MarketId": 1346,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779917400,
+        "CreatedAt": "2026-05-27 21:30:00.6192245",
+        "Id": 947,
+        "MarketId": 1347,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779917700,
+        "CreatedAt": "2026-05-27 21:35:02.4477763",
+        "Id": 948,
+        "MarketId": 1348,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779919500,
+        "CreatedAt": "2026-05-27 22:05:48.1871688",
+        "Id": 949,
+        "MarketId": 1354,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779921300,
+        "CreatedAt": "2026-05-27 22:35:00.8061853",
+        "Id": 950,
+        "MarketId": 1360,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779921600,
+        "CreatedAt": "2026-05-27 22:40:00.4882279",
+        "Id": 951,
+        "MarketId": 1361,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779921900,
+        "CreatedAt": "2026-05-27 22:45:05.4045251",
+        "Id": 952,
+        "MarketId": 1362,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779922200,
+        "CreatedAt": "2026-05-27 22:50:00.7432142",
+        "Id": 953,
+        "MarketId": 1363,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779922500,
+        "CreatedAt": "2026-05-27 22:55:33.7064762",
+        "Id": 954,
+        "MarketId": 1364,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779923700,
+        "CreatedAt": "2026-05-27 23:15:50.0108085",
+        "Id": 955,
+        "MarketId": 1368,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779924000,
+        "CreatedAt": "2026-05-27 23:20:00.950367",
+        "Id": 956,
+        "MarketId": 1369,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779924600,
+        "CreatedAt": "2026-05-27 23:30:50.2502992",
+        "Id": 957,
+        "MarketId": 1371,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779925800,
+        "CreatedAt": "2026-05-27 23:50:01.0401727",
+        "Id": 958,
+        "MarketId": 1375,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779926100,
+        "CreatedAt": "2026-05-27 23:55:00.3656612",
+        "Id": 959,
+        "MarketId": 1376,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779926400,
+        "CreatedAt": "2026-05-28 00:00:00.6299799",
+        "Id": 960,
+        "MarketId": 1377,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779926700,
+        "CreatedAt": "2026-05-28 00:05:00.4120537",
+        "Id": 961,
+        "MarketId": 1378,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779927000,
+        "CreatedAt": "2026-05-28 00:10:00.4949557",
+        "Id": 962,
+        "MarketId": 1379,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779927300,
+        "CreatedAt": "2026-05-28 00:15:00.4208591",
+        "Id": 963,
+        "MarketId": 1380,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779927600,
+        "CreatedAt": "2026-05-28 00:20:00.3539428",
+        "Id": 964,
+        "MarketId": 1381,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779927900,
+        "CreatedAt": "2026-05-28 00:25:00.4058226",
+        "Id": 965,
+        "MarketId": 1382,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779928200,
+        "CreatedAt": "2026-05-28 00:30:00.7593004",
+        "Id": 966,
+        "MarketId": 1383,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779928500,
+        "CreatedAt": "2026-05-28 00:35:00.4053281",
+        "Id": 967,
+        "MarketId": 1384,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779928800,
+        "CreatedAt": "2026-05-28 00:40:00.3655147",
+        "Id": 968,
+        "MarketId": 1385,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779929100,
+        "CreatedAt": "2026-05-28 00:45:00.4022972",
+        "Id": 969,
+        "MarketId": 1386,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779929400,
+        "CreatedAt": "2026-05-28 00:50:00.3707637",
+        "Id": 970,
+        "MarketId": 1387,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779929700,
+        "CreatedAt": "2026-05-28 00:55:00.5758785",
+        "Id": 971,
+        "MarketId": 1388,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779930000,
+        "CreatedAt": "2026-05-28 01:00:00.3417147",
+        "Id": 972,
+        "MarketId": 1389,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779930300,
+        "CreatedAt": "2026-05-28 01:05:00.4906867",
+        "Id": 973,
+        "MarketId": 1390,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779930600,
+        "CreatedAt": "2026-05-28 01:10:00.6025327",
+        "Id": 974,
+        "MarketId": 1391,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779930900,
+        "CreatedAt": "2026-05-28 01:15:00.4103396",
+        "Id": 975,
+        "MarketId": 1392,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779931200,
+        "CreatedAt": "2026-05-28 01:20:00.3601653",
+        "Id": 976,
+        "MarketId": 1393,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779931500,
+        "CreatedAt": "2026-05-28 01:25:01.9114271",
+        "Id": 977,
+        "MarketId": 1394,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779933600,
+        "CreatedAt": "2026-05-28 02:00:32.0252234",
+        "Id": 978,
+        "MarketId": 1401,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779934500,
+        "CreatedAt": "2026-05-28 02:15:01.0309477",
+        "Id": 979,
+        "MarketId": 1404,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779935100,
+        "CreatedAt": "2026-05-28 02:25:32.9598626",
+        "Id": 980,
+        "MarketId": 1406,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779935400,
+        "CreatedAt": "2026-05-28 02:30:32.6943883",
+        "Id": 981,
+        "MarketId": 1407,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779936600,
+        "CreatedAt": "2026-05-28 02:50:00.6549715",
+        "Id": 982,
+        "MarketId": 1411,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779936900,
+        "CreatedAt": "2026-05-28 02:55:00.5332309",
+        "Id": 983,
+        "MarketId": 1412,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779937200,
+        "CreatedAt": "2026-05-28 03:00:00.4322223",
+        "Id": 984,
+        "MarketId": 1413,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779937500,
+        "CreatedAt": "2026-05-28 03:05:02.8847682",
+        "Id": 985,
+        "MarketId": 1414,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779938100,
+        "CreatedAt": "2026-05-28 03:15:31.6357178",
+        "Id": 986,
+        "MarketId": 1416,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779938400,
+        "CreatedAt": "2026-05-28 03:20:31.5296239",
+        "Id": 987,
+        "MarketId": 1417,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779939600,
+        "CreatedAt": "2026-05-28 03:40:33.3170585",
+        "Id": 988,
+        "MarketId": 1421,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779939900,
+        "CreatedAt": "2026-05-28 03:45:37.6488185",
+        "Id": 989,
+        "MarketId": 1422,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779940500,
+        "CreatedAt": "2026-05-28 03:55:12.4334431",
+        "Id": 990,
+        "MarketId": 1424,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779941400,
+        "CreatedAt": "2026-05-28 04:10:33.7548046",
+        "Id": 991,
+        "MarketId": 1427,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779942300,
+        "CreatedAt": "2026-05-28 04:25:06.4152655",
+        "Id": 992,
+        "MarketId": 1430,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779942900,
+        "CreatedAt": "2026-05-28 04:35:48.6695783",
+        "Id": 993,
+        "MarketId": 1432,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779943200,
+        "CreatedAt": "2026-05-28 04:40:48.1964587",
+        "Id": 994,
+        "MarketId": 1433,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779943500,
+        "CreatedAt": "2026-05-28 04:45:00.4375439",
+        "Id": 995,
+        "MarketId": 1434,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779943800,
+        "CreatedAt": "2026-05-28 04:50:02.2931971",
+        "Id": 996,
+        "MarketId": 1435,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779944100,
+        "CreatedAt": "2026-05-28 04:55:00.3518854",
+        "Id": 997,
+        "MarketId": 1436,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779944400,
+        "CreatedAt": "2026-05-28 05:00:00.5748475",
+        "Id": 998,
+        "MarketId": 1437,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779944700,
+        "CreatedAt": "2026-05-28 05:05:00.4343573",
+        "Id": 999,
+        "MarketId": 1438,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779945300,
+        "CreatedAt": "2026-05-28 05:15:32.0960887",
+        "Id": 1000,
+        "MarketId": 1440,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779946500,
+        "CreatedAt": "2026-05-28 05:35:01.2110585",
+        "Id": 1001,
+        "MarketId": 1444,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779946800,
+        "CreatedAt": "2026-05-28 05:40:00.4300296",
+        "Id": 1002,
+        "MarketId": 1445,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779947100,
+        "CreatedAt": "2026-05-28 05:45:00.408356",
+        "Id": 1003,
+        "MarketId": 1446,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779947700,
+        "CreatedAt": "2026-05-28 05:55:05.5837798",
+        "Id": 1004,
+        "MarketId": 1448,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779948000,
+        "CreatedAt": "2026-05-28 06:00:00.4484211",
+        "Id": 1005,
+        "MarketId": 1449,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779948300,
+        "CreatedAt": "2026-05-28 06:05:00.3275652",
+        "Id": 1006,
+        "MarketId": 1450,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779948600,
+        "CreatedAt": "2026-05-28 06:10:00.5381713",
+        "Id": 1007,
+        "MarketId": 1451,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779948900,
+        "CreatedAt": "2026-05-28 06:15:00.3568751",
+        "Id": 1008,
+        "MarketId": 1452,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779949200,
+        "CreatedAt": "2026-05-28 06:20:00.6869129",
+        "Id": 1009,
+        "MarketId": 1453,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779949500,
+        "CreatedAt": "2026-05-28 06:25:00.3702286",
+        "Id": 1010,
+        "MarketId": 1454,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779949800,
+        "CreatedAt": "2026-05-28 06:30:04.5515503",
+        "Id": 1011,
+        "MarketId": 1455,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779950100,
+        "CreatedAt": "2026-05-28 06:35:00.2835128",
+        "Id": 1012,
+        "MarketId": 1456,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779950400,
+        "CreatedAt": "2026-05-28 06:40:00.5095828",
+        "Id": 1013,
+        "MarketId": 1457,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779950700,
+        "CreatedAt": "2026-05-28 06:45:00.7707249",
+        "Id": 1014,
+        "MarketId": 1458,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779951000,
+        "CreatedAt": "2026-05-28 06:50:00.481605",
+        "Id": 1015,
+        "MarketId": 1459,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779951300,
+        "CreatedAt": "2026-05-28 06:55:01.7627304",
+        "Id": 1016,
+        "MarketId": 1460,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779951600,
+        "CreatedAt": "2026-05-28 07:00:00.6826054",
+        "Id": 1017,
+        "MarketId": 1461,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779951900,
+        "CreatedAt": "2026-05-28 07:05:00.5197482",
+        "Id": 1018,
+        "MarketId": 1462,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779952200,
+        "CreatedAt": "2026-05-28 07:10:00.6942796",
+        "Id": 1019,
+        "MarketId": 1463,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779952500,
+        "CreatedAt": "2026-05-28 07:15:00.3522192",
+        "Id": 1020,
+        "MarketId": 1464,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779952800,
+        "CreatedAt": "2026-05-28 07:20:00.4086073",
+        "Id": 1021,
+        "MarketId": 1465,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779953100,
+        "CreatedAt": "2026-05-28 07:25:00.4002309",
+        "Id": 1022,
+        "MarketId": 1466,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779953400,
+        "CreatedAt": "2026-05-28 07:30:00.4304927",
+        "Id": 1023,
+        "MarketId": 1467,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779954300,
+        "CreatedAt": "2026-05-28 07:45:33.2098424",
+        "Id": 1024,
+        "MarketId": 1470,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779954600,
+        "CreatedAt": "2026-05-28 07:50:47.5636751",
+        "Id": 1025,
+        "MarketId": 1471,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779955800,
+        "CreatedAt": "2026-05-28 08:10:48.2664859",
+        "Id": 1026,
+        "MarketId": 1475,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779956100,
+        "CreatedAt": "2026-05-28 08:15:36.1720692",
+        "Id": 1027,
+        "MarketId": 1476,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779956400,
+        "CreatedAt": "2026-05-28 08:20:48.6727538",
+        "Id": 1028,
+        "MarketId": 1477,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779956700,
+        "CreatedAt": "2026-05-28 08:25:02.5595047",
+        "Id": 1029,
+        "MarketId": 1478,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779957000,
+        "CreatedAt": "2026-05-28 08:30:00.5017093",
+        "Id": 1030,
+        "MarketId": 1479,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779957300,
+        "CreatedAt": "2026-05-28 08:35:00.4098533",
+        "Id": 1031,
+        "MarketId": 1480,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779957600,
+        "CreatedAt": "2026-05-28 08:40:00.4793565",
+        "Id": 1032,
+        "MarketId": 1481,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779957900,
+        "CreatedAt": "2026-05-28 08:45:01.2311723",
+        "Id": 1033,
+        "MarketId": 1482,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779958200,
+        "CreatedAt": "2026-05-28 08:50:00.2467675",
+        "Id": 1034,
+        "MarketId": 1483,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779958500,
+        "CreatedAt": "2026-05-28 08:55:00.6286915",
+        "Id": 1035,
+        "MarketId": 1484,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779958800,
+        "CreatedAt": "2026-05-28 09:00:00.35343",
+        "Id": 1036,
+        "MarketId": 1485,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779959100,
+        "CreatedAt": "2026-05-28 09:05:00.3927743",
+        "Id": 1037,
+        "MarketId": 1486,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779959400,
+        "CreatedAt": "2026-05-28 09:10:00.4649476",
+        "Id": 1038,
+        "MarketId": 1487,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779959700,
+        "CreatedAt": "2026-05-28 09:15:00.3922087",
+        "Id": 1039,
+        "MarketId": 1488,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779960000,
+        "CreatedAt": "2026-05-28 09:20:00.3734253",
+        "Id": 1040,
+        "MarketId": 1489,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779960300,
+        "CreatedAt": "2026-05-28 09:25:00.3527793",
+        "Id": 1041,
+        "MarketId": 1490,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779960600,
+        "CreatedAt": "2026-05-28 09:30:00.7016871",
+        "Id": 1042,
+        "MarketId": 1491,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779960900,
+        "CreatedAt": "2026-05-28 09:35:01.366539",
+        "Id": 1043,
+        "MarketId": 1492,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779961800,
+        "CreatedAt": "2026-05-28 09:50:35.5390495",
+        "Id": 1044,
+        "MarketId": 1495,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779963600,
+        "CreatedAt": "2026-05-28 10:20:01.2084924",
+        "Id": 1045,
+        "MarketId": 1501,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779963900,
+        "CreatedAt": "2026-05-28 10:25:01.0329725",
+        "Id": 1046,
+        "MarketId": 1502,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779964200,
+        "CreatedAt": "2026-05-28 10:30:00.4555392",
+        "Id": 1047,
+        "MarketId": 1503,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779964500,
+        "CreatedAt": "2026-05-28 10:35:00.4188748",
+        "Id": 1048,
+        "MarketId": 1504,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779964800,
+        "CreatedAt": "2026-05-28 10:40:00.5179652",
+        "Id": 1049,
+        "MarketId": 1505,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779965400,
+        "CreatedAt": "2026-05-28 10:50:41.7486423",
+        "Id": 1050,
+        "MarketId": 1507,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779965700,
+        "CreatedAt": "2026-05-28 10:55:00.3256161",
+        "Id": 1051,
+        "MarketId": 1508,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779966000,
+        "CreatedAt": "2026-05-28 11:00:00.5264636",
+        "Id": 1052,
+        "MarketId": 1509,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779966300,
+        "CreatedAt": "2026-05-28 11:05:01.0612847",
+        "Id": 1053,
+        "MarketId": 1510,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779966600,
+        "CreatedAt": "2026-05-28 11:10:00.5115241",
+        "Id": 1054,
+        "MarketId": 1511,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779966900,
+        "CreatedAt": "2026-05-28 11:15:00.7114964",
+        "Id": 1055,
+        "MarketId": 1512,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779967200,
+        "CreatedAt": "2026-05-28 11:20:02.8879282",
+        "Id": 1056,
+        "MarketId": 1513,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779967500,
+        "CreatedAt": "2026-05-28 11:25:01.9110572",
+        "Id": 1057,
+        "MarketId": 1514,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779967800,
+        "CreatedAt": "2026-05-28 11:30:03.2347803",
+        "Id": 1058,
+        "MarketId": 1515,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779968100,
+        "CreatedAt": "2026-05-28 11:35:02.5437766",
+        "Id": 1059,
+        "MarketId": 1516,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779968400,
+        "CreatedAt": "2026-05-28 11:40:00.5427227",
+        "Id": 1060,
+        "MarketId": 1517,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779968700,
+        "CreatedAt": "2026-05-28 11:45:03.7290338",
+        "Id": 1061,
+        "MarketId": 1518,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779969000,
+        "CreatedAt": "2026-05-28 11:50:00.9478925",
+        "Id": 1062,
+        "MarketId": 1519,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779969300,
+        "CreatedAt": "2026-05-28 11:55:49.9335092",
+        "Id": 1063,
+        "MarketId": 1520,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779969900,
+        "CreatedAt": "2026-05-28 12:05:01.1269354",
+        "Id": 1064,
+        "MarketId": 1522,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779970200,
+        "CreatedAt": "2026-05-28 12:10:00.6383722",
+        "Id": 1065,
+        "MarketId": 1523,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779970500,
+        "CreatedAt": "2026-05-28 12:15:01.7086219",
+        "Id": 1066,
+        "MarketId": 1524,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779970800,
+        "CreatedAt": "2026-05-28 12:20:00.4836281",
+        "Id": 1067,
+        "MarketId": 1525,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779971100,
+        "CreatedAt": "2026-05-28 12:25:31.7333178",
+        "Id": 1068,
+        "MarketId": 1526,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779971400,
+        "CreatedAt": "2026-05-28 12:30:00.3888084",
+        "Id": 1069,
+        "MarketId": 1527,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779971700,
+        "CreatedAt": "2026-05-28 12:35:00.3147912",
+        "Id": 1070,
+        "MarketId": 1528,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779972000,
+        "CreatedAt": "2026-05-28 12:40:00.4137854",
+        "Id": 1071,
+        "MarketId": 1529,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779972300,
+        "CreatedAt": "2026-05-28 12:45:00.3343062",
+        "Id": 1072,
+        "MarketId": 1530,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779972900,
+        "CreatedAt": "2026-05-28 12:55:33.1032806",
+        "Id": 1073,
+        "MarketId": 1532,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779973200,
+        "CreatedAt": "2026-05-28 13:00:00.6579529",
+        "Id": 1074,
+        "MarketId": 1533,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779973500,
+        "CreatedAt": "2026-05-28 13:05:00.4102909",
+        "Id": 1075,
+        "MarketId": 1534,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779974400,
+        "CreatedAt": "2026-05-28 13:20:31.9960917",
+        "Id": 1076,
+        "MarketId": 1537,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779975900,
+        "CreatedAt": "2026-05-28 13:45:35.8473607",
+        "Id": 1077,
+        "MarketId": 1542,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779977700,
+        "CreatedAt": "2026-05-28 14:15:00.9693249",
+        "Id": 1078,
+        "MarketId": 1548,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779978000,
+        "CreatedAt": "2026-05-28 14:20:00.4600101",
+        "Id": 1079,
+        "MarketId": 1549,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779978300,
+        "CreatedAt": "2026-05-28 14:25:00.5992383",
+        "Id": 1080,
+        "MarketId": 1550,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779979200,
+        "CreatedAt": "2026-05-28 14:40:04.648675",
+        "Id": 1081,
+        "MarketId": 1553,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779979800,
+        "CreatedAt": "2026-05-28 14:50:33.2638677",
+        "Id": 1082,
+        "MarketId": 1555,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779980100,
+        "CreatedAt": "2026-05-28 14:55:00.4151746",
+        "Id": 1083,
+        "MarketId": 1556,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779980400,
+        "CreatedAt": "2026-05-28 15:00:00.3573726",
+        "Id": 1084,
+        "MarketId": 1557,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779980700,
+        "CreatedAt": "2026-05-28 15:05:00.39761",
+        "Id": 1085,
+        "MarketId": 1558,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779981000,
+        "CreatedAt": "2026-05-28 15:10:00.3081829",
+        "Id": 1086,
+        "MarketId": 1559,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779982200,
+        "CreatedAt": "2026-05-28 15:30:00.7510595",
+        "Id": 1087,
+        "MarketId": 1563,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779982800,
+        "CreatedAt": "2026-05-28 15:40:01.0152092",
+        "Id": 1088,
+        "MarketId": 1565,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779983100,
+        "CreatedAt": "2026-05-28 15:45:01.6036025",
+        "Id": 1089,
+        "MarketId": 1566,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779983400,
+        "CreatedAt": "2026-05-28 15:50:02.2730052",
+        "Id": 1090,
+        "MarketId": 1567,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779983700,
+        "CreatedAt": "2026-05-28 15:55:00.4010851",
+        "Id": 1091,
+        "MarketId": 1568,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779984000,
+        "CreatedAt": "2026-05-28 16:00:01.5193436",
+        "Id": 1092,
+        "MarketId": 1569,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779984600,
+        "CreatedAt": "2026-05-28 16:10:00.7855558",
+        "Id": 1093,
+        "MarketId": 1571,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779984900,
+        "CreatedAt": "2026-05-28 16:15:00.7761972",
+        "Id": 1094,
+        "MarketId": 1572,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779985200,
+        "CreatedAt": "2026-05-28 16:20:00.459577",
+        "Id": 1095,
+        "MarketId": 1573,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779985500,
+        "CreatedAt": "2026-05-28 16:25:00.4427828",
+        "Id": 1096,
+        "MarketId": 1574,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779985800,
+        "CreatedAt": "2026-05-28 16:30:00.6899271",
+        "Id": 1097,
+        "MarketId": 1575,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779986100,
+        "CreatedAt": "2026-05-28 16:35:00.3927325",
+        "Id": 1098,
+        "MarketId": 1576,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779986400,
+        "CreatedAt": "2026-05-28 16:40:00.4193271",
+        "Id": 1099,
+        "MarketId": 1577,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779988500,
+        "CreatedAt": "2026-05-28 17:15:48.2891751",
+        "Id": 1100,
+        "MarketId": 1584,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779989100,
+        "CreatedAt": "2026-05-28 17:25:33.4572627",
+        "Id": 1101,
+        "MarketId": 1586,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779989400,
+        "CreatedAt": "2026-05-28 17:30:00.3344556",
+        "Id": 1102,
+        "MarketId": 1587,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779990600,
+        "CreatedAt": "2026-05-28 17:50:33.5252855",
+        "Id": 1103,
+        "MarketId": 1591,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779990900,
+        "CreatedAt": "2026-05-28 17:55:47.2449027",
+        "Id": 1104,
+        "MarketId": 1592,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779991200,
+        "CreatedAt": "2026-05-28 18:00:48.7776628",
+        "Id": 1105,
+        "MarketId": 1593,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779991800,
+        "CreatedAt": "2026-05-28 18:10:32.867948",
+        "Id": 1106,
+        "MarketId": 1595,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779993300,
+        "CreatedAt": "2026-05-28 18:35:32.1954152",
+        "Id": 1107,
+        "MarketId": 1600,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779993600,
+        "CreatedAt": "2026-05-28 18:40:01.0604472",
+        "Id": 1108,
+        "MarketId": 1601,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779993900,
+        "CreatedAt": "2026-05-28 18:45:00.4479098",
+        "Id": 1109,
+        "MarketId": 1602,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779994800,
+        "CreatedAt": "2026-05-28 19:00:35.1932553",
+        "Id": 1110,
+        "MarketId": 1605,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1779995100,
+        "CreatedAt": "2026-05-28 19:05:00.4520572",
+        "Id": 1111,
+        "MarketId": 1606,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779995400,
+        "CreatedAt": "2026-05-28 19:10:01.6366161",
+        "Id": 1112,
+        "MarketId": 1607,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779995700,
+        "CreatedAt": "2026-05-28 19:15:00.5225212",
+        "Id": 1113,
+        "MarketId": 1608,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779996000,
+        "CreatedAt": "2026-05-28 19:20:00.3786778",
+        "Id": 1114,
+        "MarketId": 1609,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779996300,
+        "CreatedAt": "2026-05-28 19:25:00.4197024",
+        "Id": 1115,
+        "MarketId": 1610,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779996600,
+        "CreatedAt": "2026-05-28 19:30:00.7644091",
+        "Id": 1116,
+        "MarketId": 1611,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779996900,
+        "CreatedAt": "2026-05-28 19:35:00.4293953",
+        "Id": 1117,
+        "MarketId": 1612,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779997200,
+        "CreatedAt": "2026-05-28 19:40:00.496212",
+        "Id": 1118,
+        "MarketId": 1613,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779997500,
+        "CreatedAt": "2026-05-28 19:45:00.5894067",
+        "Id": 1119,
+        "MarketId": 1614,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779997800,
+        "CreatedAt": "2026-05-28 19:50:00.3557569",
+        "Id": 1120,
+        "MarketId": 1615,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779998100,
+        "CreatedAt": "2026-05-28 19:55:04.3730775",
+        "Id": 1121,
+        "MarketId": 1616,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779998400,
+        "CreatedAt": "2026-05-28 20:00:00.7356787",
+        "Id": 1122,
+        "MarketId": 1617,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779998700,
+        "CreatedAt": "2026-05-28 20:05:00.4190172",
+        "Id": 1123,
+        "MarketId": 1618,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779999000,
+        "CreatedAt": "2026-05-28 20:10:00.5304737",
+        "Id": 1124,
+        "MarketId": 1619,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779999300,
+        "CreatedAt": "2026-05-28 20:15:00.377437",
+        "Id": 1125,
+        "MarketId": 1620,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779999600,
+        "CreatedAt": "2026-05-28 20:20:00.4747534",
+        "Id": 1126,
+        "MarketId": 1621,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1779999900,
+        "CreatedAt": "2026-05-28 20:25:00.4790584",
+        "Id": 1127,
+        "MarketId": 1622,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780001100,
+        "CreatedAt": "2026-05-28 20:45:33.7409659",
+        "Id": 1128,
+        "MarketId": 1626,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780001700,
+        "CreatedAt": "2026-05-28 20:55:47.0080472",
+        "Id": 1129,
+        "MarketId": 1628,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780002000,
+        "CreatedAt": "2026-05-28 21:00:00.4849531",
+        "Id": 1130,
+        "MarketId": 1629,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780002300,
+        "CreatedAt": "2026-05-28 21:05:00.5193016",
+        "Id": 1131,
+        "MarketId": 1630,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780002600,
+        "CreatedAt": "2026-05-28 21:10:02.5915107",
+        "Id": 1132,
+        "MarketId": 1631,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780004100,
+        "CreatedAt": "2026-05-28 21:35:32.9514934",
+        "Id": 1133,
+        "MarketId": 1636,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780004700,
+        "CreatedAt": "2026-05-28 21:45:32.6639071",
+        "Id": 1134,
+        "MarketId": 1638,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780005000,
+        "CreatedAt": "2026-05-28 21:50:46.8088937",
+        "Id": 1135,
+        "MarketId": 1639,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780006200,
+        "CreatedAt": "2026-05-28 22:10:01.2527628",
+        "Id": 1136,
+        "MarketId": 1643,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780006500,
+        "CreatedAt": "2026-05-28 22:15:01.505844",
+        "Id": 1137,
+        "MarketId": 1644,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780006800,
+        "CreatedAt": "2026-05-28 22:20:00.6160566",
+        "Id": 1138,
+        "MarketId": 1645,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780007100,
+        "CreatedAt": "2026-05-28 22:25:00.4830146",
+        "Id": 1139,
+        "MarketId": 1646,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780007400,
+        "CreatedAt": "2026-05-28 22:30:00.8851954",
+        "Id": 1140,
+        "MarketId": 1647,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780007700,
+        "CreatedAt": "2026-05-28 22:35:00.4210765",
+        "Id": 1141,
+        "MarketId": 1648,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780008000,
+        "CreatedAt": "2026-05-28 22:40:00.74033",
+        "Id": 1142,
+        "MarketId": 1649,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780008300,
+        "CreatedAt": "2026-05-28 22:45:00.5128221",
+        "Id": 1143,
+        "MarketId": 1650,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780008600,
+        "CreatedAt": "2026-05-28 22:50:00.3970046",
+        "Id": 1144,
+        "MarketId": 1651,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780008900,
+        "CreatedAt": "2026-05-28 22:55:00.4115737",
+        "Id": 1145,
+        "MarketId": 1652,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780009200,
+        "CreatedAt": "2026-05-28 23:00:32.8863999",
+        "Id": 1146,
+        "MarketId": 1653,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780009500,
+        "CreatedAt": "2026-05-28 23:05:00.6160823",
+        "Id": 1147,
+        "MarketId": 1654,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780009800,
+        "CreatedAt": "2026-05-28 23:10:00.4808317",
+        "Id": 1148,
+        "MarketId": 1655,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780010100,
+        "CreatedAt": "2026-05-28 23:15:00.4698489",
+        "Id": 1149,
+        "MarketId": 1656,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780010400,
+        "CreatedAt": "2026-05-28 23:20:00.4347464",
+        "Id": 1150,
+        "MarketId": 1657,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780010700,
+        "CreatedAt": "2026-05-28 23:25:00.3688689",
+        "Id": 1151,
+        "MarketId": 1658,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780011000,
+        "CreatedAt": "2026-05-28 23:30:00.6680207",
+        "Id": 1152,
+        "MarketId": 1659,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780011300,
+        "CreatedAt": "2026-05-28 23:35:01.0205359",
+        "Id": 1153,
+        "MarketId": 1660,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780011600,
+        "CreatedAt": "2026-05-28 23:40:00.3322332",
+        "Id": 1154,
+        "MarketId": 1661,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780011900,
+        "CreatedAt": "2026-05-28 23:45:00.3458459",
+        "Id": 1155,
+        "MarketId": 1662,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780012200,
+        "CreatedAt": "2026-05-28 23:50:03.7447683",
+        "Id": 1156,
+        "MarketId": 1663,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780012500,
+        "CreatedAt": "2026-05-28 23:55:00.5389203",
+        "Id": 1157,
+        "MarketId": 1664,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780012800,
+        "CreatedAt": "2026-05-29 00:00:00.488674",
+        "Id": 1158,
+        "MarketId": 1665,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780013100,
+        "CreatedAt": "2026-05-29 00:05:02.1529702",
+        "Id": 1159,
+        "MarketId": 1666,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780013400,
+        "CreatedAt": "2026-05-29 00:10:00.7808341",
+        "Id": 1160,
+        "MarketId": 1667,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780013700,
+        "CreatedAt": "2026-05-29 00:15:00.6176424",
+        "Id": 1161,
+        "MarketId": 1668,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780014900,
+        "CreatedAt": "2026-05-29 00:35:00.9384193",
+        "Id": 1162,
+        "MarketId": 1672,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780015200,
+        "CreatedAt": "2026-05-29 00:40:31.4372332",
+        "Id": 1163,
+        "MarketId": 1673,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780015500,
+        "CreatedAt": "2026-05-29 00:45:34.6628764",
+        "Id": 1164,
+        "MarketId": 1674,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780015800,
+        "CreatedAt": "2026-05-29 00:50:00.4237527",
+        "Id": 1165,
+        "MarketId": 1675,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780016100,
+        "CreatedAt": "2026-05-29 00:55:00.5420093",
+        "Id": 1166,
+        "MarketId": 1676,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780016400,
+        "CreatedAt": "2026-05-29 01:00:00.5559093",
+        "Id": 1167,
+        "MarketId": 1677,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780016700,
+        "CreatedAt": "2026-05-29 01:05:00.5366394",
+        "Id": 1168,
+        "MarketId": 1678,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780017300,
+        "CreatedAt": "2026-05-29 01:15:03.5861762",
+        "Id": 1169,
+        "MarketId": 1680,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780017600,
+        "CreatedAt": "2026-05-29 01:20:00.3024627",
+        "Id": 1170,
+        "MarketId": 1681,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780017900,
+        "CreatedAt": "2026-05-29 01:25:00.8269057",
+        "Id": 1171,
+        "MarketId": 1682,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780018200,
+        "CreatedAt": "2026-05-29 01:30:00.4464921",
+        "Id": 1172,
+        "MarketId": 1683,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780018500,
+        "CreatedAt": "2026-05-29 01:35:00.8438232",
+        "Id": 1173,
+        "MarketId": 1684,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780019100,
+        "CreatedAt": "2026-05-29 01:45:32.4426339",
+        "Id": 1174,
+        "MarketId": 1686,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780019400,
+        "CreatedAt": "2026-05-29 01:50:47.476755",
+        "Id": 1175,
+        "MarketId": 1687,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780019700,
+        "CreatedAt": "2026-05-29 01:55:00.518816",
+        "Id": 1176,
+        "MarketId": 1688,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780020000,
+        "CreatedAt": "2026-05-29 02:00:00.8793851",
+        "Id": 1177,
+        "MarketId": 1689,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780020300,
+        "CreatedAt": "2026-05-29 02:05:00.4103646",
+        "Id": 1178,
+        "MarketId": 1690,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780020600,
+        "CreatedAt": "2026-05-29 02:10:00.432455",
+        "Id": 1179,
+        "MarketId": 1691,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780020900,
+        "CreatedAt": "2026-05-29 02:15:00.8534771",
+        "Id": 1180,
+        "MarketId": 1692,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780021200,
+        "CreatedAt": "2026-05-29 02:20:00.8186975",
+        "Id": 1181,
+        "MarketId": 1693,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780022100,
+        "CreatedAt": "2026-05-29 02:35:47.1346825",
+        "Id": 1182,
+        "MarketId": 1696,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780022400,
+        "CreatedAt": "2026-05-29 02:40:31.4557587",
+        "Id": 1183,
+        "MarketId": 1697,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780022700,
+        "CreatedAt": "2026-05-29 02:45:31.4258051",
+        "Id": 1184,
+        "MarketId": 1698,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780023600,
+        "CreatedAt": "2026-05-29 03:00:31.8082839",
+        "Id": 1185,
+        "MarketId": 1701,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780023900,
+        "CreatedAt": "2026-05-29 03:05:46.3703904",
+        "Id": 1186,
+        "MarketId": 1702,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780024200,
+        "CreatedAt": "2026-05-29 03:10:00.3488774",
+        "Id": 1187,
+        "MarketId": 1703,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780024500,
+        "CreatedAt": "2026-05-29 03:15:00.3532273",
+        "Id": 1188,
+        "MarketId": 1704,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780024800,
+        "CreatedAt": "2026-05-29 03:20:00.5000158",
+        "Id": 1189,
+        "MarketId": 1705,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780025100,
+        "CreatedAt": "2026-05-29 03:25:00.8877366",
+        "Id": 1190,
+        "MarketId": 1706,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780025400,
+        "CreatedAt": "2026-05-29 03:30:00.3566792",
+        "Id": 1191,
+        "MarketId": 1707,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780025700,
+        "CreatedAt": "2026-05-29 03:35:00.317873",
+        "Id": 1192,
+        "MarketId": 1708,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780026000,
+        "CreatedAt": "2026-05-29 03:40:31.5456835",
+        "Id": 1193,
+        "MarketId": 1709,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780026300,
+        "CreatedAt": "2026-05-29 03:45:00.3946724",
+        "Id": 1194,
+        "MarketId": 1710,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780026600,
+        "CreatedAt": "2026-05-29 03:50:00.3660754",
+        "Id": 1195,
+        "MarketId": 1711,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780026900,
+        "CreatedAt": "2026-05-29 03:55:34.5956559",
+        "Id": 1196,
+        "MarketId": 1712,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780027200,
+        "CreatedAt": "2026-05-29 04:00:47.194062",
+        "Id": 1197,
+        "MarketId": 1713,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780027500,
+        "CreatedAt": "2026-05-29 04:05:00.5144906",
+        "Id": 1198,
+        "MarketId": 1714,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780028100,
+        "CreatedAt": "2026-05-29 04:15:31.5653749",
+        "Id": 1199,
+        "MarketId": 1716,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780028400,
+        "CreatedAt": "2026-05-29 04:20:19.3877523",
+        "Id": 1200,
+        "MarketId": 1717,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780028700,
+        "CreatedAt": "2026-05-29 04:25:00.2957824",
+        "Id": 1201,
+        "MarketId": 1718,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780029000,
+        "CreatedAt": "2026-05-29 04:30:00.4148165",
+        "Id": 1202,
+        "MarketId": 1719,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780029300,
+        "CreatedAt": "2026-05-29 04:35:01.6257723",
+        "Id": 1203,
+        "MarketId": 1720,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780029600,
+        "CreatedAt": "2026-05-29 04:40:01.6395193",
+        "Id": 1204,
+        "MarketId": 1721,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780029900,
+        "CreatedAt": "2026-05-29 04:45:00.7574715",
+        "Id": 1205,
+        "MarketId": 1722,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780030200,
+        "CreatedAt": "2026-05-29 04:50:00.3934119",
+        "Id": 1206,
+        "MarketId": 1723,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780030500,
+        "CreatedAt": "2026-05-29 04:55:00.3433825",
+        "Id": 1207,
+        "MarketId": 1724,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780030800,
+        "CreatedAt": "2026-05-29 05:00:00.4355182",
+        "Id": 1208,
+        "MarketId": 1725,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780031100,
+        "CreatedAt": "2026-05-29 05:05:02.0380547",
+        "Id": 1209,
+        "MarketId": 1726,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780031400,
+        "CreatedAt": "2026-05-29 05:10:00.43929",
+        "Id": 1210,
+        "MarketId": 1727,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780032000,
+        "CreatedAt": "2026-05-29 05:20:32.0617945",
+        "Id": 1211,
+        "MarketId": 1729,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780032300,
+        "CreatedAt": "2026-05-29 05:25:00.5229434",
+        "Id": 1212,
+        "MarketId": 1730,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780032600,
+        "CreatedAt": "2026-05-29 05:30:46.2310056",
+        "Id": 1213,
+        "MarketId": 1731,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780032900,
+        "CreatedAt": "2026-05-29 05:35:00.3281931",
+        "Id": 1214,
+        "MarketId": 1732,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780033200,
+        "CreatedAt": "2026-05-29 05:40:00.3595062",
+        "Id": 1215,
+        "MarketId": 1733,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780033500,
+        "CreatedAt": "2026-05-29 05:45:00.3992736",
+        "Id": 1216,
+        "MarketId": 1734,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780033800,
+        "CreatedAt": "2026-05-29 05:50:47.0753845",
+        "Id": 1217,
+        "MarketId": 1735,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780034700,
+        "CreatedAt": "2026-05-29 06:05:31.8204497",
+        "Id": 1218,
+        "MarketId": 1738,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780036200,
+        "CreatedAt": "2026-05-29 06:30:27.89584",
+        "Id": 1219,
+        "MarketId": 1743,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780036800,
+        "CreatedAt": "2026-05-29 06:40:00.863013",
+        "Id": 1220,
+        "MarketId": 1745,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780037100,
+        "CreatedAt": "2026-05-29 06:45:00.5272883",
+        "Id": 1221,
+        "MarketId": 1746,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780038600,
+        "CreatedAt": "2026-05-29 07:10:04.5383034",
+        "Id": 1222,
+        "MarketId": 1751,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780039200,
+        "CreatedAt": "2026-05-29 07:20:38.2585267",
+        "Id": 1223,
+        "MarketId": 1753,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780039800,
+        "CreatedAt": "2026-05-29 07:30:02.4630492",
+        "Id": 1224,
+        "MarketId": 1755,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780040100,
+        "CreatedAt": "2026-05-29 07:35:04.4524266",
+        "Id": 1225,
+        "MarketId": 1756,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780040400,
+        "CreatedAt": "2026-05-29 07:40:00.5149271",
+        "Id": 1226,
+        "MarketId": 1757,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780040700,
+        "CreatedAt": "2026-05-29 07:45:00.654704",
+        "Id": 1227,
+        "MarketId": 1758,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780041000,
+        "CreatedAt": "2026-05-29 07:50:00.4112934",
+        "Id": 1228,
+        "MarketId": 1759,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780041300,
+        "CreatedAt": "2026-05-29 07:55:00.8560331",
+        "Id": 1229,
+        "MarketId": 1760,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780041600,
+        "CreatedAt": "2026-05-29 08:00:00.4252902",
+        "Id": 1230,
+        "MarketId": 1761,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780041900,
+        "CreatedAt": "2026-05-29 08:05:00.5581547",
+        "Id": 1231,
+        "MarketId": 1762,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780042200,
+        "CreatedAt": "2026-05-29 08:10:00.4177173",
+        "Id": 1232,
+        "MarketId": 1763,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780042500,
+        "CreatedAt": "2026-05-29 08:15:00.4845374",
+        "Id": 1233,
+        "MarketId": 1764,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780042800,
+        "CreatedAt": "2026-05-29 08:20:00.8184476",
+        "Id": 1234,
+        "MarketId": 1765,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780043400,
+        "CreatedAt": "2026-05-29 08:30:31.9088143",
+        "Id": 1235,
+        "MarketId": 1767,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780043700,
+        "CreatedAt": "2026-05-29 08:35:31.5505396",
+        "Id": 1236,
+        "MarketId": 1768,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780044600,
+        "CreatedAt": "2026-05-29 08:50:00.93123",
+        "Id": 1237,
+        "MarketId": 1771,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780044900,
+        "CreatedAt": "2026-05-29 08:55:00.4878305",
+        "Id": 1238,
+        "MarketId": 1772,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780045200,
+        "CreatedAt": "2026-05-29 09:00:05.4150864",
+        "Id": 1239,
+        "MarketId": 1773,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780045500,
+        "CreatedAt": "2026-05-29 09:05:00.3725603",
+        "Id": 1240,
+        "MarketId": 1774,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780045800,
+        "CreatedAt": "2026-05-29 09:10:00.4040292",
+        "Id": 1241,
+        "MarketId": 1775,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780047300,
+        "CreatedAt": "2026-05-29 09:35:32.2466821",
+        "Id": 1242,
+        "MarketId": 1780,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780047600,
+        "CreatedAt": "2026-05-29 09:40:31.4521363",
+        "Id": 1243,
+        "MarketId": 1781,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780047900,
+        "CreatedAt": "2026-05-29 09:45:00.4712742",
+        "Id": 1244,
+        "MarketId": 1782,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780048200,
+        "CreatedAt": "2026-05-29 09:50:00.4339046",
+        "Id": 1245,
+        "MarketId": 1783,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780048500,
+        "CreatedAt": "2026-05-29 09:55:00.4742285",
+        "Id": 1246,
+        "MarketId": 1784,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780048800,
+        "CreatedAt": "2026-05-29 10:00:00.6352872",
+        "Id": 1247,
+        "MarketId": 1785,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780049100,
+        "CreatedAt": "2026-05-29 10:05:00.440153",
+        "Id": 1248,
+        "MarketId": 1786,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780049400,
+        "CreatedAt": "2026-05-29 10:10:03.2918369",
+        "Id": 1249,
+        "MarketId": 1787,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780049700,
+        "CreatedAt": "2026-05-29 10:15:05.4945582",
+        "Id": 1250,
+        "MarketId": 1788,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780050000,
+        "CreatedAt": "2026-05-29 10:20:00.5463749",
+        "Id": 1251,
+        "MarketId": 1789,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780050300,
+        "CreatedAt": "2026-05-29 10:25:00.5862209",
+        "Id": 1252,
+        "MarketId": 1790,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780050600,
+        "CreatedAt": "2026-05-29 10:30:00.5867641",
+        "Id": 1253,
+        "MarketId": 1791,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780050900,
+        "CreatedAt": "2026-05-29 10:35:00.3640071",
+        "Id": 1254,
+        "MarketId": 1792,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780051200,
+        "CreatedAt": "2026-05-29 10:40:01.8280091",
+        "Id": 1255,
+        "MarketId": 1793,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780051500,
+        "CreatedAt": "2026-05-29 10:45:01.6145117",
+        "Id": 1256,
+        "MarketId": 1794,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780051800,
+        "CreatedAt": "2026-05-29 10:50:00.4836861",
+        "Id": 1257,
+        "MarketId": 1795,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780052100,
+        "CreatedAt": "2026-05-29 10:55:04.2142729",
+        "Id": 1258,
+        "MarketId": 1796,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780052400,
+        "CreatedAt": "2026-05-29 11:00:01.1219252",
+        "Id": 1259,
+        "MarketId": 1797,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780052700,
+        "CreatedAt": "2026-05-29 11:05:00.3353375",
+        "Id": 1260,
+        "MarketId": 1798,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780053000,
+        "CreatedAt": "2026-05-29 11:10:00.471973",
+        "Id": 1261,
+        "MarketId": 1799,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780053300,
+        "CreatedAt": "2026-05-29 11:15:02.048376",
+        "Id": 1262,
+        "MarketId": 1800,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780053600,
+        "CreatedAt": "2026-05-29 11:20:04.4732755",
+        "Id": 1263,
+        "MarketId": 1801,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780053900,
+        "CreatedAt": "2026-05-29 11:25:00.4036349",
+        "Id": 1264,
+        "MarketId": 1802,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780054200,
+        "CreatedAt": "2026-05-29 11:30:00.7963775",
+        "Id": 1265,
+        "MarketId": 1803,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780054500,
+        "CreatedAt": "2026-05-29 11:35:00.3811479",
+        "Id": 1266,
+        "MarketId": 1804,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780055700,
+        "CreatedAt": "2026-05-29 11:55:50.9931642",
+        "Id": 1267,
+        "MarketId": 1808,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780056000,
+        "CreatedAt": "2026-05-29 12:00:02.6032106",
+        "Id": 1268,
+        "MarketId": 1809,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780056300,
+        "CreatedAt": "2026-05-29 12:05:01.8792231",
+        "Id": 1269,
+        "MarketId": 1810,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780056900,
+        "CreatedAt": "2026-05-29 12:15:02.5419702",
+        "Id": 1270,
+        "MarketId": 1812,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780057200,
+        "CreatedAt": "2026-05-29 12:20:02.5030187",
+        "Id": 1271,
+        "MarketId": 1813,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780057500,
+        "CreatedAt": "2026-05-29 12:25:01.5490051",
+        "Id": 1272,
+        "MarketId": 1814,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780057800,
+        "CreatedAt": "2026-05-29 12:30:01.6771848",
+        "Id": 1273,
+        "MarketId": 1815,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780058400,
+        "CreatedAt": "2026-05-29 12:40:54.0960662",
+        "Id": 1274,
+        "MarketId": 1817,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780058700,
+        "CreatedAt": "2026-05-29 12:45:48.4427097",
+        "Id": 1275,
+        "MarketId": 1818,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780059000,
+        "CreatedAt": "2026-05-29 12:50:52.8715071",
+        "Id": 1276,
+        "MarketId": 1819,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780059300,
+        "CreatedAt": "2026-05-29 12:55:34.1345825",
+        "Id": 1277,
+        "MarketId": 1820,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780059600,
+        "CreatedAt": "2026-05-29 13:00:32.8077101",
+        "Id": 1278,
+        "MarketId": 1821,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780059900,
+        "CreatedAt": "2026-05-29 13:05:32.1848928",
+        "Id": 1279,
+        "MarketId": 1822,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780060200,
+        "CreatedAt": "2026-05-29 13:10:31.8026541",
+        "Id": 1280,
+        "MarketId": 1823,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780060500,
+        "CreatedAt": "2026-05-29 13:15:02.7546186",
+        "Id": 1281,
+        "MarketId": 1824,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780060800,
+        "CreatedAt": "2026-05-29 13:20:02.59984",
+        "Id": 1282,
+        "MarketId": 1825,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780061100,
+        "CreatedAt": "2026-05-29 13:25:01.8614141",
+        "Id": 1283,
+        "MarketId": 1826,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780061700,
+        "CreatedAt": "2026-05-29 13:35:33.0913512",
+        "Id": 1284,
+        "MarketId": 1828,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780062000,
+        "CreatedAt": "2026-05-29 13:40:04.5689033",
+        "Id": 1285,
+        "MarketId": 1829,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780062300,
+        "CreatedAt": "2026-05-29 13:45:00.4726854",
+        "Id": 1286,
+        "MarketId": 1830,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780062600,
+        "CreatedAt": "2026-05-29 13:50:00.5469084",
+        "Id": 1287,
+        "MarketId": 1831,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780062900,
+        "CreatedAt": "2026-05-29 13:55:51.3935643",
+        "Id": 1288,
+        "MarketId": 1832,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780063200,
+        "CreatedAt": "2026-05-29 14:00:01.0076517",
+        "Id": 1289,
+        "MarketId": 1833,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780063500,
+        "CreatedAt": "2026-05-29 14:05:05.5706526",
+        "Id": 1290,
+        "MarketId": 1834,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780064100,
+        "CreatedAt": "2026-05-29 14:15:54.3207504",
+        "Id": 1291,
+        "MarketId": 1836,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780064400,
+        "CreatedAt": "2026-05-29 14:20:33.9025599",
+        "Id": 1292,
+        "MarketId": 1837,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780065000,
+        "CreatedAt": "2026-05-29 14:30:33.1245963",
+        "Id": 1293,
+        "MarketId": 1839,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780065300,
+        "CreatedAt": "2026-05-29 14:35:32.7226696",
+        "Id": 1294,
+        "MarketId": 1840,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780066200,
+        "CreatedAt": "2026-05-29 14:50:48.7444445",
+        "Id": 1295,
+        "MarketId": 1843,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780066500,
+        "CreatedAt": "2026-05-29 14:55:00.3648757",
+        "Id": 1296,
+        "MarketId": 1844,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780066800,
+        "CreatedAt": "2026-05-29 15:00:00.420251",
+        "Id": 1297,
+        "MarketId": 1845,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780067100,
+        "CreatedAt": "2026-05-29 15:05:01.2035959",
+        "Id": 1298,
+        "MarketId": 1846,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780068000,
+        "CreatedAt": "2026-05-29 15:20:33.9830769",
+        "Id": 1299,
+        "MarketId": 1849,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780068300,
+        "CreatedAt": "2026-05-29 15:25:31.4348632",
+        "Id": 1300,
+        "MarketId": 1850,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780069200,
+        "CreatedAt": "2026-05-29 15:40:34.2119011",
+        "Id": 1301,
+        "MarketId": 1853,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780069500,
+        "CreatedAt": "2026-05-29 15:45:33.6799289",
+        "Id": 1302,
+        "MarketId": 1854,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780070100,
+        "CreatedAt": "2026-05-29 15:55:51.4613206",
+        "Id": 1303,
+        "MarketId": 1856,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780071300,
+        "CreatedAt": "2026-05-29 16:16:11.5838541",
+        "Id": 1304,
+        "MarketId": 1860,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "order_failed"
+    },
+    {
+        "CandleTime": 1780071600,
+        "CreatedAt": "2026-05-29 16:20:00.4456943",
+        "Id": 1305,
+        "MarketId": 1861,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780071900,
+        "CreatedAt": "2026-05-29 16:25:00.4286866",
+        "Id": 1306,
+        "MarketId": 1862,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780072200,
+        "CreatedAt": "2026-05-29 16:30:04.6691845",
+        "Id": 1307,
+        "MarketId": 1863,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780073100,
+        "CreatedAt": "2026-05-29 16:45:49.0315733",
+        "Id": 1308,
+        "MarketId": 1866,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780073400,
+        "CreatedAt": "2026-05-29 16:50:31.6207256",
+        "Id": 1309,
+        "MarketId": 1867,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780073700,
+        "CreatedAt": "2026-05-29 16:55:46.6353949",
+        "Id": 1310,
+        "MarketId": 1868,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780074300,
+        "CreatedAt": "2026-05-29 17:05:01.2277544",
+        "Id": 1311,
+        "MarketId": 1870,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780075500,
+        "CreatedAt": "2026-05-29 17:25:34.4471777",
+        "Id": 1312,
+        "MarketId": 1874,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780076700,
+        "CreatedAt": "2026-05-29 17:45:33.1199108",
+        "Id": 1313,
+        "MarketId": 1878,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780077000,
+        "CreatedAt": "2026-05-29 17:50:00.4318267",
+        "Id": 1314,
+        "MarketId": 1879,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780077300,
+        "CreatedAt": "2026-05-29 17:55:00.3849487",
+        "Id": 1315,
+        "MarketId": 1880,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780077600,
+        "CreatedAt": "2026-05-29 18:00:00.3928157",
+        "Id": 1316,
+        "MarketId": 1881,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780077900,
+        "CreatedAt": "2026-05-29 18:05:00.8787966",
+        "Id": 1317,
+        "MarketId": 1882,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780078200,
+        "CreatedAt": "2026-05-29 18:10:05.4951605",
+        "Id": 1318,
+        "MarketId": 1883,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780078500,
+        "CreatedAt": "2026-05-29 18:15:01.8597822",
+        "Id": 1319,
+        "MarketId": 1884,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780078800,
+        "CreatedAt": "2026-05-29 18:20:00.6584046",
+        "Id": 1320,
+        "MarketId": 1885,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780079100,
+        "CreatedAt": "2026-05-29 18:25:01.7847724",
+        "Id": 1321,
+        "MarketId": 1886,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780079400,
+        "CreatedAt": "2026-05-29 18:30:00.4998588",
+        "Id": 1322,
+        "MarketId": 1887,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780079700,
+        "CreatedAt": "2026-05-29 18:35:00.4087206",
+        "Id": 1323,
+        "MarketId": 1888,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780080000,
+        "CreatedAt": "2026-05-29 18:40:05.6167748",
+        "Id": 1324,
+        "MarketId": 1889,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780080300,
+        "CreatedAt": "2026-05-29 18:45:00.3697679",
+        "Id": 1325,
+        "MarketId": 1890,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780080600,
+        "CreatedAt": "2026-05-29 18:50:00.3988636",
+        "Id": 1326,
+        "MarketId": 1891,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780082700,
+        "CreatedAt": "2026-05-29 19:25:32.009075",
+        "Id": 1327,
+        "MarketId": 1898,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780083000,
+        "CreatedAt": "2026-05-29 19:30:47.3259793",
+        "Id": 1328,
+        "MarketId": 1899,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780083300,
+        "CreatedAt": "2026-05-29 19:35:03.0728235",
+        "Id": 1329,
+        "MarketId": 1900,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780083600,
+        "CreatedAt": "2026-05-29 19:40:00.4307873",
+        "Id": 1330,
+        "MarketId": 1901,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780083900,
+        "CreatedAt": "2026-05-29 19:45:00.7114849",
+        "Id": 1331,
+        "MarketId": 1902,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780084200,
+        "CreatedAt": "2026-05-29 19:50:05.5052871",
+        "Id": 1332,
+        "MarketId": 1903,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780084500,
+        "CreatedAt": "2026-05-29 19:55:00.4022635",
+        "Id": 1333,
+        "MarketId": 1904,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780084800,
+        "CreatedAt": "2026-05-29 20:00:00.4074395",
+        "Id": 1334,
+        "MarketId": 1905,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780085100,
+        "CreatedAt": "2026-05-29 20:05:01.8216806",
+        "Id": 1335,
+        "MarketId": 1906,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780085400,
+        "CreatedAt": "2026-05-29 20:10:00.4464933",
+        "Id": 1336,
+        "MarketId": 1907,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780085700,
+        "CreatedAt": "2026-05-29 20:15:05.6212274",
+        "Id": 1337,
+        "MarketId": 1908,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780086000,
+        "CreatedAt": "2026-05-29 20:20:00.7149517",
+        "Id": 1338,
+        "MarketId": 1909,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780086300,
+        "CreatedAt": "2026-05-29 20:25:00.8794279",
+        "Id": 1339,
+        "MarketId": 1910,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780086600,
+        "CreatedAt": "2026-05-29 20:30:00.4111333",
+        "Id": 1340,
+        "MarketId": 1911,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780086900,
+        "CreatedAt": "2026-05-29 20:35:00.5540255",
+        "Id": 1341,
+        "MarketId": 1912,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780087500,
+        "CreatedAt": "2026-05-29 20:45:00.7276797",
+        "Id": 1342,
+        "MarketId": 1914,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780087800,
+        "CreatedAt": "2026-05-29 20:50:00.3363249",
+        "Id": 1343,
+        "MarketId": 1915,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780088100,
+        "CreatedAt": "2026-05-29 20:55:00.3434389",
+        "Id": 1344,
+        "MarketId": 1916,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780088400,
+        "CreatedAt": "2026-05-29 21:00:00.5418867",
+        "Id": 1345,
+        "MarketId": 1917,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780088700,
+        "CreatedAt": "2026-05-29 21:05:00.4057839",
+        "Id": 1346,
+        "MarketId": 1918,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780089000,
+        "CreatedAt": "2026-05-29 21:10:00.6126591",
+        "Id": 1347,
+        "MarketId": 1919,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780089300,
+        "CreatedAt": "2026-05-29 21:15:00.4188251",
+        "Id": 1348,
+        "MarketId": 1920,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780089600,
+        "CreatedAt": "2026-05-29 21:20:01.9858983",
+        "Id": 1349,
+        "MarketId": 1921,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780089900,
+        "CreatedAt": "2026-05-29 21:25:00.5375994",
+        "Id": 1350,
+        "MarketId": 1922,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780090200,
+        "CreatedAt": "2026-05-29 21:30:00.5918414",
+        "Id": 1351,
+        "MarketId": 1923,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780090500,
+        "CreatedAt": "2026-05-29 21:35:00.4066625",
+        "Id": 1352,
+        "MarketId": 1924,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780090800,
+        "CreatedAt": "2026-05-29 21:40:00.5933797",
+        "Id": 1353,
+        "MarketId": 1925,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780091100,
+        "CreatedAt": "2026-05-29 21:45:01.0409091",
+        "Id": 1354,
+        "MarketId": 1926,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780091400,
+        "CreatedAt": "2026-05-29 21:50:02.4832569",
+        "Id": 1355,
+        "MarketId": 1927,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780092000,
+        "CreatedAt": "2026-05-29 22:00:33.7594653",
+        "Id": 1356,
+        "MarketId": 1929,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780092300,
+        "CreatedAt": "2026-05-29 22:05:31.2838782",
+        "Id": 1357,
+        "MarketId": 1930,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780092900,
+        "CreatedAt": "2026-05-29 22:15:32.2853367",
+        "Id": 1358,
+        "MarketId": 1932,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780093200,
+        "CreatedAt": "2026-05-29 22:20:00.9942009",
+        "Id": 1359,
+        "MarketId": 1933,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780093500,
+        "CreatedAt": "2026-05-29 22:25:00.4785214",
+        "Id": 1360,
+        "MarketId": 1934,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780093800,
+        "CreatedAt": "2026-05-29 22:30:00.4236116",
+        "Id": 1361,
+        "MarketId": 1935,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780094100,
+        "CreatedAt": "2026-05-29 22:35:00.6544549",
+        "Id": 1362,
+        "MarketId": 1936,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780094400,
+        "CreatedAt": "2026-05-29 22:40:00.442907",
+        "Id": 1363,
+        "MarketId": 1937,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780094700,
+        "CreatedAt": "2026-05-29 22:45:00.903701",
+        "Id": 1364,
+        "MarketId": 1938,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780095000,
+        "CreatedAt": "2026-05-29 22:50:00.5240669",
+        "Id": 1365,
+        "MarketId": 1939,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780095300,
+        "CreatedAt": "2026-05-29 22:55:00.4822983",
+        "Id": 1366,
+        "MarketId": 1940,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780095600,
+        "CreatedAt": "2026-05-29 23:00:00.4064891",
+        "Id": 1367,
+        "MarketId": 1941,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780095900,
+        "CreatedAt": "2026-05-29 23:05:00.4662093",
+        "Id": 1368,
+        "MarketId": 1942,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780096200,
+        "CreatedAt": "2026-05-29 23:10:00.6780866",
+        "Id": 1369,
+        "MarketId": 1943,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780096500,
+        "CreatedAt": "2026-05-29 23:15:48.9740839",
+        "Id": 1370,
+        "MarketId": 1944,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780096800,
+        "CreatedAt": "2026-05-29 23:20:00.4402494",
+        "Id": 1371,
+        "MarketId": 1945,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780097100,
+        "CreatedAt": "2026-05-29 23:25:47.3054101",
+        "Id": 1372,
+        "MarketId": 1946,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780097400,
+        "CreatedAt": "2026-05-29 23:30:46.9029083",
+        "Id": 1373,
+        "MarketId": 1947,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780098000,
+        "CreatedAt": "2026-05-29 23:40:48.5906504",
+        "Id": 1374,
+        "MarketId": 1949,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780098300,
+        "CreatedAt": "2026-05-29 23:45:01.806841",
+        "Id": 1375,
+        "MarketId": 1950,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780098600,
+        "CreatedAt": "2026-05-29 23:50:00.4142639",
+        "Id": 1376,
+        "MarketId": 1951,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780098900,
+        "CreatedAt": "2026-05-29 23:55:00.3876875",
+        "Id": 1377,
+        "MarketId": 1952,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780099200,
+        "CreatedAt": "2026-05-30 00:00:00.5141661",
+        "Id": 1378,
+        "MarketId": 1953,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780099500,
+        "CreatedAt": "2026-05-30 00:05:00.3717508",
+        "Id": 1379,
+        "MarketId": 1954,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780099800,
+        "CreatedAt": "2026-05-30 00:10:00.8547781",
+        "Id": 1380,
+        "MarketId": 1955,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780100100,
+        "CreatedAt": "2026-05-30 00:15:01.6052267",
+        "Id": 1381,
+        "MarketId": 1956,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780100400,
+        "CreatedAt": "2026-05-30 00:20:00.4138888",
+        "Id": 1382,
+        "MarketId": 1957,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780100700,
+        "CreatedAt": "2026-05-30 00:25:00.3334672",
+        "Id": 1383,
+        "MarketId": 1958,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780101000,
+        "CreatedAt": "2026-05-30 00:30:01.608065",
+        "Id": 1384,
+        "MarketId": 1959,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780101300,
+        "CreatedAt": "2026-05-30 00:35:00.3984706",
+        "Id": 1385,
+        "MarketId": 1960,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780101600,
+        "CreatedAt": "2026-05-30 00:40:00.6755908",
+        "Id": 1386,
+        "MarketId": 1961,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780101900,
+        "CreatedAt": "2026-05-30 00:45:00.4851934",
+        "Id": 1387,
+        "MarketId": 1962,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780102200,
+        "CreatedAt": "2026-05-30 00:50:00.3385152",
+        "Id": 1388,
+        "MarketId": 1963,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780102500,
+        "CreatedAt": "2026-05-30 00:55:00.3709817",
+        "Id": 1389,
+        "MarketId": 1964,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780102800,
+        "CreatedAt": "2026-05-30 01:00:00.4402037",
+        "Id": 1390,
+        "MarketId": 1965,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780103100,
+        "CreatedAt": "2026-05-30 01:05:00.3463652",
+        "Id": 1391,
+        "MarketId": 1966,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780103400,
+        "CreatedAt": "2026-05-30 01:10:00.4040285",
+        "Id": 1392,
+        "MarketId": 1967,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780105200,
+        "CreatedAt": "2026-05-30 01:40:46.9405838",
+        "Id": 1393,
+        "MarketId": 1973,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780105800,
+        "CreatedAt": "2026-05-30 01:50:48.3451629",
+        "Id": 1394,
+        "MarketId": 1975,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780106700,
+        "CreatedAt": "2026-05-30 02:05:33.2408163",
+        "Id": 1395,
+        "MarketId": 1978,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780107600,
+        "CreatedAt": "2026-05-30 02:20:46.9926213",
+        "Id": 1396,
+        "MarketId": 1981,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780107900,
+        "CreatedAt": "2026-05-30 02:25:00.4368419",
+        "Id": 1397,
+        "MarketId": 1982,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780108200,
+        "CreatedAt": "2026-05-30 02:30:00.4114154",
+        "Id": 1398,
+        "MarketId": 1983,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780110300,
+        "CreatedAt": "2026-05-30 03:05:31.4299623",
+        "Id": 1399,
+        "MarketId": 1990,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780110600,
+        "CreatedAt": "2026-05-30 03:10:31.6393874",
+        "Id": 1400,
+        "MarketId": 1991,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780110900,
+        "CreatedAt": "2026-05-30 03:15:46.7328696",
+        "Id": 1401,
+        "MarketId": 1992,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780111200,
+        "CreatedAt": "2026-05-30 03:20:00.2461698",
+        "Id": 1402,
+        "MarketId": 1993,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780111500,
+        "CreatedAt": "2026-05-30 03:25:00.1992066",
+        "Id": 1403,
+        "MarketId": 1994,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780111800,
+        "CreatedAt": "2026-05-30 03:30:00.3828266",
+        "Id": 1404,
+        "MarketId": 1995,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780112100,
+        "CreatedAt": "2026-05-30 03:35:00.5820374",
+        "Id": 1405,
+        "MarketId": 1996,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780112400,
+        "CreatedAt": "2026-05-30 03:40:00.7017608",
+        "Id": 1406,
+        "MarketId": 1997,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780112700,
+        "CreatedAt": "2026-05-30 03:45:00.3178587",
+        "Id": 1407,
+        "MarketId": 1998,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780113000,
+        "CreatedAt": "2026-05-30 03:50:00.3552145",
+        "Id": 1408,
+        "MarketId": 1999,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780113300,
+        "CreatedAt": "2026-05-30 03:55:00.3550891",
+        "Id": 1409,
+        "MarketId": 2000,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780113600,
+        "CreatedAt": "2026-05-30 04:00:00.609825",
+        "Id": 1410,
+        "MarketId": 2001,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780113900,
+        "CreatedAt": "2026-05-30 04:05:00.3531886",
+        "Id": 1411,
+        "MarketId": 2002,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780114200,
+        "CreatedAt": "2026-05-30 04:10:47.072175",
+        "Id": 1412,
+        "MarketId": 2003,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780116600,
+        "CreatedAt": "2026-05-30 04:50:47.8866868",
+        "Id": 1413,
+        "MarketId": 2011,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780116900,
+        "CreatedAt": "2026-05-30 04:55:34.0443236",
+        "Id": 1414,
+        "MarketId": 2012,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "entry_price_out_of_range"
+    },
+    {
+        "CandleTime": 1780117200,
+        "CreatedAt": "2026-05-30 05:00:01.0033228",
+        "Id": 1415,
+        "MarketId": 2013,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780117500,
+        "CreatedAt": "2026-05-30 05:05:01.0801469",
+        "Id": 1416,
+        "MarketId": 2014,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780117800,
+        "CreatedAt": "2026-05-30 05:10:01.6956931",
+        "Id": 1417,
+        "MarketId": 2015,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780118100,
+        "CreatedAt": "2026-05-30 05:15:00.6626494",
+        "Id": 1418,
+        "MarketId": 2016,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780118400,
+        "CreatedAt": "2026-05-30 05:20:05.878162",
+        "Id": 1419,
+        "MarketId": 2017,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780118700,
+        "CreatedAt": "2026-05-30 05:25:01.2023829",
+        "Id": 1420,
+        "MarketId": 2018,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    },
+    {
+        "CandleTime": 1780119000,
+        "CreatedAt": "2026-05-30 05:30:04.4164275",
+        "Id": 1421,
+        "MarketId": 2019,
+        "Mode": "Live",
+        "PaperAccountId": 0,
+        "SkipReason": "no_signal"
+    }
+]

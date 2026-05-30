@@ -24,6 +24,7 @@ public static class SerilogBootstrap
     {
         var logDirectory = ApplicationLogPaths.ResolveLogDirectory(configuration);
         Directory.CreateDirectory(logDirectory);
+        TradeExecutionLog.Initialize(configuration, logDirectory);
 
         var retained = configuration.GetValue("Serilog:RetainedFileCountLimit", 90);
         var minLevel = ParseLevel(
@@ -42,21 +43,29 @@ public static class SerilogBootstrap
             .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
             .MinimumLevel.Override("Microsoft.EntityFrameworkCore", LogEventLevel.Warning)
             .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
+            .MinimumLevel.Override("PolyTrader.TradeExecution", LogEventLevel.Debug)
             .Enrich.FromLogContext()
             .Enrich.WithProperty("Application", "PolyTrader")
             .Enrich.WithProperty("MachineName", Environment.MachineName)
-            .WriteTo.Console(outputTemplate: OutputTemplate)
-            .WriteTo.File(
-                Path.Combine(logDirectory, "polytrader-.log"),
-                rollingInterval: RollingInterval.Day,
-                retainedFileCountLimit: retained,
-                shared: true,
-                outputTemplate: OutputTemplate);
+            .WriteTo.Logger(lc => lc
+                .Filter.With(SerilogTradeExecutionFilter.ExcludeTradeExecution)
+                .WriteTo.Console(
+                    outputTemplate: OutputTemplate,
+                    restrictedToMinimumLevel: minLevel))
+            .WriteTo.Logger(lc => lc
+                .Filter.With(SerilogTradeExecutionFilter.ExcludeTradeExecution)
+                .WriteTo.File(
+                    Path.Combine(logDirectory, "polytrader-.log"),
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: retained,
+                    shared: true,
+                    outputTemplate: OutputTemplate));
 
         if (liveEnabled && liveBroadcaster is not null)
         {
-            loggerConfig = loggerConfig.WriteTo.Sink(
-                new SerilogLiveStreamSink(liveBroadcaster, liveMinLevel));
+            loggerConfig = loggerConfig.WriteTo.Logger(lc => lc
+                .Filter.With(SerilogTradeExecutionFilter.ExcludeTradeExecution)
+                .WriteTo.Sink(new SerilogLiveStreamSink(liveBroadcaster, liveMinLevel)));
         }
 
         Log.Logger = loggerConfig.CreateLogger();

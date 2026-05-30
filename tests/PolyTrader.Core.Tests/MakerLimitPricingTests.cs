@@ -24,4 +24,11 @@ public class MakerLimitPricingTests
         var limit = MakerLimitPricing.ComputePostOnlyBuyLimit(0.50, 0.55, 0.01m, 10);
         Assert.Equal(0.50m, limit);
     }
+
+    [Fact]
+    public void CapPostOnlyAgainstAsk_clamps_to_ask_minus_tick()
+    {
+        var capped = MakerLimitPricing.CapPostOnlyAgainstAsk(0.52m, 0.52, 0.01m);
+        Assert.Equal(0.51m, capped);
+    }
 }

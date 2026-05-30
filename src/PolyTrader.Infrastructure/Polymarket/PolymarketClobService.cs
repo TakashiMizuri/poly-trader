@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PolyTrader.Core.Models;
 using PolyTrader.Core.Strategy;
+using PolyTrader.Infrastructure.Logging;
 using PolyTrader.Infrastructure.Options;
 
 namespace PolyTrader.Infrastructure.Polymarket;
@@ -39,6 +40,7 @@ public interface IPolymarketClobService
         double sizeUsd,
         double? askPriceHint = null,
         LiveEntryOrderKey? entryKey = null,
+        long? windowStartMs = null,
         CancellationToken ct = default);
 }
 
@@ -51,21 +53,30 @@ public sealed class PolymarketClobService : IPolymarketClobService
 
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IPolymarketRestTradingClient _trading;
+    private readonly IPolymarketMarketWebSocket _marketWs;
     private readonly IPolymarketWalletResolver _wallet;
     private readonly PolyTraderOptions _options;
+    private readonly EntryExecutionSettings _entryExecution;
+    private readonly ITradeExecutionLogger _tradeLog;
     private readonly ILogger<PolymarketClobService> _logger;
 
     public PolymarketClobService(
         IHttpClientFactory httpClientFactory,
         IPolymarketRestTradingClient trading,
+        IPolymarketMarketWebSocket marketWs,
         IPolymarketWalletResolver wallet,
         IOptions<PolyTraderOptions> options,
+        EntryExecutionSettings entryExecution,
+        ITradeExecutionLogger tradeLog,
         ILogger<PolymarketClobService> logger)
     {
         _httpClientFactory = httpClientFactory;
         _trading = trading;
+        _marketWs = marketWs;
         _wallet = wallet;
         _options = options.Value;
+        _entryExecution = entryExecution;
+        _tradeLog = tradeLog;
         _logger = logger;
     }
 
@@ -215,16 +226,6 @@ public sealed class PolymarketClobService : IPolymarketClobService
 
         var firstWait = TimeSpan.FromSeconds(Math.Max(1, _options.LiveMakerFillWaitSeconds));
         var remainderWait = TimeSpan.FromSeconds(Math.Max(1, _options.LiveMakerRemainderFillWaitSeconds));
-        _logger.LogInformation(
-            "Placing live maker two-wave buy token {TokenId} notional ${Size:F2} bid {Bid:F4} ask {Ask} wave1={Wave1Seconds}s wave2={Wave2Seconds}s wallet {Wallet}",
-            tokenId,
-            sizeUsd,
-            bid,
-            ask?.ToString("F4") ?? "n/a",
-            firstWait.TotalSeconds,
-            remainderWait.TotalSeconds,
-            _wallet.ResolveWalletAddress() ?? "unknown");
-
         return await _trading.PlaceMakerLimitBuyUsdAsync(
             tokenId,
             sizeUsd,
@@ -237,40 +238,81 @@ public sealed class PolymarketClobService : IPolymarketClobService
             ct);
     }
 
-    public Task<LiveMarketBuyOutcome> PlacePatienceEntryOrderAsync(
+    public async Task<LiveMarketBuyOutcome> PlacePatienceEntryOrderAsync(
         string tokenId,
         double sizeUsd,
         double? askPriceHint = null,
         LiveEntryOrderKey? entryKey = null,
+        long? windowStartMs = null,
         CancellationToken ct = default)
     {
         if (!IsConfigured)
         {
             const string reason = "POLYMARKET_PRIVATE_KEY not configured";
             _logger.LogWarning("Patience entry skipped: {Reason}", reason);
-            return Task.FromResult(LiveMarketBuyOutcome.Fail(reason));
+            return LiveMarketBuyOutcome.Fail(reason);
         }
 
-        var wait = EntryPriceRules.PatienceWaitDuration;
+        var windowStart = windowStartMs ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var wait = _entryExecution.ResolvePatienceWait(windowStart);
+        var maxBid = _entryExecution.PatienceMaxEntryPrice;
+        var (freshBid, freshAsk) = await RefreshQuoteAsync(tokenId, ct);
+        var bidHint = freshBid is > 0 ? Math.Min(maxBid, freshBid.Value) : maxBid;
+
         _logger.LogInformation(
-            "Placing patience maker buy token {TokenId} notional ${Size:F2} max bid {Bid:F4} wait {WaitSeconds}s wallet {Wallet}",
+            "Placing patience maker buy token {TokenId} notional ${Size:F2} bid hint {Bid:F4} (cap {Cap:F4}) wait {WaitSeconds}s wallet {Wallet}",
             tokenId,
             sizeUsd,
-            EntryPriceRules.PatienceMaxEntryPrice,
+            bidHint,
+            maxBid,
             wait.TotalSeconds,
             _wallet.ResolveWalletAddress() ?? "unknown");
 
-        return _trading.PlaceMakerLimitBuySingleWaveAsync(
+        return await _trading.PlaceMakerLimitBuySingleWaveAsync(
             tokenId,
             sizeUsd,
-            EntryPriceRules.PatienceMaxEntryPrice,
-            askPriceHint,
+            bidHint,
+            freshAsk ?? askPriceHint,
             wait,
             ct => RefreshQuoteAsync(tokenId, ct),
             entryKey,
             ct);
     }
 
-    private async Task<(double? Bid, double? Ask)> RefreshQuoteAsync(string tokenId, CancellationToken ct) =>
-        (await TryGetBidPriceAsync(tokenId, ct), await TryGetBuyPriceAsync(tokenId, ct));
+    private async Task<(double? Bid, double? Ask)> RefreshQuoteAsync(string tokenId, CancellationToken ct)
+    {
+        var maxAge = TimeSpan.FromMilliseconds(Math.Clamp(_options.WebSocketQuoteMaxAgeMs, 100, 5000));
+        double? wsBid = null;
+        double? wsAsk = null;
+        if (_marketWs.Prices.TryGetFreshQuote(tokenId, maxAge, out var bid, out var ask))
+        {
+            wsBid = bid;
+            wsAsk = ask;
+        }
+
+        var restBid = await TryGetBidPriceAsync(tokenId, ct);
+        var restAsk = await TryGetBuyPriceAsync(tokenId, ct);
+
+        if (wsBid is > 0 && wsAsk is > 0 && restAsk is > 0)
+        {
+            if (Math.Abs(wsAsk.Value - restAsk.Value) > 0.02)
+            {
+                _logger.LogDebug(
+                    "Quote WS/REST ask diverge for {TokenId}: ws {WsAsk:F4} rest {RestAsk:F4}; using REST",
+                    tokenId,
+                    wsAsk,
+                    restAsk);
+                return (restBid, restAsk);
+            }
+
+            return (restBid is > 0 ? restBid : wsBid, restAsk);
+        }
+
+        if (wsBid is > 0 && wsAsk is > 0)
+        {
+            return (wsBid, wsAsk);
+        }
+
+        return (restBid, restAsk);
+    }
 }

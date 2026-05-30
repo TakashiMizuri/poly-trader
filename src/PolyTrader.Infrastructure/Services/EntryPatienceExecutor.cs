@@ -8,6 +8,7 @@ using PolyTrader.Core.Models;
 using PolyTrader.Core.Strategy;
 using PolyTrader.Infrastructure.Data;
 using PolyTrader.Infrastructure.Entities;
+using PolyTrader.Infrastructure.Logging;
 using PolyTrader.Infrastructure.Polymarket;
 
 namespace PolyTrader.Infrastructure.Services;
@@ -41,6 +42,8 @@ public sealed class EntryPatienceExecutor : IEntryPatienceExecutor
     private readonly IPolymarketMarketWebSocket _marketWs;
     private readonly IEntryWaitTracker _entryWaitTracker;
     private readonly ITradingEventPublisher _publisher;
+    private readonly ITradeExecutionLogger _tradeLog;
+    private readonly EntryExecutionSettings _entryExecution;
     private readonly ILogger<EntryPatienceExecutor> _logger;
 
     /// <summary>One patience run per candle/mode/account (defense in depth vs duplicate CLOB orders).</summary>
@@ -52,6 +55,8 @@ public sealed class EntryPatienceExecutor : IEntryPatienceExecutor
         IPolymarketMarketWebSocket marketWs,
         IEntryWaitTracker entryWaitTracker,
         ITradingEventPublisher publisher,
+        ITradeExecutionLogger tradeLog,
+        EntryExecutionSettings entryExecution,
         ILogger<EntryPatienceExecutor> logger)
     {
         _scopeFactory = scopeFactory;
@@ -59,6 +64,8 @@ public sealed class EntryPatienceExecutor : IEntryPatienceExecutor
         _marketWs = marketWs;
         _entryWaitTracker = entryWaitTracker;
         _publisher = publisher;
+        _tradeLog = tradeLog;
+        _entryExecution = entryExecution;
         _logger = logger;
     }
 
@@ -75,6 +82,8 @@ public sealed class EntryPatienceExecutor : IEntryPatienceExecutor
             return;
         }
 
+        var startedUtc = DateTime.UtcNow;
+        var wait = _entryExecution.ResolvePatienceWait(request.WindowStartMs);
         _entryWaitTracker.SetWaiting(new EntryWaitState(
             request.TargetCandleTime,
             request.Mode,
@@ -83,7 +92,22 @@ public sealed class EntryPatienceExecutor : IEntryPatienceExecutor
             request.Side.ToString(),
             request.Trend.ToString(),
             request.WindowStartMs,
-            DateTime.UtcNow));
+            startedUtc,
+            startedUtc.Add(wait)));
+
+        _tradeLog.Information(
+            "PATIENCE_START candle={CandleTime} mode={Mode} account={AccountId} side={Side} trend={Trend} "
+            + "initialQuote={InitialQuote:F4} waitSeconds={WaitSeconds:F0} band=(0,{Max:F2}] token={TokenId}",
+            request.TargetCandleTime,
+            request.Mode,
+            request.TradeContextId,
+            request.Side,
+            request.Trend,
+            request.InitialQuote,
+            wait.TotalSeconds,
+            _entryExecution.PatienceMaxEntryPrice,
+            request.OutcomeTokenId);
+        _ = PublishFeedChangedSafeAsync();
 
         _ = Task.Run(async () =>
         {
@@ -168,7 +192,7 @@ public sealed class EntryPatienceExecutor : IEntryPatienceExecutor
                 balanceAtOpen,
                 stake,
                 stakeParams.MaxBetStakeUsd ?? 500,
-                EntryPriceRules.PatienceMaxEntryPrice,
+                _entryExecution.PatienceMaxEntryPrice,
                 out var stakeBlockReason);
             if (stake <= 0)
             {
@@ -247,13 +271,17 @@ public sealed class EntryPatienceExecutor : IEntryPatienceExecutor
                     }
                 }
 
-                _logger.LogInformation(
-                    "Patience entry opened {Mode} trade candle {CandleTime} side {Side} @ {Price:F4} stake ${Stake:F2}",
-                    filled.Mode,
+                _tradeLog.Information(
+                    "PATIENCE_FILL candle={CandleTime} mode={Mode} side={Side} trend={Trend} entry={Entry:F4} "
+                    + "stake=${Stake:F2} order={OrderId} token={TokenId}",
                     filled.CandleTime,
+                    filled.Mode,
                     filled.Side,
+                    filled.Trend,
                     filled.EntryPrice,
-                    filled.StakeUsd);
+                    filled.StakeUsd,
+                    filled.PolymarketOrderId ?? "(none)",
+                    request.OutcomeTokenId);
                 return;
             }
 
@@ -262,7 +290,7 @@ public sealed class EntryPatienceExecutor : IEntryPatienceExecutor
                 settings,
                 request,
                 "entry_price_out_of_range",
-                $"No fill within {EntryPriceRules.PatienceWaitDuration.TotalSeconds:F0}s (initial quote {request.InitialQuote:F4}, patience band (0, {EntryPriceRules.PatienceMaxEntryPrice:F2}])");
+                $"No fill within {_entryExecution.ResolvePatienceWait(request.WindowStartMs).TotalSeconds:F0}s (initial quote {request.InitialQuote:F4}, patience band (0, {_entryExecution.PatienceMaxEntryPrice:F2}])");
         }
         catch (Exception ex)
         {
@@ -277,6 +305,7 @@ public sealed class EntryPatienceExecutor : IEntryPatienceExecutor
                 request.TargetCandleTime,
                 request.Mode,
                 request.TradeContextId);
+            await PublishFeedChangedSafeAsync();
             if (releaseEntryClaim)
             {
                 request.ReleaseClaim();
@@ -325,6 +354,7 @@ public sealed class EntryPatienceExecutor : IEntryPatienceExecutor
             stake,
             ask,
             new LiveEntryOrderKey(request.TargetCandleTime, request.OutcomeTokenId),
+            request.WindowStartMs,
             CancellationToken.None);
 
         if (!outcome.IsSuccess || outcome.Result == null)
@@ -341,7 +371,7 @@ public sealed class EntryPatienceExecutor : IEntryPatienceExecutor
             ? liveBuy.AveragePrice.Value
             : liveBuy.MatchedShares > 0 && liveBuy.FilledStakeUsd > 0
                 ? liveBuy.FilledStakeUsd / liveBuy.MatchedShares
-                : EntryPriceRules.PatienceMaxEntryPrice;
+                : _entryExecution.PatienceMaxEntryPrice;
 
         if (!EntryPriceRules.IsPatienceFillAllowed(entryPrice))
         {
@@ -380,7 +410,7 @@ public sealed class EntryPatienceExecutor : IEntryPatienceExecutor
         EntryPatienceRequest request,
         double stake)
     {
-        var deadline = DateTime.UtcNow + EntryPriceRules.PatienceWaitDuration;
+        var deadline = DateTime.UtcNow + _entryExecution.ResolvePatienceWait(request.WindowStartMs);
         while (DateTime.UtcNow < deadline)
         {
             var bid = await ResolveMakerBidPriceAsync(
@@ -391,7 +421,7 @@ public sealed class EntryPatienceExecutor : IEntryPatienceExecutor
 
             if (EntryPriceRules.IsPatienceFillAllowed(bid))
             {
-                var entryPrice = Math.Min(bid, EntryPriceRules.PatienceMaxEntryPrice);
+                var entryPrice = Math.Min(bid, _entryExecution.PatienceMaxEntryPrice);
                 var orderId = $"paper-patience-{Guid.NewGuid():N}";
                 _logger.LogInformation(
                     "Paper patience fill @ {Price:F4} candle {CandleTime} stake ${Stake:F2}",
@@ -494,9 +524,24 @@ public sealed class EntryPatienceExecutor : IEntryPatienceExecutor
             Mode = request.Mode,
             PaperAccountId = request.TradeContextId,
             SkipReason = skipReason,
+            SkipDetail = SkippedBetEntity.TruncateDetail(detail),
+            Side = request.Side.ToString(),
+            Trend = request.Trend.ToString(),
+            InitialBid = request.InitialQuote,
+            SignalPresent = true,
         });
 
         await db.SaveChangesAsync();
+
+        _tradeLog.Warning(
+            "PATIENCE_SKIP candle={CandleTime} mode={Mode} reason={Reason} detail={Detail} side={Side} trend={Trend}",
+            request.TargetCandleTime,
+            request.Mode,
+            skipReason,
+            detail ?? "(none)",
+            request.Side,
+            request.Trend);
+        await PublishFeedChangedSafeAsync();
 
         var marketMeta = await db.Markets.AsNoTracking()
             .Where(m => m.Id == request.MarketId)
@@ -575,6 +620,18 @@ public sealed class EntryPatienceExecutor : IEntryPatienceExecutor
         }
 
         return 0;
+    }
+
+    private async Task PublishFeedChangedSafeAsync()
+    {
+        try
+        {
+            await _publisher.PublishPositionsFeedChangedAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "PositionsFeedChanged publish failed");
+        }
     }
 }
 

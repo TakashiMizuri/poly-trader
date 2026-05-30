@@ -24,22 +24,45 @@ public sealed class SignalRTradingEventPublisher : ITradingEventPublisher
 
     public Task PublishEngineStatusAsync(bool isRunning, string mode, CancellationToken ct = default)
     {
-        _logger.LogInformation("SignalR EngineStatus running={Running} mode={Mode}", isRunning, mode);
+        _logger.LogDebug("SignalR EngineStatus running={Running} mode={Mode}", isRunning, mode);
         return _hub.Clients.All.SendAsync("EngineStatus", new { isRunning, mode }, ct);
     }
 
     public Task PublishTradePlacedAsync(object trade, CancellationToken ct = default)
     {
-        _logger.LogInformation("SignalR TradePlaced payload={Payload}", trade);
+        _logger.LogDebug("SignalR TradePlaced");
         return _hub.Clients.All.SendAsync("TradePlaced", trade, ct);
     }
 
-    public Task PublishEntryFailedAsync(EntryFailedEvent entryFailed, CancellationToken ct = default) =>
-        Task.CompletedTask;
+    public Task PublishEntryFailedAsync(EntryFailedEvent entryFailed, CancellationToken ct = default)
+    {
+        _logger.LogDebug(
+            "SignalR EntryFailed candle={CandleTime} reason={Reason}",
+            entryFailed.CandleTimeSec,
+            entryFailed.SkipReason);
+        return _hub.Clients.All.SendAsync(
+            "EntryFailed",
+            new
+            {
+                candleTime = entryFailed.CandleTimeSec,
+                entryFailed.Mode,
+                entryFailed.SkipReason,
+                entryFailed.Detail,
+                entryFailed.MarketTitle,
+                entryFailed.MarketSlug,
+                entryFailed.Side,
+                entryFailed.Trend,
+                entryFailed.StakeUsd,
+            },
+            ct);
+    }
+
+    public Task PublishPositionsFeedChangedAsync(CancellationToken ct = default) =>
+        _hub.Clients.All.SendAsync("PositionsFeedChanged", new { at = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() }, ct);
 
     public Task PublishBalanceUpdatedAsync(double balance, int paperAccountId = 0, CancellationToken ct = default)
     {
-        _logger.LogInformation(
+        _logger.LogDebug(
             "SignalR BalanceUpdated account={AccountId} balance=${Balance:F2}",
             paperAccountId,
             balance);
@@ -48,7 +71,7 @@ public sealed class SignalRTradingEventPublisher : ITradingEventPublisher
 
     public Task PublishMarketWindowUpdatedAsync(object? market, CancellationToken ct = default)
     {
-        _logger.LogInformation("SignalR MarketWindowUpdated");
+        _logger.LogDebug("SignalR MarketWindowUpdated");
         return _hub.Clients.All.SendAsync("MarketWindowUpdated", market, ct);
     }
 
@@ -81,6 +104,8 @@ public static class TradeMapper
         t.Won,
         t.PnlUsd,
         t.WinPayoutRatio,
+        settlementStatus = t.SettlementStatus.ToString().ToLowerInvariant(),
+        t.SettlementSource,
         t.PaperAccountId,
         t.PolymarketOrderId,
         entryWaves = TradeEntryWavesJson.Deserialize(t.EntryWavesJson)?.Select(w => new

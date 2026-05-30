@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
   api,
+  type ExecutionGapAnalytics,
   type TradeStatistics,
   type TradeStatisticsPeriod,
 } from '@/api/client'
@@ -198,6 +199,7 @@ export function TradeStatisticsDialog({
 }: Props) {
   const [period, setPeriod] = useState<TradeStatisticsPeriod>('all')
   const [stats, setStats] = useState<TradeStatistics | null>(null)
+  const [executionGap, setExecutionGap] = useState<ExecutionGapAnalytics | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -210,13 +212,16 @@ export function TradeStatisticsDialog({
     setLoading(true)
     setError(null)
     try {
-      const data = await api<TradeStatistics>(
-        `/api/trades/statistics?${statsParams}`,
-      )
-      setStats(data)
+      const [statsData, gapData] = await Promise.all([
+        api<TradeStatistics>(`/api/trades/statistics?${statsParams}`),
+        api<ExecutionGapAnalytics>(`/api/analytics/execution-gap?${statsParams}`),
+      ])
+      setStats(statsData)
+      setExecutionGap(gapData)
     } catch (e) {
       console.error(e)
       setStats(null)
+      setExecutionGap(null)
       setError(e instanceof Error ? e.message : 'Failed to load statistics')
     } finally {
       setLoading(false)
@@ -328,6 +333,46 @@ export function TradeStatisticsDialog({
                 </h3>
                 <BreakdownList stats={stats} />
               </div>
+
+              {executionGap ? (
+                <div>
+                  <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Execution gap
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    <Stat
+                      label="Coverage"
+                      value={
+                        executionGap.coveragePct != null
+                          ? `${executionGap.coveragePct.toFixed(1)}%`
+                          : '—'
+                      }
+                      hint={`${executionGap.tradedBars} / ${executionGap.signalBars} signal bars`}
+                    />
+                    <Stat
+                      label="Exec skips"
+                      value={executionGap.executionSkipSignalBars}
+                      hint="Signal bars missed by execution"
+                    />
+                    <Stat
+                      label="Counterfactual"
+                      value={formatPnlUsd(executionGap.counterfactualPnlUsd)}
+                      hint="BT-A@0.50 on exec skips"
+                    />
+                    <Stat
+                      label="Entry edge"
+                      value={formatPnlUsd(executionGap.entryEdgeUsd)}
+                      hint="Win PnL vs fill @ 0.50"
+                    />
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Full report:{' '}
+                    <code className="rounded bg-muted px-1 py-0.5">
+                      {executionGap.reportCommand}
+                    </code>
+                  </p>
+                </div>
+              ) : null}
             </>
           ) : null}
         </DialogBody>

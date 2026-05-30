@@ -168,6 +168,8 @@ export function DashboardPage() {
     bumpTrades()
     void refreshAccount()
   })
+  useTradingLiveEvent('EntryFailed', bumpTrades)
+  useTradingLiveEvent('PositionsFeedChanged', bumpTrades)
   useTradingLiveEvent('CandleClosed', bumpTrades)
 
   return (

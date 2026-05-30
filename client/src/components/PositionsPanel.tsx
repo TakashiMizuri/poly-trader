@@ -10,6 +10,7 @@ import {
 import { BarChart3 } from 'lucide-react'
 import { api } from '@/api/client'
 import { usePoll } from '@/api/hooks'
+import { useTradingLiveEvent } from '@/api/tradingLive'
 import { EventWindowProgressFill } from '@/components/EventWindowProgressFill'
 import { MarketCell } from '@/components/MarketCell'
 import { PageCard, Skeleton, StatusBadge } from '@/components/app-ui'
@@ -598,14 +599,21 @@ export function PositionsPanel({
 
   useFeedWindowBoundaries(groups, onWindowBoundary)
 
+  useTradingLiveEvent('TradePlaced', () => void feedPoll.refresh())
+  useTradingLiveEvent('EntryFailed', () => void feedPoll.refresh())
+  useTradingLiveEvent('PositionsFeedChanged', () => void feedPoll.refresh())
+  useTradingLiveEvent('CandleClosed', () => void feedPoll.refresh())
+  useTradingLiveEvent('EngineStatus', () => void feedPoll.refresh())
+
   useEffect(() => {
+    if (!engineRunning) return
     const hasActive = groups.some(
       (g) => g.isUpcoming || (g.scheduled && !g.completed),
     )
-    const pollMs = hasActive ? 5_000 : 15_000
+    const pollMs = hasActive ? 12_000 : 30_000
     const id = globalThis.setInterval(() => void feedPoll.refresh(), pollMs)
     return () => globalThis.clearInterval(id)
-  }, [groups, feedPoll.refresh])
+  }, [engineRunning, groups, feedPoll.refresh])
 
   return (
     <>

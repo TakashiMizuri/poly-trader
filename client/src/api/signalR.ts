@@ -8,7 +8,11 @@ export function createTradingConnection() {
   return new signalR.HubConnectionBuilder()
     .withUrl(HUB_URL, {
       accessTokenFactory: () => getStoredToken(),
+      transport:
+        signalR.HttpTransportType.WebSockets |
+        signalR.HttpTransportType.ServerSentEvents,
     })
-    .withAutomaticReconnect()
+    .withAutomaticReconnect([0, 1000, 2000, 5000, 10000])
+    .configureLogging(signalR.LogLevel.Warning)
     .build()
 }

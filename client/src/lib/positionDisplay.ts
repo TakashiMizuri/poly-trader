@@ -28,11 +28,20 @@ export interface PositionFeedFill {
   mode?: string | null
   result: string
   skipReason?: string | null
+  /** CLOB / engine message when skipReason is an entry error. */
+  skipDetail?: string | null
   won?: boolean | null
   pnlUsd?: number | null
   polymarketOrderId?: string | null
   /** Live win awaiting on-chain CTF redeem. */
   awaitingRedeem?: boolean
+  /** open | provisional | confirmed — live Binance vs Polymarket settlement. */
+  settlementStatus?: string | null
+  settlementSource?: string | null
+  trend?: string | null
+  initialBid?: number | null
+  initialAsk?: number | null
+  signalPresent?: boolean | null
   /** Patience window start (unix ms) while waiting for entry. */
   entryWaitStartedMs?: number | null
   /** Patience window end (unix ms). */
@@ -487,8 +496,12 @@ export function resultTone(fill: PositionFeedFill): StatusBadgeTone {
     return fill.skipReason === 'engine_stopped' ? 'neutral' : 'shadow'
   }
   if (fill.result === 'Open') return 'warn'
-  if (fill.result === 'Won') return 'liveMuted'
-  if (fill.result === 'Lost') return 'dangerMuted'
+  if (fill.result === 'Won') {
+    return isProvisionalSettlement(fill) ? 'warn' : 'liveMuted'
+  }
+  if (fill.result === 'Lost') {
+    return isProvisionalSettlement(fill) ? 'neutral' : 'dangerMuted'
+  }
   return 'neutral'
 }
 
@@ -511,12 +524,14 @@ export function resultLabel(
   if (fill.result === 'Open' && fill.mode === 'Paper') return 'Paper (open)'
   if (fill.result === 'Open' && fill.mode === 'Live' && isPartialFill(fill)) return 'Partial'
   if (fill.result === 'Open' && fill.mode === 'Live') return 'Live (open)'
+  if (fill.result === 'Won' && isProvisionalSettlement(fill)) return 'Won?'
+  if (fill.result === 'Lost' && isProvisionalSettlement(fill)) return 'Lost?'
   return fill.result
 }
 
 export function resultTitle(fill: PositionFeedFill): string | undefined {
   if (isWaitingForEntryFill(fill)) {
-    return 'Watching for a fill at ≤ 0.50 during the 30s patience window'
+    return 'Watching for fill at ≤ 0.52 during the patience window'
   }
   if (hasEntryWaves(fill)) {
     const lines = fill.entryWaves!.map((w) => formatEntryWaveLine(w)).join('; ')
@@ -541,7 +556,8 @@ export function resultTitle(fill: PositionFeedFill): string | undefined {
     return 'Awaiting on-chain redeem of winning outcome tokens'
   }
   if (isEntryErrorFill(fill)) {
-    return skipLabel(fill.skipReason) ?? 'Entry failed — bet was not opened'
+    const base = skipLabel(fill.skipReason) ?? 'Entry failed — bet was not opened'
+    return fill.skipDetail ? `${base} — ${fill.skipDetail}` : base
   }
   if (fill.result === 'Skipped') {
     const label = skipLabel(fill.skipReason)
@@ -558,10 +574,18 @@ export function resultTitle(fill: PositionFeedFill): string | undefined {
   }
   if (fill.result === 'Won') {
     const pnl = formatPnl(fill)
+    if (isProvisionalSettlement(fill)) {
+      const base = pnl && pnl !== '—' ? `Won? · ${pnl}` : 'Won?'
+      return `${base} · Binance candle; Polymarket confirmation pending`
+    }
     return pnl && pnl !== '—' ? `Won · ${pnl}` : 'Won'
   }
   if (fill.result === 'Lost') {
     const pnl = formatPnl(fill)
+    if (isProvisionalSettlement(fill)) {
+      const base = pnl && pnl !== '—' ? `Lost? · ${pnl}` : 'Lost?'
+      return `${base} · Binance candle; Polymarket confirmation pending`
+    }
     return pnl && pnl !== '—' ? `Lost · ${pnl}` : 'Lost'
   }
   if (fill.mode === 'Paper') return 'Simulated fill at live Polymarket prices'
@@ -653,6 +677,10 @@ export function entryWaveTitle(wave: PositionEntryWave): string | undefined {
   if (price) return `@ ${price}`
   if (order) return `order ${order}`
   return undefined
+}
+
+export function isProvisionalSettlement(fill: PositionFeedFill): boolean {
+  return fill.settlementStatus === 'provisional'
 }
 
 export function isAwaitingRedeem(fill: PositionFeedFill): boolean {

@@ -82,6 +82,9 @@ public sealed class TelegramTradingEventPublisher : ITradingEventPublisher
         }
     }
 
+    public Task PublishPositionsFeedChangedAsync(CancellationToken ct = default) =>
+        Task.CompletedTask;
+
     public Task PublishBalanceUpdatedAsync(double balance, int paperAccountId = 0, CancellationToken ct = default) =>
         Task.CompletedTask;
 

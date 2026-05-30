@@ -42,4 +42,7 @@ public interface IPolymarketRestTradingClient
         CancellationToken ct = default);
 
     Task<double?> GetOrderMatchedSharesAsync(string orderId, CancellationToken ct = default);
+
+    /// <summary>L2 API credentials for authenticated user WebSocket (derived on first CLOB client init).</summary>
+    Task<PolymarketWsApiAuth?> TryGetWsAuthAsync(CancellationToken ct = default);
 }

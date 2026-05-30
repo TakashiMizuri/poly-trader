@@ -24,7 +24,12 @@ builder.Services.AddControllers()
     });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(options =>
+{
+    options.KeepAliveInterval = TimeSpan.FromSeconds(10);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+    options.EnableDetailedErrors = builder.Environment.IsDevelopment();
+});
 builder.Services.AddSingleton<SignalRTradingEventPublisher>();
 builder.Services.AddSingleton<TelegramTradingEventPublisher>();
 builder.Services.AddSingleton<ITradingEventPublisher>(sp =>

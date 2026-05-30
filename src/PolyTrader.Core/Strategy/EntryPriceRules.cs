@@ -5,13 +5,10 @@ public static class EntryPriceRules
 {
     public const double MaxEntryPrice = 0.52;
 
-    /// <summary>Max outcome price when filling during the post-open patience window.</summary>
-    public const double PatienceMaxEntryPrice = 0.50;
-
-    public static readonly TimeSpan PatienceWaitDuration = TimeSpan.FromSeconds(30);
+    /// <summary>Same band as immediate entry (patience no longer uses a tighter cap).</summary>
+    public const double PatienceMaxEntryPrice = MaxEntryPrice;
 
     public static bool IsAllowed(double price) => price is > 0 and <= MaxEntryPrice;
 
-    public static bool IsPatienceFillAllowed(double price) =>
-        price is > 0 and <= PatienceMaxEntryPrice;
+    public static bool IsPatienceFillAllowed(double price) => IsAllowed(price);
 }

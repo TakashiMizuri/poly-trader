@@ -12,7 +12,8 @@ internal static class MakerLimitPricing
         double bidHint,
         double? askHint,
         decimal tickSize,
-        double stakeUsd)
+        double stakeUsd,
+        int askTickMargin = 1)
     {
         if (bidHint <= 0 || !double.IsFinite(bidHint) || stakeUsd < 0.01 || tickSize <= 0)
         {
@@ -28,7 +29,10 @@ internal static class MakerLimitPricing
         var candidate = bid;
         if (askHint is > 0 and <= 1)
         {
-            var cap = PolymarketOrderPricing.RoundDownToTick((decimal)askHint.Value - tickSize, tickSize);
+            var marginTicks = Math.Max(1, askTickMargin);
+            var cap = PolymarketOrderPricing.RoundDownToTick(
+                (decimal)askHint.Value - tickSize * marginTicks,
+                tickSize);
             if (cap > 0)
             {
                 candidate = Math.Min(candidate, cap);
@@ -53,6 +57,25 @@ internal static class MakerLimitPricing
         }
 
         return candidate;
+    }
+
+    /// <summary>Clamp limit so a post-only buy stays strictly below the current ask.</summary>
+    public static decimal CapPostOnlyAgainstAsk(
+        decimal price,
+        double askHint,
+        decimal tickSize,
+        int askTickMargin = 1)
+    {
+        if (askHint is not > 0 and <= 1)
+        {
+            return price;
+        }
+
+        var marginTicks = Math.Max(1, askTickMargin);
+        var cap = PolymarketOrderPricing.RoundDownToTick(
+            (decimal)askHint - tickSize * marginTicks,
+            tickSize);
+        return cap > 0 ? Math.Min(price, cap) : price;
     }
 
     private static decimal CapToAffordablePrice(decimal price, decimal tickSize, double stakeUsd)

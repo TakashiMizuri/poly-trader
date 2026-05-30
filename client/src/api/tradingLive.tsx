@@ -31,6 +31,8 @@ export type TradingLiveEvent =
   | 'EngineStatus'
   | 'MarketWindowUpdated'
   | 'TradePlaced'
+  | 'EntryFailed'
+  | 'PositionsFeedChanged'
   | 'CandleClosed'
 
 type TradingLiveContextValue = {
@@ -83,6 +85,8 @@ export function TradingLiveProvider({ children }: { children: ReactNode }) {
     conn.on('EngineStatus', () => emit('EngineStatus'))
     conn.on('MarketWindowUpdated', () => emit('MarketWindowUpdated'))
     conn.on('TradePlaced', () => emit('TradePlaced'))
+    conn.on('EntryFailed', () => emit('EntryFailed'))
+    conn.on('PositionsFeedChanged', () => emit('PositionsFeedChanged'))
     conn.on('CandleClosed', () => emit('CandleClosed'))
     conn.on('LogEntry', (entry: LiveLogEntry) => {
       setLogs((prev) => {

@@ -52,7 +52,7 @@ flowchart TD
     B -->|да| Z[Выход]
     B -->|нет| C[Рынок Polymarket + bid/ask]
     C --> D{bid/ask в 0, 0.52]?}
-    D -->|нет| E[Patience до 30 с, коридор 0, 0.50]
+    D -->|нет| E[Patience до maxWait с, коридор 0, 0.52]
     E --> F{Fill?}
     F -->|да| T[Запись Trade]
     F -->|нет| S[Skip entry_price_out_of_range]
@@ -79,20 +79,20 @@ flowchart TD
 
 Все новые **лимитные** входы ограничены константами в `EntryPriceRules`:
 
-| Правило | Константа | Диапазон | Где применяется |
-|--------|-----------|----------|-----------------|
+| Правило | Константа / env | Диапазон | Где применяется |
+|--------|-----------------|----------|-----------------|
 | Основной коридор | `MaxEntryPrice = 0.52` | `(0, 0.52]` | Немедленный вход; волна 1 и волна 2 maker; перекотировка после post-only cross |
-| Patience | `PatienceMaxEntryPrice = 0.50` | `(0, 0.50]` | Окно ожидания после дорогой котировки на открытии |
-| Длительность patience | `PatienceWaitDuration` | 30 с | `EntryPatienceExecutor` |
+| Patience | `PatienceMaxEntryPrice` (= 0.52 по умолчанию) | `(0, 0.52]` | Окно ожидания после дорогой котировки на открытии |
+| Длительность patience | `POLYTRADER_ENTRY_MAX_WAIT_SECONDS` | 1–180 с (default **60**) | `EntryPatienceExecutor`; также clamp до `windowEnd − 30s` |
 
 Проверки:
 
 - `EntryPriceRules.IsAllowed(price)` — основной коридор.
-- `EntryPriceRules.IsPatienceFillAllowed(price)` — patience.
+- `EntryPriceRules.IsPatienceFillAllowed(price)` — **тот же** коридор, что и немедленный вход (исправление patience paradox).
 
 **Важно:** для режима **Market** на первом шаге в gate используется **ask**, а не bid. Maker-режимы используют **best bid**.
 
-Patience **уже**, чем основной вход: если на открытии bid = 0.51, немедленный вход возможен (≤ 0.52), patience не запускается. Patience включается только когда котировка **строго выше 0.52** (например 0.55 на открытии).
+Patience запускается, когда котировка **строго выше 0.52** (например 0.55 на открытии). Если bid = 0.51 — немедленный вход (≤ 0.52), patience не нужен.
 
 ---
 
@@ -141,11 +141,13 @@ Paper: для limit-режимов симуляция использует bid; 
 
 Источники: CLOB REST / WebSocket (`ResolveMakerBidPriceAsync`, `ResolveAskPriceAsync`).
 
+**Live maker:** перед каждым `PlaceOrderAsync` котировки **обновляются с REST** (`RefreshQuoteAsync`). Без валидного **ask** post-only ордер **не выставляется** (защита от `order crossed the book`). Для превью/gate также используется **market WebSocket** (`best_bid_ask`, `book`, `price_change`) при свежести &lt; `POLYTRADER_WS_QUOTE_MAX_AGE_MS`. Fill ордеров ускоряется **user WebSocket** (`size_matched` на канале user).
+
 ### 5. Ветвление по цене
 
 ```
 if quoteForPriceGate NOT in (0, 0.52]:
-    → EntryPatienceExecutor.Start()   // фон, до 30 с
+    → EntryPatienceExecutor.Start()   // фон, до POLYTRADER_ENTRY_MAX_WAIT_SECONDS (default 60s)
 else:
     → немедленный расчёт стейка и PlaceEntryOrderAsync
 ```
@@ -204,12 +206,12 @@ else:
 1. Проверка: движок ещё `IsRunning`, нет дубликата trade/skip.
 2. Баланс и стейк (с учётом режима, для sizing в patience используется `PatienceMaxEntryPrice` как опорный bid).
 3. **Live:** `PlacePatienceEntryOrderAsync` → **одна волна** maker:
-   - bid-hint = **0.50** (`PatienceMaxEntryPrice`);
-   - ожидание fill = **30 с** (`PatienceWaitDuration`);
+   - bid-hint = `PatienceMaxEntryPrice` (default **0.52**);
+   - ожидание fill = `POLYTRADER_ENTRY_MAX_WAIT_SECONDS` (default **60** с, max 180);
    - **не** используется двухволновая схема.
-4. После fill проверка: итоговая цена входа в `(0, 0.50]`; иначе fill отбрасывается.
-5. **Paper:** poll bid каждые 2 с; при bid ≤ 0.50 — мгновенный «fill» по `min(bid, 0.50)`.
-6. Таймаут 30 с без fill → skip `entry_price_out_of_range`.
+4. После fill проверка: итоговая цена входа в `(0, PatienceMaxEntryPrice]`; иначе fill отбрасывается.
+5. **Paper:** poll bid каждые 2 с; при bid ≤ PatienceMaxEntryPrice — мгновенный «fill» по `min(bid, PatienceMaxEntryPrice)`.
+6. Таймаут без fill → skip `entry_price_out_of_range`.
 
 UI/лента: состояние ожидания через `IEntryWaitTracker` (`EntryWaitState`).
 
@@ -389,8 +391,8 @@ remainder < $0.01                      →  SUCCESS (остаток копееч
 | `balance_unavailable` | Не прочитали USDC с CLOB |
 | `insufficient_balance` | Баланс / стейк ниже минимума |
 | `clob_min_order_size` | Стейк не тянет 5 shares @ bid |
-| `entry_price_out_of_range` | Patience 30 с без fill в (0, 0.50] |
-| `order_failed` | CLOB вернул ошибку на немедленном входе |
+| `entry_price_out_of_range` | Patience без fill в (0, 0.52] |
+| `order_failed` | CLOB вернул ошибку на немедленном входе (текст в `SkippedBets.SkipDetail`) |
 
 Частичные maker-fill без достаточных shares обычно дают `order_failed` с текстом про insufficient fill, без записи `Trades`.
 
@@ -401,9 +403,16 @@ remainder < $0.01                      →  SUCCESS (остаток копееч
 | Параметр | Где | Описание |
 |----------|-----|----------|
 | `LiveEntryOrderMode` | Engine settings / API | `Limit`, `Market`, `LimitElseMarket` |
+| `POLYTRADER_ENTRY_MAX_WAIT_SECONDS` | `.env` | Max patience wait (1–180, default **60**) |
+| `POLYTRADER_PATIENCE_MAX_ENTRY_PRICE` | `.env` | Optional override patience band (default 0.52) |
 | `POLYTRADER_LIVE_MAKER_FILL_WAIT_SECONDS` | `.env` | Таймаут волны 1 (≥ 1) |
 | `POLYTRADER_LIVE_MAKER_REMAINDER_FILL_WAIT_SECONDS` | `.env` | Таймаут волны 2 (≥ 1) |
 | `POLYMARKET_PRIVATE_KEY` | `.env` | Без ключа live-ордера не отправляются |
+| `POLYTRADER_POST_ONLY_ASK_TICK_MARGIN` | `.env` | Тиков ниже ask при расчёте лимита (default **1**) |
+| `POLYTRADER_POST_ONLY_CROSS_TICK_RETRIES` | `.env` | Повторы вниз при cross (default **5**) |
+| `POLYTRADER_ENTRY_OPEN_DELAY_MS` | `.env` | Пауза после открытия 5m свечи (default **300**, 0=выкл) |
+| `POLYTRADER_WS_QUOTE_MAX_AGE_MS` | `.env` | Макс. возраст WS-котировки для gate (default **500**) |
+| `POLYTRADER_MAKER_FILL_POLL_MS` | `.env` | Интервал REST poll fill (default **250**) |
 
 После смены env на VPS: пересоздать контейнер **api** (см. `deploy/OPERATIONS.ru.md`).
 
@@ -449,14 +458,14 @@ remainder < $0.01                      →  SUCCESS (остаток копееч
 
 ### D — Patience
 
-- На открытии bid 0.55 → patience 30 с.
-- Через 12 с bid 0.49 → одиночный maker @ ≤ 0.50, fill.
-- Trade с ценой ≤ 0.50.
+- На открытии bid 0.55 → patience до 60 с (configurable).
+- Через 12 с bid 0.49 → одиночный maker @ ≤ 0.52, fill.
+- Trade с ценой ≤ 0.52.
 
 ### E — Дорого с самого начала, patience не помог
 
 - Bid 0.60 на открытии → patience.
-- 30 с bid не опускался ≤ 0.50 → skip `entry_price_out_of_range`.
+- 60 с bid не опускался ≤ 0.52 → skip `entry_price_out_of_range`.
 
 ---
 
