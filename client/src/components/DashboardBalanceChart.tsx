@@ -201,7 +201,7 @@ export function DashboardBalanceChart({
   const cacheKey = `api/balance/history:${paperAccountId ?? 'live'}:${tradingMode ?? ''}`
 
   const fetchHistory = useCallback(async () => {
-    const params = new URLSearchParams({ limit: '500' })
+    const params = new URLSearchParams()
     if (paperAccountId != null) {
       params.set('paperAccountId', String(paperAccountId))
     } else {

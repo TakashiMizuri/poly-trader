@@ -29,7 +29,7 @@ public sealed class BalanceHistoryService(IPolymarketClobService clob)
         PolyTraderDbContext db,
         TradingMode mode,
         int? paperAccountId,
-        int limit = 500,
+        int? limit = null,
         CancellationToken ct = default)
     {
         var settings = await db.EngineSettings.AsNoTracking().FirstAsync(ct);
@@ -60,11 +60,17 @@ public sealed class BalanceHistoryService(IPolymarketClobService clob)
             .Where(b => b.PaperAccountId == contextId)
             .ToListAsync(ct);
 
-        snapshots = snapshots
+        IEnumerable<(BalanceSnapshotEntity Snap, long ChartTime)> orderedSnapshots = snapshots
             .Select(s => (Snap: s, ChartTime: SnapshotChartTime(s)))
             .Where(x => x.ChartTime > 0)
-            .OrderByDescending(x => x.ChartTime)
-            .Take(limit)
+            .OrderByDescending(x => x.ChartTime);
+
+        if (limit is > 0)
+        {
+            orderedSnapshots = orderedSnapshots.Take(limit.Value);
+        }
+
+        snapshots = orderedSnapshots
             .OrderBy(x => x.ChartTime)
             .Select(x => x.Snap)
             .ToList();
@@ -99,17 +105,22 @@ public sealed class BalanceHistoryService(IPolymarketClobService clob)
         PolyTraderDbContext db,
         TradingMode mode,
         int tradeContextId,
-        int limit,
+        int? limit,
         CancellationToken ct)
     {
-        var trades = await db.Trades.AsNoTracking()
+        IQueryable<TradeEntity> tradesQuery = db.Trades.AsNoTracking()
             .Where(t => t.Mode == mode
                 && t.PaperAccountId == tradeContextId
                 && t.Won != null)
             .OrderByDescending(t => t.CandleTime)
-            .ThenByDescending(t => t.Id)
-            .Take(limit)
-            .ToListAsync(ct);
+            .ThenByDescending(t => t.Id);
+
+        if (limit is > 0)
+        {
+            tradesQuery = tradesQuery.Take(limit.Value);
+        }
+
+        var trades = await tradesQuery.ToListAsync(ct);
 
         trades.Reverse();
 

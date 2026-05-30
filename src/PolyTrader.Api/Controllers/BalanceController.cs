@@ -72,7 +72,7 @@ public sealed class BalanceController : ControllerBase
 
     [HttpGet("history")]
     public async Task<ActionResult<object>> History(
-        [FromQuery] int limit = 500,
+        [FromQuery] int? limit = null,
         [FromQuery] int? paperAccountId = null,
         [FromQuery] string? mode = null,
         CancellationToken ct = default)
