@@ -59,7 +59,7 @@ export function AccountMetricsBar({
   return (
     <Panel
       className={cn(
-        'flex min-h-0 min-w-0 max-w-full flex-wrap items-stretch divide-y divide-border sm:flex-nowrap sm:divide-x sm:divide-y-0',
+        'flex min-h-0 min-w-0 max-w-full flex-nowrap items-stretch divide-x divide-border',
         className,
       )}
     >
@@ -84,7 +84,7 @@ export function AccountMetric({
   return (
     <div
       className={cn(
-        'flex min-w-0 flex-1 flex-col justify-center px-4 py-3 sm:min-w-[7.5rem]',
+        'flex min-w-0 flex-1 flex-col justify-center px-3 py-2.5 sm:min-w-[7.5rem] sm:px-4 sm:py-3',
         className,
       )}
     >
@@ -94,7 +94,7 @@ export function AccountMetric({
         </p>
         {badge}
       </div>
-      <p className="mt-1 text-lg font-semibold tabular-nums text-primary sm:text-xl">
+      <p className="mt-1 text-base font-semibold tabular-nums text-primary sm:text-xl">
         {value}
       </p>
       {hint ? (

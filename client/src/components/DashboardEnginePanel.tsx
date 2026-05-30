@@ -60,7 +60,7 @@ export function DashboardEnginePanel({
     return (
       <Panel
         className={cn(
-          'flex min-h-0 w-full max-w-full shrink-0 flex-row divide-x divide-border sm:min-h-[7.25rem] sm:w-fit',
+          'flex min-h-0 w-max min-w-0 max-w-full shrink-0 flex-row divide-x divide-border sm:min-h-[7.25rem]',
           className,
         )}
       >
@@ -70,6 +70,8 @@ export function DashboardEnginePanel({
             className={cn(
               sectionClass,
               'gap-2',
+              paperTradingEnabled && i === 0 && 'hidden sm:flex',
+              i === sectionCount - 1 && 'min-w-[5.75rem] flex-none sm:min-w-[7.5rem]',
             )}
           >
             <Skeleton shimmer={false} className="h-3 w-12 rounded" />
@@ -150,12 +152,17 @@ export function DashboardEnginePanel({
     <>
       <Panel
         className={cn(
-          'flex min-h-0 w-full min-w-0 max-w-full shrink-0 flex-row flex-nowrap items-stretch divide-x divide-border sm:min-h-[7.25rem] sm:w-fit',
+          'flex min-h-0 w-max min-w-0 max-w-full shrink-0 flex-row flex-nowrap items-stretch divide-x divide-border sm:min-h-[7.25rem]',
           className,
         )}
       >
         {paperTradingEnabled ? (
-          <div className={cn(sectionClass, 'min-w-0 flex-1 sm:min-w-[8.5rem] sm:flex-none')}>
+          <div
+            className={cn(
+              sectionClass,
+              'hidden min-w-0 flex-1 sm:min-w-[8.5rem] sm:flex sm:flex-none',
+            )}
+          >
             <p className={labelClass}>Mode</p>
             <div
               className="mt-1.5 flex w-full max-w-none rounded-lg border border-border bg-background p-0.5 sm:mt-2 sm:max-w-[8.5rem]"
@@ -205,8 +212,8 @@ export function DashboardEnginePanel({
           </div>
         ) : null}
 
-        <div className={cn(sectionClass, 'min-w-0 flex-1 sm:min-w-[7.5rem] sm:flex-none')}>
-          <div className="flex items-center gap-2">
+        <div className={cn(sectionClass, 'min-w-[5.75rem] flex-none sm:min-w-[7.5rem]')}>
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <p className={labelClass}>Engine</p>
             <StatusBadge
               tone={isRunning ? 'live' : 'neutral'}

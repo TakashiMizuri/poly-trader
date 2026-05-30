@@ -172,7 +172,7 @@ export function DashboardPage() {
 
   return (
     <div className="flex w-full min-w-0 max-w-full flex-col gap-3 p-3 lg:h-full lg:min-h-0 md:gap-4 md:p-4">
-      <header className="grid min-w-0 shrink-0 gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-stretch">
+      <header className="grid min-w-0 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-stretch gap-2 sm:gap-3">
         <DashboardBalancePanel
           settings={settings}
           balance={balance}
@@ -184,7 +184,7 @@ export function DashboardPage() {
           settings={settings}
           onSettingsSaved={applyAccountSettings}
           onUpdated={refreshAccount}
-          className="min-w-0 w-full lg:w-max lg:max-w-full"
+          className="min-w-0 w-max max-w-[42vw] shrink-0 sm:max-w-none"
         />
       </header>
 

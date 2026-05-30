@@ -58,7 +58,7 @@ export function DashboardBalancePanel({
   if (pending) {
     const skeletonCount = paperTradingEnabled ? 2 : 1
     return (
-      <AccountMetricsBar className={cn('min-h-[5.5rem] shrink-0', className)}>
+      <AccountMetricsBar className={cn('min-h-[4.75rem] shrink-0 sm:min-h-[5.5rem]', className)}>
         {Array.from({ length: skeletonCount }, (_, i) => (
           <div
             key={i}
@@ -74,7 +74,7 @@ export function DashboardBalancePanel({
   }
 
   return (
-    <AccountMetricsBar className={cn('min-h-[5.5rem] shrink-0', className)}>
+    <AccountMetricsBar className={cn('min-h-[4.75rem] shrink-0 sm:min-h-[5.5rem]', className)}>
       {paperTradingEnabled ? (
         <>
           <AccountMetric
