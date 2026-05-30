@@ -40,7 +40,6 @@ import {
   resolveDisplayedOpenFill,
   resolveDisplayedSkipFill,
   resolveDisplayedWaitingFill,
-  waitingEntryLabel,
   type PositionFeedFill,
   type PositionFeedGroup,
   sortPositionFeedGroups,
@@ -307,10 +306,6 @@ function PositionBlock({
   const openFill = resolveDisplayedOpenFill(group, allGroups)
   const skipFill = resolveDisplayedSkipFill(group, allGroups)
   const waitingFill = resolveDisplayedWaitingFill(group, allGroups)
-  const patience = useEntryPatienceCountdown(
-    waitingFill?.entryWaitStartedMs,
-    waitingFill?.entryWaitExpiresMs,
-  )
   const displayedFills = resolveDisplayedFills(group, allGroups)
   const hasOpenBet = openFill != null || groupHasOpenBet(group)
   const awaitingEntry =

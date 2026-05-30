@@ -14,8 +14,13 @@
 **/.vs
 **/.idea
 **/tmp_*
+analyze/
 references/
+reports/data/
+scripts/
 tests/
+docs/
+deploy/
 client/node_modules/
 client/dist/
 *.md

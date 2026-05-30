@@ -1,12 +1,41 @@
+# Build outputs
 bin/
 obj/
 node_modules/
 dist/
+dist-ssr/
+
+# Local databases
 *.db
 *.db-shm
 *.db-wal
+
+# Secrets & runtime
 .env
 logs/
+
+# Local analysis (exported API / trade logs)
+analyze/
+
+# Vendored reference repos (dev only; ~40MB+ in git)
+references/
+
+# Regenerated backtest CSV/JSON (see scripts/backtest_vs_prod_dashboard.py)
+reports/data/
+
+# Python tooling
+__pycache__/
+*.py[cod]
+.Python
+
+# Logs & temp
+*.log
+tmp_*
+
+# OS / IDE
 .DS_Store
+Thumbs.db
 .idea/
 .vs/
+*.user
+*.suo
