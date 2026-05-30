@@ -1681,6 +1681,17 @@ public sealed class TradingEngineHostedService : BackgroundService
 
         if (IsEntryErrorSkipReason(skipReason))
         {
+            _tradeLog.Warning(
+                "SKIP candle={CandleTime} mode={Mode} reason={Reason} detail={Detail} side={Side} trend={Trend} market={MarketId} account={AccountId}",
+                candleTime,
+                settings.TradingMode,
+                skipReason,
+                detail ?? "(none)",
+                side ?? "(none)",
+                trend ?? "(none)",
+                resolvedMarketId.Value,
+                contextId);
+
             _logger.LogWarning(
                 "Recorded entry error candle {CandleTime} reason={Reason} detail={Detail} mode={Mode} account={AccountId} market={MarketId}",
                 candleTime,
@@ -1708,6 +1719,17 @@ public sealed class TradingEngineHostedService : BackgroundService
         }
         else
         {
+            _tradeLog.Information(
+                "SKIP candle={CandleTime} mode={Mode} reason={Reason} detail={Detail} side={Side} trend={Trend} market={MarketId} account={AccountId}",
+                candleTime,
+                settings.TradingMode,
+                skipReason,
+                detail ?? "(none)",
+                side ?? "(none)",
+                trend ?? "(none)",
+                resolvedMarketId.Value,
+                contextId);
+
             _logger.LogInformation(
                 "Recorded skip candle {CandleTime} reason={Reason} mode={Mode} account={AccountId} market={MarketId}",
                 candleTime,

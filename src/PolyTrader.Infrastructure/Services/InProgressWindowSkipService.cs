@@ -4,6 +4,7 @@ using PolyTrader.Core.Models;
 using PolyTrader.Infrastructure.Binance;
 using PolyTrader.Infrastructure.Data;
 using PolyTrader.Infrastructure.Entities;
+using PolyTrader.Infrastructure.Logging;
 using PolyTrader.Infrastructure.Polymarket;
 
 namespace PolyTrader.Infrastructure.Services;
@@ -16,6 +17,7 @@ public sealed class InProgressWindowSkipService(
     PolyTraderDbContext db,
     IBinanceMarketService binance,
     IPolymarketGammaService gamma,
+    ITradeExecutionLogger tradeLog,
     ILogger<InProgressWindowSkipService> logger)
 {
     /// <summary>Allow a few seconds after window open before treating entry as missed.</summary>
@@ -163,6 +165,16 @@ public sealed class InProgressWindowSkipService(
         });
 
         await db.SaveChangesAsync(ct);
+        tradeLog.Information(
+            "SKIP candle={CandleTime} mode={Mode} reason={Reason} detail={Detail} side={Side} trend={Trend} market={MarketId} account={AccountId}",
+            candleTimeSec,
+            settings.TradingMode,
+            "engine_stopped",
+            "(none)",
+            "(none)",
+            "(none)",
+            market.Id,
+            contextId);
         logger.LogInformation(
             "Recorded engine_stopped skip for in-progress candle {CandleTime} mode={Mode} account={AccountId} market={MarketId}",
             candleTimeSec,
