@@ -9,7 +9,7 @@ namespace PolyTrader.Infrastructure.Logging;
 /// </summary>
 public static class EntryAuditLog
 {
-    private static readonly ILogger Logger =
+    private static ILogger Logger =>
         Log.ForContext("SourceContext", "PolyTrader.EntryAudit");
 
     public static void Skip(

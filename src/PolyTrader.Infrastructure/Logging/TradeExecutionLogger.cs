@@ -6,13 +6,6 @@ namespace PolyTrader.Infrastructure.Logging;
 
 public sealed class TradeExecutionLogger : ITradeExecutionLogger
 {
-    private readonly ILogger _logger;
-
-    public TradeExecutionLogger()
-    {
-        _logger = TradeExecutionLog.RequireLogger();
-    }
-
     public void Debug(string messageTemplate, params object?[] propertyValues) =>
         Write(LogEventLevel.Debug, null, messageTemplate, propertyValues);
 
@@ -25,18 +18,19 @@ public sealed class TradeExecutionLogger : ITradeExecutionLogger
     public void Error(Exception? exception, string messageTemplate, params object?[] propertyValues) =>
         Write(LogEventLevel.Error, exception, messageTemplate, propertyValues);
 
-    private void Write(
+    private static void Write(
         LogEventLevel level,
         Exception? exception,
         string messageTemplate,
         object?[] propertyValues)
     {
-        if (!_logger.IsEnabled(level))
+        var logger = TradeExecutionLog.RequireLogger();
+        if (!logger.IsEnabled(level))
         {
             return;
         }
 
-        _logger.Write(level, exception, messageTemplate, propertyValues);
+        logger.Write(level, exception, messageTemplate, propertyValues);
     }
 }
 
@@ -61,6 +55,11 @@ public static class TradeExecutionLog
     public static void Initialize(IConfiguration configuration, string logDirectory)
     {
         Directory.CreateDirectory(logDirectory);
+        if (_logger is IDisposable previous)
+        {
+            previous.Dispose();
+        }
+
         _logger = BuildLogger(configuration, logDirectory);
         var filePrefix = Path.Combine(logDirectory, "trade-execution");
         _logger.Information(
