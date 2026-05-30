@@ -252,7 +252,7 @@ public sealed class TelegramBotHostedService : BackgroundService
             limit: 200,
             ct);
 
-        if (history.Actual.Count == 0 && history.Expected.Count == 0)
+        if (history.Actual.Count == 0)
         {
             await _notifier.SendMessageToChatAsync(chatId, "No balance history yet.", ct);
             return;

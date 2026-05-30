@@ -1,17 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using PolyTrader.Core.Models;
-using PolyTrader.Core.Strategy;
 using PolyTrader.Infrastructure.Data;
 using PolyTrader.Infrastructure.Entities;
 using PolyTrader.Infrastructure.Polymarket;
 
 namespace PolyTrader.Infrastructure.Services;
-
-/// <summary>Ideal Polymarket 1:1 entry price for the expected balance curve.</summary>
-internal static class BalanceHistoryIdealEntry
-{
-    public const double EntryPrice = 0.5;
-}
 
 public sealed record BalanceHistoryPoint(long Time, double Value);
 
@@ -20,7 +13,6 @@ public sealed record TradePayoutPoint(long Time, double Ratio, bool Won, int Tra
 public sealed record BalanceHistoryResult(
     double InitialBalance,
     IReadOnlyList<BalanceHistoryPoint> Actual,
-    IReadOnlyList<BalanceHistoryPoint> Expected,
     IReadOnlyList<TradePayoutPoint> PayoutRatios);
 
 public sealed class BalanceHistoryService(IPolymarketClobService clob)
@@ -42,14 +34,14 @@ public sealed class BalanceHistoryService(IPolymarketClobService clob)
             var id = paperAccountId ?? settings.ActivePaperAccountId;
             if (id is not int accountId)
             {
-                return new BalanceHistoryResult(0, [], [], []);
+                return new BalanceHistoryResult(0, [], []);
             }
 
             account = await db.PaperAccounts.AsNoTracking()
                 .FirstOrDefaultAsync(a => a.Id == accountId, ct);
             if (account == null)
             {
-                return new BalanceHistoryResult(0, [], [], []);
+                return new BalanceHistoryResult(0, [], []);
             }
 
             contextId = account.Id;
@@ -83,14 +75,6 @@ public sealed class BalanceHistoryService(IPolymarketClobService clob)
 
         actual = NormalizeChartSeries(actual);
 
-        var expected = await BuildExpectedSeriesAsync(
-            db,
-            account,
-            isPaper,
-            contextId,
-            actual,
-            ct);
-
         var payoutRatios = await BuildPayoutRatioSeriesAsync(
             db,
             mode,
@@ -98,7 +82,7 @@ public sealed class BalanceHistoryService(IPolymarketClobService clob)
             limit,
             ct);
 
-        return new BalanceHistoryResult(initialBalance, actual, expected, payoutRatios);
+        return new BalanceHistoryResult(initialBalance, actual, payoutRatios);
     }
 
     private static async Task<IReadOnlyList<TradePayoutPoint>> BuildPayoutRatioSeriesAsync(
@@ -229,105 +213,6 @@ public sealed class BalanceHistoryService(IPolymarketClobService clob)
         }
 
         return points;
-    }
-
-    /// <summary>
-    /// Expected equity curve: backtest-style chain on our real trades — each point is the previous
-    /// expected balance plus ideal 1:1 PnL (0.5 entry, default stake % and commission).
-    /// </summary>
-    private static async Task<IReadOnlyList<BalanceHistoryPoint>> BuildExpectedSeriesAsync(
-        PolyTraderDbContext db,
-        PaperAccountEntity? account,
-        bool isPaper,
-        int tradeContextId,
-        IReadOnlyList<BalanceHistoryPoint> actual,
-        CancellationToken ct)
-    {
-        if (actual.Count == 0)
-        {
-            return [];
-        }
-
-        var mode = isPaper ? TradingMode.Paper : TradingMode.Live;
-        var startSec = actual[0].Time;
-        var endSec = actual[^1].Time;
-
-        var trades = await db.Trades.AsNoTracking()
-            .Where(t => t.Mode == mode
-                && t.PaperAccountId == tradeContextId
-                && t.CandleTime >= startSec
-                && t.CandleTime <= endSec)
-            .OrderBy(t => t.CandleTime)
-            .ThenBy(t => t.Id)
-            .ToListAsync(ct);
-
-        var startBalance = isPaper && account != null
-            ? account.InitialBalance
-            : actual[0].Value;
-
-        var strategyParams = ExpectedCurveStrategyParams(startBalance);
-
-        var result = new List<BalanceHistoryPoint>(actual.Count);
-        var expectedBalance = startBalance;
-        var tradeIdx = 0;
-
-        foreach (var point in actual)
-        {
-            while (tradeIdx < trades.Count && trades[tradeIdx].CandleTime <= point.Time)
-            {
-                expectedBalance = ApplyIdealSettlement(
-                    expectedBalance,
-                    trades[tradeIdx],
-                    strategyParams);
-                tradeIdx++;
-            }
-
-            result.Add(new BalanceHistoryPoint(point.Time, expectedBalance));
-        }
-
-        return result;
-    }
-
-    /// <summary>Default backtest stake/fee (STRATEGY.md); not live engine overrides.</summary>
-    private static TrendBetStrategyParams ExpectedCurveStrategyParams(double startBalance)
-    {
-        var d = TrendBetStrategyParams.Default;
-        return new TrendBetStrategyParams
-        {
-            StartBalance = startBalance,
-            BetStake = d.BetStake,
-            BetStakeMode = d.BetStakeMode,
-            BetStakePercent = d.BetStakePercent,
-            CommissionPercent = d.CommissionPercent,
-            MaxBetStakeUsd = d.MaxBetStakeUsd,
-            BlendFade2 = d.BlendFade2,
-        };
-    }
-
-    /// <summary>Advance expected balance after one settled trade (stake from balance before bet).</summary>
-    private static double ApplyIdealSettlement(
-        double expectedBalance,
-        TradeEntity trade,
-        TrendBetStrategyParams parameters)
-    {
-        if (trade.Won is not bool won)
-        {
-            return expectedBalance;
-        }
-
-        var stake = BetStakeResolver.ResolveForBalance(expectedBalance, parameters);
-        if (stake is not > 0)
-        {
-            return expectedBalance;
-        }
-
-        var (pnl, _) = TrendBetStrategySimulator.ComputeBetPnl(
-            won,
-            stake.Value,
-            parameters.CommissionPercent,
-            BalanceHistoryIdealEntry.EntryPrice);
-
-        return SafeBetStake.ClampBalanceAfterBet(expectedBalance + pnl);
     }
 
     /// <summary>Sort ascending by time and keep the last value per timestamp (lightweight-charts requirement).</summary>

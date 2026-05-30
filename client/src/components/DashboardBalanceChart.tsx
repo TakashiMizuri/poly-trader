@@ -35,7 +35,6 @@ export interface TradePayoutPoint {
 export interface BalanceHistoryResponse {
   initialBalance: number
   actual: BalanceHistoryPoint[]
-  expected: BalanceHistoryPoint[]
   payoutRatios: TradePayoutPoint[]
   mode: string
   commissionPercent: number
@@ -106,30 +105,6 @@ function toPayoutHistogramData(
   return out
 }
 
-function EquityLegend() {
-  return (
-    <div className="flex flex-wrap items-center justify-end gap-3 text-[11px] text-muted-foreground">
-      <span className="flex items-center gap-1.5">
-        <span
-          className="inline-block h-0.5 w-4 rounded-full"
-          style={{ background: 'var(--color-chart-equity)' }}
-        />
-        Actual
-      </span>
-      <span className="flex items-center gap-1.5">
-        <span
-          className="inline-block h-0.5 w-4 rounded-full opacity-80"
-          style={{
-            background: 'var(--color-chart-expected)',
-            boxShadow: '0 0 0 1px var(--color-chart-expected)',
-          }}
-        />
-        Expected
-      </span>
-    </div>
-  )
-}
-
 function PayoutLegend() {
   return (
     <div className="flex flex-wrap items-center justify-end gap-3 text-[11px] text-muted-foreground">
@@ -195,7 +170,6 @@ export function DashboardBalanceChart({
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<IChartApi | null>(null)
   const actualRef = useRef<ISeriesApi<'Line'> | null>(null)
-  const expectedRef = useRef<ISeriesApi<'Line'> | null>(null)
   const payoutRef = useRef<ISeriesApi<'Histogram'> | null>(null)
 
   const cacheKey = `api/balance/history:${paperAccountId ?? 'live'}:${tradingMode ?? ''}`
@@ -228,10 +202,6 @@ export function DashboardBalanceChart({
     if (!container) return
 
     const palette = getChartPalette()
-    const expectedColor =
-      getComputedStyle(document.documentElement)
-        .getPropertyValue('--color-chart-expected')
-        .trim() || '#a78bfa'
     const chartTimeLocalization = buildChartTimeLocalization(timeFormat, useLocalTime)
 
     const chart = createChart(container, {
@@ -262,14 +232,6 @@ export function DashboardBalanceChart({
       visible: true,
     })
 
-    const expectedSeries = chart.addSeries(LineSeries, {
-      color: expectedColor,
-      lineWidth: 2,
-      lineStyle: 2,
-      title: 'Expected',
-      visible: true,
-    })
-
     const payoutSeries = chart.addSeries(HistogramSeries, {
       color: palette.up,
       priceFormat: {
@@ -283,7 +245,6 @@ export function DashboardBalanceChart({
 
     chartRef.current = chart
     actualRef.current = actualSeries
-    expectedRef.current = expectedSeries
     payoutRef.current = payoutSeries
 
     const ro = new ResizeObserver(() => {
@@ -299,7 +260,6 @@ export function DashboardBalanceChart({
       chart.remove()
       chartRef.current = null
       actualRef.current = null
-      expectedRef.current = null
       payoutRef.current = null
     }
   }, [theme, tradingMode, timeFormat, useLocalTime])
@@ -333,15 +293,13 @@ export function DashboardBalanceChart({
   useEffect(() => {
     const chart = chartRef.current
     const actual = actualRef.current
-    const expected = expectedRef.current
     const payout = payoutRef.current
-    if (!chart || !actual || !expected || !payout) return
+    if (!chart || !actual || !payout) return
 
     const palette = getChartPalette()
     const isEquity = chartView === 'equity'
 
     actual.applyOptions({ visible: isEquity })
-    expected.applyOptions({ visible: isEquity })
     payout.applyOptions({ visible: !isEquity })
 
     const priceScale = chart.priceScale('right')
@@ -350,7 +308,6 @@ export function DashboardBalanceChart({
         scaleMargins: { top: 0.1, bottom: 0.1 },
       })
       actual.setData(toSeriesData(actualSeries))
-      expected.setData(toSeriesData(history?.expected ?? []))
       payout.setData([])
       if (actualSeries.length > 0) {
         chart.timeScale().fitContent()
@@ -360,7 +317,6 @@ export function DashboardBalanceChart({
         scaleMargins: { top: 0.12, bottom: 0.12 },
       })
       actual.setData([])
-      expected.setData([])
       const bars = toPayoutHistogramData(
         payoutSeries,
         palette.up,
@@ -440,7 +396,7 @@ export function DashboardBalanceChart({
             </span>
           )}
           <span className="hidden sm:contents">
-            {chartView === 'equity' ? <EquityLegend /> : <PayoutLegend />}
+            {chartView === 'payout' ? <PayoutLegend /> : null}
           </span>
         </div>
       }

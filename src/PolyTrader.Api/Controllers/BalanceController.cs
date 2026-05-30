@@ -86,7 +86,6 @@ public sealed class BalanceController : ControllerBase
         {
             initialBalance = result.InitialBalance,
             actual = result.Actual.Select(p => new { time = p.Time, value = p.Value }),
-            expected = result.Expected.Select(p => new { time = p.Time, value = p.Value }),
             payoutRatios = result.PayoutRatios.Select(p => new
             {
                 time = p.Time,

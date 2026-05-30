@@ -80,7 +80,6 @@
   --color-chart-up: var(--chart-up);
   --color-chart-down: var(--chart-down);
   --color-chart-equity: var(--chart-equity);
-  --color-chart-expected: var(--chart-expected);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -131,7 +130,6 @@
   --chart-up: #3dd6c6;
   --chart-down: #f07178;
   --chart-equity: #79c0ff;
-  --chart-expected: #a78bfa;
   --scrollbar-thumb: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
   --scrollbar-thumb-hover: color-mix(in oklab, var(--muted-foreground) 65%, transparent);
 }
@@ -168,7 +166,6 @@
   --chart-up: #0d9488;
   --chart-down: #dc2626;
   --chart-equity: #2563eb;
-  --chart-expected: #7c3aed;
   --scrollbar-thumb: color-mix(in oklab, var(--muted-foreground) 35%, transparent);
   --scrollbar-thumb-hover: color-mix(in oklab, var(--muted-foreground) 55%, transparent);
 }
