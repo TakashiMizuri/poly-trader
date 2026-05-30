@@ -232,6 +232,7 @@ export function DashboardBalanceChart({
       getComputedStyle(document.documentElement)
         .getPropertyValue('--color-chart-expected')
         .trim() || '#a78bfa'
+    const chartTimeLocalization = buildChartTimeLocalization(timeFormat, useLocalTime)
 
     const chart = createChart(container, {
       layout: {
@@ -244,10 +245,14 @@ export function DashboardBalanceChart({
       },
       crosshair: { mode: CrosshairMode.Normal },
       rightPriceScale: { borderColor: palette.border },
-      timeScale: { borderColor: palette.border, timeVisible: true },
+      localization: chartTimeLocalization.localization,
+      timeScale: {
+        borderColor: palette.border,
+        timeVisible: true,
+        ...chartTimeLocalization.timeScale,
+      },
       width: Math.max(1, Math.floor(container.clientWidth)),
       height: Math.max(1, Math.floor(container.clientHeight)),
-      ...buildChartTimeLocalization(timeFormat, useLocalTime),
     })
 
     const actualSeries = chart.addSeries(LineSeries, {
