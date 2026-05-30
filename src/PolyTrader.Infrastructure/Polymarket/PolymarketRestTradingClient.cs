@@ -22,10 +22,13 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
     private static readonly TimeSpan TransientRetryDelay = TimeSpan.FromSeconds(1);
 
     private readonly PolyTraderOptions _options;
+    private readonly EntryExecutionSettings _entryExecution;
     private readonly IPolymarketWalletResolver _wallet;
     private readonly IPolymarketOrderFillNotifier _fillNotifier;
     private readonly ITradeExecutionLogger _tradeLog;
     private readonly ILogger<PolymarketRestTradingClient> _logger;
+
+    private double MaxEntryPrice => _entryExecution.PatienceMaxEntryPrice;
     private PolymarketWsApiAuth? _wsAuth;
     private readonly SemaphoreSlim _initLock = new(1, 1);
     private readonly SemaphoreSlim _balanceLock = new(1, 1);
@@ -39,12 +42,14 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
 
     public PolymarketRestTradingClient(
         IOptions<PolyTraderOptions> options,
+        EntryExecutionSettings entryExecution,
         IPolymarketWalletResolver wallet,
         IPolymarketOrderFillNotifier fillNotifier,
         ITradeExecutionLogger tradeLog,
         ILogger<PolymarketRestTradingClient> logger)
     {
         _options = options.Value;
+        _entryExecution = entryExecution;
         _wallet = wallet;
         _fillNotifier = fillNotifier;
         _tradeLog = tradeLog;
@@ -477,41 +482,78 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                 $"Cannot derive post-only limit on {tokenId} (bid {bid:F4}, ask {ask:F4}, stake ${stakeUsd:F2})");
         }
 
-        if (!EntryPriceRules.IsAllowed(limit.Value))
+        if (!EntryPriceRules.IsAllowed(limit.Value, MaxEntryPrice))
         {
             return LiveMarketBuyOutcome.Fail(
-                $"Maker limit {limit.Value:F4} outside allowed entry band (0, {EntryPriceRules.MaxEntryPrice:F2}] "
+                $"Maker limit {limit.Value:F4} outside allowed entry band (0, {MaxEntryPrice:F2}] "
                 + $"on {tokenId} (bid {bid:F4}, ask {ask:F4})");
         }
 
         LogLimitAdjustment(bidPriceHint, ask, limit.Value, wave: 1, tokenId);
-        var wave = await ExecuteMakerLimitWaveAsync(
-            client,
-            tokenId,
-            stakeUsd,
-            bid,
-            ask,
-            tickSize,
-            refreshQuoteAsync,
-            fillWait,
-            entryKey?.DeriveClientOrderId(0),
-            ct);
+        var clientOrderId = entryKey?.DeriveClientOrderId(0);
+        string? lastReason = null;
 
-        if (wave.PlacementFailed)
+        for (var attempt = 1; attempt <= TransientRetryCount; attempt++)
         {
-            return LiveMarketBuyOutcome.Fail(wave.FailureReason ?? "Maker limit placement failed");
+            var wave = await ExecuteMakerLimitWaveAsync(
+                client,
+                tokenId,
+                stakeUsd,
+                bid,
+                ask,
+                tickSize,
+                refreshQuoteAsync,
+                fillWait,
+                clientOrderId,
+                ct);
+
+            if (!wave.PlacementFailed)
+            {
+                var waves = new List<LiveEntryWaveFill> { ToLiveEntryWaveFill(1, stakeUsd, wave) };
+                var priceNumerator = wave.MatchedShares * (wave.LimitPrice ?? limit.Value);
+                return BuildAggregatedMakerOutcome(
+                    tokenId,
+                    stakeUsd,
+                    wave.MatchedShares,
+                    priceNumerator,
+                    wave.OrderId,
+                    waves,
+                    wave.FilledStakeUsd);
+            }
+
+            lastReason = wave.FailureReason;
+
+            if (entryKey != null && clientOrderId is long salt)
+            {
+                var recovered = await TryRecoverEntryOrderAsync(
+                    client,
+                    salt,
+                    entryKey,
+                    tokenId,
+                    stakeUsd,
+                    bidPriceHint,
+                    ct);
+                if (recovered is { IsSuccess: true })
+                {
+                    return recovered;
+                }
+            }
+
+            if (IsDuplicateFailure(lastReason))
+            {
+                return LiveMarketBuyOutcome.Fail(
+                    "CLOB reported duplicate order but existing fill could not be recovered (no double-place retry)");
+            }
+
+            if (!IsTransientFailure(lastReason) || attempt == TransientRetryCount)
+            {
+                return LiveMarketBuyOutcome.Fail(lastReason ?? "Maker limit placement failed");
+            }
+
+            await Task.Delay(TransientRetryDelay, ct);
         }
 
-        var waves = new List<LiveEntryWaveFill> { ToLiveEntryWaveFill(1, stakeUsd, wave) };
-        var priceNumerator = wave.MatchedShares * (wave.LimitPrice ?? limit.Value);
-        return BuildAggregatedMakerOutcome(
-            tokenId,
-            stakeUsd,
-            wave.MatchedShares,
-            priceNumerator,
-            wave.OrderId,
-            waves,
-            wave.FilledStakeUsd);
+        return LiveMarketBuyOutcome.Fail(lastReason ?? "Maker limit placement failed");
     }
 
     private sealed record MakerLimitWaveResult(
@@ -553,10 +595,10 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                 $"Cannot derive post-only limit for wave 1 on {tokenId} (bid {wave1Bid:F4}, ask {wave1Ask:F4}, stake ${requestedStakeUsd:F2})");
         }
 
-        if (!EntryPriceRules.IsAllowed(wave1Limit.Value))
+        if (!EntryPriceRules.IsAllowed(wave1Limit.Value, MaxEntryPrice))
         {
             return LiveMarketBuyOutcome.Fail(
-                $"Maker wave 1 limit {wave1Limit.Value:F4} outside allowed entry band (0, {EntryPriceRules.MaxEntryPrice:F2}] "
+                $"Maker wave 1 limit {wave1Limit.Value:F4} outside allowed entry band (0, {MaxEntryPrice:F2}] "
                 + $"on {tokenId} (bid {wave1Bid:F4}, ask {wave1Ask:F4})");
         }
 
@@ -691,21 +733,21 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                 totalFilledStake);
         }
 
-        if (!EntryPriceRules.IsAllowed(wave2Limit.Value))
+        if (!EntryPriceRules.IsAllowed(wave2Limit.Value, MaxEntryPrice))
         {
             _logger.LogWarning(
                 "Skipping maker wave 2 for {TokenId}: limit {Limit:F4} outside allowed entry band (0, {Max:F2}] "
                 + "for remainder ${Remainder:F2} (bid {Bid:F4}, ask {Ask})",
                 tokenId,
                 wave2Limit.Value,
-                EntryPriceRules.MaxEntryPrice,
+                MaxEntryPrice,
                 remainderStake,
                 wave2Bid,
                 wave2Ask);
             if (totalMatchedShares < MinMatchedShares)
             {
                 return LiveMarketBuyOutcome.Fail(
-                    $"Maker entry not filled: limit {wave2Limit.Value:F4} outside allowed entry band (0, {EntryPriceRules.MaxEntryPrice:F2}] "
+                    $"Maker entry not filled: limit {wave2Limit.Value:F4} outside allowed entry band (0, {MaxEntryPrice:F2}] "
                     + $"for remainder ${remainderStake:F2} (bid {wave2Bid:F4}, ask {wave2Ask:F4})");
             }
 
@@ -945,12 +987,12 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
                     tickSize,
                     askTickMargin);
 
-                if (!EntryPriceRules.IsAllowed((double)price.Value))
+                if (!EntryPriceRules.IsAllowed((double)price.Value, MaxEntryPrice))
                 {
                     return new MakerLimitWaveResult(
                         PlacementFailed: true,
                         FailureReason:
-                            $"Post-only limit {price:F4} outside allowed entry band (0, {EntryPriceRules.MaxEntryPrice:F2}] "
+                            $"Post-only limit {price:F4} outside allowed entry band (0, {MaxEntryPrice:F2}] "
                             + $"(bid {bidHint:F4}, ask {askHint:F4})",
                         OrderId: null,
                         MatchedShares: 0,
@@ -1050,14 +1092,14 @@ public sealed class PolymarketRestTradingClient : IPolymarketRestTradingClient
 
                             if (repriced is > 0 && repriced != price.Value)
                             {
-                                if (!EntryPriceRules.IsAllowed((double)repriced.Value))
+                                if (!EntryPriceRules.IsAllowed((double)repriced.Value, MaxEntryPrice))
                                 {
                                     _logger.LogWarning(
                                         "Refusing maker limit re-price for {TokenId} above entry cap: {New:F4} "
                                         + "(allowed (0, {Max:F2}], bid {Bid:F4}, ask {Ask:F4})",
                                         tokenId,
                                         repriced,
-                                        EntryPriceRules.MaxEntryPrice,
+                                        MaxEntryPrice,
                                         reBid,
                                         reAsk);
                                 }

@@ -149,6 +149,22 @@ tail -f logs/polytrader-$(date +%Y%m%d).log
 tail -f logs/trade-execution-$(date +%Y%m%d).log
 ```
 
+**Нет `trade-execution-*.log`, но в UI был No entry?**
+
+1. Образ API **старше v1.7** (файл появился с отдельным trade-log) — пересобрать и пересоздать контейнер:
+   ```bash
+   bash deploy/update.sh
+   # или: $COMPOSE up -d --build --force-recreate api
+   ```
+2. В **основном** логе после обновления ищите строки `PolyTrader.EntryAudit` и `Entry skip` — дубликат пропусков (если trade-файл ещё не создался).
+3. При старте API в `polytrader-*.log` должна быть строка `Trade execution log active at /app/logs`.
+4. В контейнере (тот же bind mount `./logs` → `/app/logs`):
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml exec api ls -la /app/logs
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml exec api sh -c 'grep -E "Entry skip|PATIENCE_SKIP|Trade execution log" /app/logs/polytrader-*.log | tail -20'
+   ```
+5. Имя файла с датой: `trade-execution-20260531.log` (не `trade-execution.log` без даты).
+
 ### API `unhealthy` после `docker compose up`
 
 Частая причина: API падает при старте на миграциях EF (`PendingModelChangesWarning`). Посмотреть причину:

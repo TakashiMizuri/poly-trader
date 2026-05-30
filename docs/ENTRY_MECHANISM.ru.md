@@ -4,6 +4,7 @@
 
 Связанные материалы:
 
+- **Разрыв бэктест ↔ live (простым языком):** [BACKTEST_VS_LIVE_GAP.ru.md](./BACKTEST_VS_LIVE_GAP.ru.md)
 - Стратегия сигналов: [blend_fade2/STRATEGY.md](./blend_fade2/STRATEGY.md)
 - Эксплуатация на VPS: [deploy/OPERATIONS.ru.md](../deploy/OPERATIONS.ru.md)
 
@@ -205,7 +206,7 @@ else:
 
 1. Проверка: движок ещё `IsRunning`, нет дубликата trade/skip.
 2. Баланс и стейк (с учётом режима, для sizing в patience используется `PatienceMaxEntryPrice` как опорный bid).
-3. **Live:** `PlacePatienceEntryOrderAsync` → **одна волна** maker:
+3. **Live:** цикл опроса bid (как paper, каждые ~2 с) пока не истечёт patience; при bid в коридоре — `PlacePatienceEntryOrderAsync` → **две волны** maker (как немедленный вход), отдельный salt на каждую попытку patience; fill вне коридора **всё равно пишется в Trade** (позиция на бирже):
    - bid-hint = `PatienceMaxEntryPrice` (default **0.52**);
    - ожидание fill = `POLYTRADER_ENTRY_MAX_WAIT_SECONDS` (default **60** с, max 180);
    - **не** используется двухволновая схема.

@@ -38,9 +38,10 @@ public interface IPolymarketClobService
     Task<LiveMarketBuyOutcome> PlacePatienceEntryOrderAsync(
         string tokenId,
         double sizeUsd,
+        double bidPriceHint,
         double? askPriceHint = null,
         LiveEntryOrderKey? entryKey = null,
-        long? windowStartMs = null,
+        TimeSpan? fillWait = null,
         CancellationToken ct = default);
 }
 
@@ -241,9 +242,10 @@ public sealed class PolymarketClobService : IPolymarketClobService
     public async Task<LiveMarketBuyOutcome> PlacePatienceEntryOrderAsync(
         string tokenId,
         double sizeUsd,
+        double bidPriceHint,
         double? askPriceHint = null,
         LiveEntryOrderKey? entryKey = null,
-        long? windowStartMs = null,
+        TimeSpan? fillWait = null,
         CancellationToken ct = default)
     {
         if (!IsConfigured)
@@ -253,27 +255,48 @@ public sealed class PolymarketClobService : IPolymarketClobService
             return LiveMarketBuyOutcome.Fail(reason);
         }
 
-        var windowStart = windowStartMs ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var wait = _entryExecution.ResolvePatienceWait(windowStart);
         var maxBid = _entryExecution.PatienceMaxEntryPrice;
+        if (!EntryPriceRules.IsPatienceFillAllowed(bidPriceHint, maxBid))
+        {
+            return LiveMarketBuyOutcome.Fail(
+                $"Patience bid hint {bidPriceHint:F4} outside allowed band (0, {maxBid:F2}]");
+        }
+
+        var totalWait = fillWait ?? TimeSpan.FromSeconds(20);
+        var firstSeconds = Math.Max(5, (int)Math.Ceiling(totalWait.TotalSeconds * 0.65));
+        var remainderSeconds = Math.Max(3, (int)Math.Ceiling(totalWait.TotalSeconds) - firstSeconds);
+        var firstWait = TimeSpan.FromSeconds(firstSeconds);
+        var remainderWait = TimeSpan.FromSeconds(remainderSeconds);
+
         var (freshBid, freshAsk) = await RefreshQuoteAsync(tokenId, ct);
-        var bidHint = freshBid is > 0 ? Math.Min(maxBid, freshBid.Value) : maxBid;
+        var bidHint = freshBid is > 0
+            ? Math.Min(maxBid, freshBid.Value)
+            : Math.Min(maxBid, bidPriceHint);
+
+        if (!EntryPriceRules.IsAllowed(bidHint, maxBid))
+        {
+            return LiveMarketBuyOutcome.Fail(
+                $"Patience maker bid {bidHint:F4} outside allowed entry band (0, {maxBid:F2}] after refresh");
+        }
 
         _logger.LogInformation(
-            "Placing patience maker buy token {TokenId} notional ${Size:F2} bid hint {Bid:F4} (cap {Cap:F4}) wait {WaitSeconds}s wallet {Wallet}",
+            "Placing patience maker buy (2-wave) token {TokenId} notional ${Size:F2} bid hint {Bid:F4} (cap {Cap:F4}) "
+            + "wait {W1}s+{W2}s wallet {Wallet}",
             tokenId,
             sizeUsd,
             bidHint,
             maxBid,
-            wait.TotalSeconds,
+            firstWait.TotalSeconds,
+            remainderWait.TotalSeconds,
             _wallet.ResolveWalletAddress() ?? "unknown");
 
-        return await _trading.PlaceMakerLimitBuySingleWaveAsync(
+        return await _trading.PlaceMakerLimitBuyUsdAsync(
             tokenId,
             sizeUsd,
             bidHint,
             freshAsk ?? askPriceHint,
-            wait,
+            firstWait,
+            remainderWait,
             ct => RefreshQuoteAsync(tokenId, ct),
             entryKey,
             ct);

@@ -10,7 +10,7 @@ public sealed class TradeExecutionLogger : ITradeExecutionLogger
 
     public TradeExecutionLogger()
     {
-        _logger = TradeExecutionLog.CreateLogger();
+        _logger = TradeExecutionLog.RequireLogger();
     }
 
     public void Debug(string messageTemplate, params object?[] propertyValues) =>
@@ -47,10 +47,30 @@ public static class TradeExecutionLog
     public static ILogger CreateLogger() =>
         _logger ??= BuildLogger();
 
+    public static ILogger RequireLogger()
+    {
+        if (_logger == null)
+        {
+            throw new InvalidOperationException(
+                "Trade execution log is not initialized. Ensure SerilogBootstrap.Configure runs before resolving ITradeExecutionLogger.");
+        }
+
+        return _logger;
+    }
+
     public static void Initialize(IConfiguration configuration, string logDirectory)
     {
         Directory.CreateDirectory(logDirectory);
         _logger = BuildLogger(configuration, logDirectory);
+        var filePrefix = Path.Combine(logDirectory, "trade-execution");
+        _logger.Information(
+            "Trade execution log started directory={LogDirectory} filePrefix={FilePrefix}-YYYYMMDD.log",
+            logDirectory,
+            filePrefix);
+        EntryAuditLog.TradeChannel(
+            LogEventLevel.Information,
+            "Trade execution log active at {LogDirectory} (files: trade-execution-YYYYMMDD.log)",
+            logDirectory);
     }
 
     private static ILogger BuildLogger(

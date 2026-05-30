@@ -12,17 +12,20 @@ public sealed class LimitEntryPreviewService
     private readonly IPolymarketGammaService _gamma;
     private readonly IPolymarketClobService _clob;
     private readonly IPolymarketMarketWebSocket _marketWs;
+    private readonly EntryExecutionSettings _entryExecution;
 
     public LimitEntryPreviewService(
         PolyTraderDbContext db,
         IPolymarketGammaService gamma,
         IPolymarketClobService clob,
-        IPolymarketMarketWebSocket marketWs)
+        IPolymarketMarketWebSocket marketWs,
+        EntryExecutionSettings entryExecution)
     {
         _db = db;
         _gamma = gamma;
         _clob = clob;
         _marketWs = marketWs;
+        _entryExecution = entryExecution;
     }
 
     public async Task<LimitEntryPreview> BuildAsync(
@@ -86,11 +89,11 @@ public sealed class LimitEntryPreviewService
 
         if (referenceBid is > 0)
         {
-            if (!EntryPriceRules.IsAllowed(referenceBid.Value))
+            if (!EntryPriceRules.IsAllowed(referenceBid.Value, _entryExecution.PatienceMaxEntryPrice))
             {
                 canTrade = false;
                 blockReason =
-                    $"Entry bid {referenceBid.Value:F4} outside allowed (0, {EntryPriceRules.MaxEntryPrice:F2}]";
+                    $"Entry bid {referenceBid.Value:F4} outside allowed (0, {_entryExecution.PatienceMaxEntryPrice:F2}]";
             }
             else if (LiveEntryOrderModes.IsLimitElseMarket(entryOrderMode))
             {

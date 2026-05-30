@@ -22,6 +22,13 @@ public class EntryPriceRulesTests
     [InlineData(0.53, false)]
     public void IsPatienceFillAllowed_matches_immediate_band(double price, bool expected) =>
         Assert.Equal(expected, EntryPriceRules.IsPatienceFillAllowed(price));
+
+    [Theory]
+    [InlineData(0.50, 0.50, true)]
+    [InlineData(0.51, 0.50, false)]
+    [InlineData(0.49, 0.52, true)]
+    public void IsAllowed_respects_configured_max(double price, double max, bool expected) =>
+        Assert.Equal(expected, EntryPriceRules.IsAllowed(price, max));
 }
 
 public class EntryExecutionSettingsTests

@@ -165,6 +165,7 @@ public sealed class TelegramTradingEventPublisher : ITradingEventPublisher
         "no_market" => "No active market",
         "clob_min_order_size" => "Below Polymarket min order size",
         "entry_price_out_of_range" => "No entry",
+        "quote_unavailable" => "Quote unavailable",
         "no_signal" => "Skip",
         "waiting_for_entry" => "Waiting for entry",
         _ => skipReason.Replace('_', ' '),

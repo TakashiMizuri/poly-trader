@@ -7,6 +7,9 @@ public sealed class EntryExecutionSettings
     public const int MaxWaitSecondsCap = 180;
     public const int WindowEndSafetyMarginSeconds = 30;
 
+    /// <summary>Do not start patience when remaining window wait is below this (avoids fake 1s waits).</summary>
+    public const int MinPatienceWaitSeconds = 5;
+
     public int MaxWaitSeconds { get; init; } = DefaultMaxWaitSeconds;
 
     public double PatienceMaxEntryPrice { get; init; } = EntryPriceRules.MaxEntryPrice;

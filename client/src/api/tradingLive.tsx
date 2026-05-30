@@ -35,13 +35,15 @@ export type TradingLiveEvent =
   | 'PositionsFeedChanged'
   | 'CandleClosed'
 
+type TradingLiveHandler = (payload?: unknown) => void
+
 type TradingLiveContextValue = {
   liveConnected: boolean
   /** False until the first hub start attempt finishes (avoids "Reconnecting" flash on load). */
   liveConnectAttempted: boolean
   logs: LiveLogEntry[]
   clearLogs: () => void
-  subscribe: (event: TradingLiveEvent, handler: () => void) => () => void
+  subscribe: (event: TradingLiveEvent, handler: TradingLiveHandler) => () => void
 }
 
 const TradingLiveContext = createContext<TradingLiveContextValue | null>(null)
@@ -52,15 +54,15 @@ export function TradingLiveProvider({ children }: { children: ReactNode }) {
   const [logs, setLogs] = useState<LiveLogEntry[]>([])
   const connRef = useRef<HubConnection | null>(null)
   const handlersRef = useRef(
-    new Map<TradingLiveEvent, Set<() => void>>(),
+    new Map<TradingLiveEvent, Set<TradingLiveHandler>>(),
   )
 
-  const emit = useCallback((event: TradingLiveEvent) => {
-    handlersRef.current.get(event)?.forEach((h) => h())
+  const emit = useCallback((event: TradingLiveEvent, payload?: unknown) => {
+    handlersRef.current.get(event)?.forEach((h) => h(payload))
   }, [])
 
   const subscribe = useCallback(
-    (event: TradingLiveEvent, handler: () => void) => {
+    (event: TradingLiveEvent, handler: TradingLiveHandler) => {
       let set = handlersRef.current.get(event)
       if (!set) {
         set = new Set()
@@ -84,8 +86,8 @@ export function TradingLiveProvider({ children }: { children: ReactNode }) {
     conn.on('BalanceUpdated', () => emit('BalanceUpdated'))
     conn.on('EngineStatus', () => emit('EngineStatus'))
     conn.on('MarketWindowUpdated', () => emit('MarketWindowUpdated'))
-    conn.on('TradePlaced', () => emit('TradePlaced'))
-    conn.on('EntryFailed', () => emit('EntryFailed'))
+    conn.on('TradePlaced', (payload: unknown) => emit('TradePlaced', payload))
+    conn.on('EntryFailed', (payload: unknown) => emit('EntryFailed', payload))
     conn.on('PositionsFeedChanged', () => emit('PositionsFeedChanged'))
     conn.on('CandleClosed', () => emit('CandleClosed'))
     conn.on('LogEntry', (entry: LiveLogEntry) => {
@@ -136,14 +138,14 @@ export function useTradingLive() {
 
 export function useTradingLiveEvent(
   event: TradingLiveEvent,
-  handler: () => void,
+  handler: TradingLiveHandler,
 ) {
   const { subscribe } = useTradingLive()
   const handlerRef = useRef(handler)
   handlerRef.current = handler
 
   useEffect(
-    () => subscribe(event, () => handlerRef.current()),
+    () => subscribe(event, (payload) => handlerRef.current(payload)),
     [event, subscribe],
   )
 }

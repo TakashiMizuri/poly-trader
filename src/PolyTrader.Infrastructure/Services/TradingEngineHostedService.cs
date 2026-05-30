@@ -62,6 +62,8 @@ public sealed class TradingEngineHostedService : BackgroundService
 
     private readonly IEntryPatienceExecutor _entryPatience;
 
+    private readonly IEntryWaitTracker _entryWaitTracker;
+
     private readonly ITradeExecutionLogger _tradeLog;
 
     private readonly EntryExecutionSettings _entryExecution;
@@ -107,6 +109,8 @@ public sealed class TradingEngineHostedService : BackgroundService
 
         IEntryPatienceExecutor entryPatience,
 
+        IEntryWaitTracker entryWaitTracker,
+
         ITradeExecutionLogger tradeLog,
 
         EntryExecutionSettings entryExecution,
@@ -136,6 +140,8 @@ public sealed class TradingEngineHostedService : BackgroundService
         _publisher = publisher;
 
         _entryPatience = entryPatience;
+
+        _entryWaitTracker = entryWaitTracker;
 
         _tradeLog = tradeLog;
 
@@ -623,28 +629,54 @@ public sealed class TradingEngineHostedService : BackgroundService
         await _publisher.PublishPositionsFeedChangedAsync(ct);
     }
 
+    private async Task PublishOpenedTradeAsync(
+        PolyTraderDbContext db,
+        TradeEntity trade,
+        CancellationToken ct)
+    {
+        if (trade.Market == null && trade.MarketId > 0)
+        {
+            await db.Entry(trade).Reference(t => t.Market).LoadAsync(ct);
+        }
+
+        await _publisher.PublishTradePlacedAsync(TradeEventDtoFactory.FromEntity(trade), ct);
+        await _publisher.PublishPositionsFeedChangedAsync(ct);
+
+        if (trade.Mode == TradingMode.Live)
+        {
+            var liveBal = await _clob.GetCollateralBalanceAsync(ct);
+            if (liveBal is > 0)
+            {
+                await _publisher.PublishBalanceUpdatedAsync(liveBal.Value, 0, ct);
+            }
+        }
+    }
+
     private async Task PublishTradesAndBalanceAsync(
         PolyTraderDbContext db,
         List<TradeEntity> trades,
         PaperAccountEntity? paperAccount,
         CancellationToken ct)
     {
-        if (trades.Count == 0)
+        var settlementTrades = trades.Where(t => t.Won != null).ToList();
+        if (settlementTrades.Count == 0)
         {
             return;
         }
 
         _logger.LogInformation(
-            "Publishing {Count} trade event(s) to clients",
-            trades.Count);
+            "Publishing {Count} settled trade event(s) to clients",
+            settlementTrades.Count);
 
-        foreach (var trade in trades)
+        foreach (var trade in settlementTrades)
         {
             await db.Entry(trade).Reference(t => t.Market).LoadAsync(ct);
             await _publisher.PublishTradePlacedAsync(TradeEventDtoFactory.FromEntity(trade), ct);
         }
 
-        if (paperAccount != null && trades.Exists(t => t.Won != null))
+        await _publisher.PublishPositionsFeedChangedAsync(ct);
+
+        if (paperAccount != null && settlementTrades.Count > 0)
         {
             _logger.LogInformation(
                 "Publishing paper balance update account={AccountId} balance=${Balance:F2}",
@@ -655,7 +687,7 @@ public sealed class TradingEngineHostedService : BackgroundService
                 paperAccount.Id,
                 ct);
         }
-        else if (trades.Exists(t => t.Mode == TradingMode.Live))
+        else if (settlementTrades.Exists(t => t.Mode == TradingMode.Live))
         {
             var liveBal = await _clob.GetCollateralBalanceAsync(ct);
             if (liveBal is > 0)
@@ -754,6 +786,13 @@ public sealed class TradingEngineHostedService : BackgroundService
                     targetCandleTime,
                     settings.TradingMode,
                     tradeContextId);
+                EntryAuditLog.Skip(
+                    targetCandleTime,
+                    settings.TradingMode.ToString(),
+                    "duplicate_entry_suppressed",
+                    "Entry target already claimed or completed this session",
+                    actions.Entry.Trend == MarketTrend.Long ? "Up" : "Down",
+                    actions.Entry.Trend.ToString());
             }
             else
             {
@@ -863,11 +902,37 @@ public sealed class TradingEngineHostedService : BackgroundService
                     {
                         // skip entry; balance_unavailable already recorded
                     }
-                    else if (!EntryPriceRules.IsAllowed(quoteForPriceGate))
+                    else if (!EntryPriceRules.IsAllowed(quoteForPriceGate, _entryExecution.PatienceMaxEntryPrice))
                     {
                         var windowStartMs = entryMarket.WindowStartUtc is { } ws
                             ? new DateTimeOffset(DateTime.SpecifyKind(ws, DateTimeKind.Utc)).ToUnixTimeMilliseconds()
                             : actions.Entry.TargetCandleTime * 1000L;
+                        var windowEndMs = entryMarket.WindowEndUtc is { } we
+                            ? new DateTimeOffset(DateTime.SpecifyKind(we, DateTimeKind.Utc)).ToUnixTimeMilliseconds()
+                            : windowStartMs + 300_000L;
+                        var patienceWaitPreview = _entryExecution.ResolvePatienceWait(windowStartMs, windowEndMs);
+                        if (patienceWaitPreview.TotalSeconds < EntryExecutionSettings.MinPatienceWaitSeconds)
+                        {
+                            ReleaseEntryTargetClaim(targetCandleTime);
+                            await TryRecordSkipAsync(
+                                db,
+                                settings,
+                                actions.Entry.TargetCandleTime,
+                                tradeContextId,
+                                "entry_price_out_of_range",
+                                entryMarket.Id,
+                                $"Quote {quoteForPriceGate:F4} outside (0, {_entryExecution.PatienceMaxEntryPrice:F2}] and patience window too short "
+                                + $"({patienceWaitPreview.TotalSeconds:F0}s left)",
+                                side: side.ToString(),
+                                trend: actions.Entry.Trend.ToString(),
+                                initialBid: bidPrice,
+                                initialAsk: askPrice,
+                                signalPresent: true,
+                                entryFailedToPublish: entryFailedToPublish,
+                                ct: ct);
+                        }
+                        else
+                        {
                         _tradeLog.Information(
                             "ENTRY_GATE_OUTSIDE candle={CandleTime} mode={Mode} quote={Quote:F4} bid={Bid:F4} ask={Ask:F4} "
                             + "max={Max:F2} patienceSeconds={WaitSeconds} side={Side} trend={Trend} token={TokenId}",
@@ -876,8 +941,8 @@ public sealed class TradingEngineHostedService : BackgroundService
                             quoteForPriceGate,
                             bidPrice,
                             askPrice,
-                            EntryPriceRules.MaxEntryPrice,
-                            _entryExecution.MaxWaitSeconds,
+                            _entryExecution.PatienceMaxEntryPrice,
+                            patienceWaitPreview.TotalSeconds,
                             side,
                             actions.Entry.Trend,
                             tokenId);
@@ -894,7 +959,9 @@ public sealed class TradingEngineHostedService : BackgroundService
                             entryOrderMode,
                             quoteForPriceGate,
                             windowStartMs,
+                            windowEndMs,
                             () => ReleaseEntryTargetClaim(targetCandleTime)));
+                        }
                     }
                     else
                     {
@@ -1061,7 +1128,31 @@ public sealed class TradingEngineHostedService : BackgroundService
                     }
                     else
                     {
+                        var immWindowStartMs = entryMarket.WindowStartUtc is { } iws
+                            ? new DateTimeOffset(DateTime.SpecifyKind(iws, DateTimeKind.Utc)).ToUnixTimeMilliseconds()
+                            : targetCandleTime * 1000L;
+                        _entryWaitTracker.SetWaiting(new EntryWaitState(
+                            targetCandleTime,
+                            settings.TradingMode,
+                            tradeContextId,
+                            entryMarket.Id,
+                            side.ToString(),
+                            actions.Entry.Trend.ToString(),
+                            immWindowStartMs,
+                            DateTime.UtcNow,
+                            DateTime.UtcNow.Add(TimeSpan.FromSeconds(90))));
+                        try
+                        {
+                            await _publisher.PublishPositionsFeedChangedAsync(ct);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogDebug(ex, "PositionsFeedChanged publish failed (immediate entry wait)");
+                        }
+
                         LiveMarketBuyOutcome? liveOutcome = null;
+                        try
+                        {
                         if (isLive)
                         {
                             _tradeLog.Information(
@@ -1184,7 +1275,8 @@ public sealed class TradingEngineHostedService : BackgroundService
                             TradeRecording.ApplyStakeSnapshot(trade, balanceAtOpen, settings);
 
                             db.Trades.Add(trade);
-                            tradesToPublish.Add(trade);
+                            await db.SaveChangesAsync(ct);
+                            await PublishOpenedTradeAsync(db, trade, ct);
 
                             _tradeLog.Information(
                                 "ENTRY_SUCCESS candle={CandleTime} mode={Mode} side={Side} trend={Trend} entry={Entry:F4} "
@@ -1209,6 +1301,22 @@ public sealed class TradingEngineHostedService : BackgroundService
                                 stake,
                                 orderId,
                                 entryMarket.Id);
+                        }
+                        }
+                        finally
+                        {
+                            _entryWaitTracker.Clear(
+                                targetCandleTime,
+                                settings.TradingMode,
+                                tradeContextId);
+                            try
+                            {
+                                await _publisher.PublishPositionsFeedChangedAsync(ct);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogDebug(ex, "PositionsFeedChanged publish failed (immediate entry clear)");
+                            }
                         }
                     }
                     }
@@ -1678,6 +1786,18 @@ public sealed class TradingEngineHostedService : BackgroundService
             InitialAsk = initialAsk,
             SignalPresent = signalPresent ?? skipReason != "no_signal",
         });
+
+        if (signalPresent != false
+            && skipReason is not ("no_signal" or "engine_stopped" or "waiting_for_entry"))
+        {
+            EntryAuditLog.Skip(
+                candleTime,
+                settings.TradingMode.ToString(),
+                skipReason,
+                detail,
+                side,
+                trend);
+        }
 
         if (IsEntryErrorSkipReason(skipReason))
         {

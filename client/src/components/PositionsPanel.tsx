@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { BarChart3 } from 'lucide-react'
 import { api } from '@/api/client'
+import { clearPollCache } from '@/api/poll-cache'
 import { usePoll } from '@/api/hooks'
 import { useTradingLiveEvent } from '@/api/tradingLive'
 import { EventWindowProgressFill } from '@/components/EventWindowProgressFill'
@@ -33,12 +34,12 @@ import {
   isSettledFill,
   formatWindowProgressLabel,
   groupHasOpenBet,
+  isWaitingForEntryFill,
   modeTone,
   resolveDisplayedFills,
   resolveDisplayedOpenFill,
   resolveDisplayedSkipFill,
   resolveDisplayedWaitingFill,
-  isWaitingForEntryFill,
   waitingEntryLabel,
   type PositionFeedFill,
   type PositionFeedGroup,
@@ -49,6 +50,10 @@ import {
   resultTone,
   sideTone,
 } from '@/lib/positionDisplay'
+import {
+  applyTradePlacedToFeedGroups,
+  type TradePlacedPayload,
+} from '@/lib/tradePlacedFeed'
 import { cn } from '@/lib/utils'
 
 /** Card chrome for ended windows (no filter — badges stay in color). */
@@ -599,18 +604,35 @@ export function PositionsPanel({
 
   useFeedWindowBoundaries(groups, onWindowBoundary)
 
-  useTradingLiveEvent('TradePlaced', () => void feedPoll.refresh())
-  useTradingLiveEvent('EntryFailed', () => void feedPoll.refresh())
-  useTradingLiveEvent('PositionsFeedChanged', () => void feedPoll.refresh())
-  useTradingLiveEvent('CandleClosed', () => void feedPoll.refresh())
-  useTradingLiveEvent('EngineStatus', () => void feedPoll.refresh())
+  const onFeedSignal = useCallback(
+    (trade?: TradePlacedPayload) => {
+      clearPollCache(feedCacheKey)
+      if (trade) {
+        feedPoll.patchData((prev) => applyTradePlacedToFeedGroups(prev, trade))
+      }
+      void feedPoll.refresh()
+    },
+    [feedCacheKey, feedPoll.patchData, feedPoll.refresh],
+  )
+
+  useTradingLiveEvent('TradePlaced', (payload) =>
+    onFeedSignal(payload as TradePlacedPayload | undefined),
+  )
+  useTradingLiveEvent('EntryFailed', () => onFeedSignal())
+  useTradingLiveEvent('PositionsFeedChanged', () => onFeedSignal())
+  useTradingLiveEvent('CandleClosed', () => onFeedSignal())
+  useTradingLiveEvent('EngineStatus', () => onFeedSignal())
 
   useEffect(() => {
     if (!engineRunning) return
     const hasActive = groups.some(
-      (g) => g.isUpcoming || (g.scheduled && !g.completed),
+      (g) =>
+        g.isUpcoming
+        || (g.scheduled && !g.completed)
+        || groupHasOpenBet(g)
+        || g.fills.some(isWaitingForEntryFill),
     )
-    const pollMs = hasActive ? 12_000 : 30_000
+    const pollMs = hasActive ? 3_000 : 20_000
     const id = globalThis.setInterval(() => void feedPoll.refresh(), pollMs)
     return () => globalThis.clearInterval(id)
   }, [engineRunning, groups, feedPoll.refresh])
