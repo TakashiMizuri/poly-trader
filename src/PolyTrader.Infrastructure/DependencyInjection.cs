@@ -135,6 +135,7 @@ public static class DependencyInjection
         services.AddSingleton<ITradeExecutionLogger, TradeExecutionLogger>();
         services.AddSingleton<IEntryPatienceExecutor, EntryPatienceExecutor>();
         services.AddSingleton<IDatabaseExportService, DatabaseExportService>();
+        services.AddSingleton<ILogExportService, LogExportService>();
         services.AddScoped<GlobalResetService>();
         services.AddScoped<InProgressWindowSkipService>();
         services.AddScoped<BalanceHistoryService>();

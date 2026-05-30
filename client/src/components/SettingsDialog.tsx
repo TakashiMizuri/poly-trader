@@ -82,6 +82,8 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const [autoRedeemError, setAutoRedeemError] = useState<string | null>(null)
   const [downloadBusy, setDownloadBusy] = useState(false)
   const [downloadError, setDownloadError] = useState<string | null>(null)
+  const [logsDownloadBusy, setLogsDownloadBusy] = useState(false)
+  const [logsDownloadError, setLogsDownloadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -156,6 +158,18 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     }
   }
 
+  async function handleDownloadLogs() {
+    setLogsDownloadBusy(true)
+    setLogsDownloadError(null)
+    try {
+      await downloadFile('/api/logs/export', 'polytrader-logs.zip')
+    } catch (e) {
+      setLogsDownloadError(e instanceof Error ? e.message : 'Download failed')
+    } finally {
+      setLogsDownloadBusy(false)
+    }
+  }
+
   async function handleGlobalReset() {
     const confirmed = confirm(
       'Reset all application data? Trades, positions, snapshots, and logs are erased; the engine stops. Chart overlays are kept.',
@@ -183,6 +197,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         if (!next) {
           setResetError(null)
           setDownloadError(null)
+          setLogsDownloadError(null)
           onClose()
         }
       }}
@@ -266,7 +281,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
           </div>
 
           <div className="space-y-2 border-t border-border pt-3">
-            <p className="text-xs font-medium text-foreground">Database</p>
+            <p className="text-xs font-medium text-foreground">Diagnostics</p>
             <p className="text-xs text-muted-foreground">
               Download a zip snapshot of the current SQLite database.
             </p>
@@ -279,11 +294,29 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
               type="button"
               variant="outline"
               size="sm"
-              disabled={downloadBusy}
+              disabled={downloadBusy || logsDownloadBusy}
               onClick={() => void handleDownloadDatabase()}
               className="h-8 w-full"
             >
               {downloadBusy ? 'Preparing…' : 'Download database'}
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Download a zip archive of application and trade-execution log files.
+            </p>
+            {logsDownloadError ? (
+              <p className="text-xs text-destructive" role="alert">
+                {logsDownloadError}
+              </p>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={downloadBusy || logsDownloadBusy}
+              onClick={() => void handleDownloadLogs()}
+              className="h-8 w-full"
+            >
+              {logsDownloadBusy ? 'Preparing…' : 'Download logs'}
             </Button>
           </div>
 
