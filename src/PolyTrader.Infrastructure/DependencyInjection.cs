@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -112,7 +113,8 @@ public static class DependencyInjection
                 configuration.GetConnectionString("DefaultConnection")
                 ?? configuration[$"{PolyTraderOptions.SectionName}:ConnectionString"]
                 ?? "Data Source=polytrader.db",
-                o => o.MigrationsAssembly(typeof(PolyTraderDbContext).Assembly.FullName)));
+                o => o.MigrationsAssembly(typeof(PolyTraderDbContext).Assembly.FullName))
+            .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
 
         services.AddSingleton<IBinanceMarketService, BinanceMarketService>();
         services.AddSingleton<IPolymarketGammaService, PolymarketGammaService>();

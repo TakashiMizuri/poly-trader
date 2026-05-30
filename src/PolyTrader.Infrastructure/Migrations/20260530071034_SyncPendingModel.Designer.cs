@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PolyTrader.Infrastructure.Data;
 
@@ -10,9 +11,11 @@ using PolyTrader.Infrastructure.Data;
 namespace PolyTrader.Infrastructure.Migrations
 {
     [DbContext(typeof(PolyTraderDbContext))]
-    partial class PolyTraderDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260530071034_SyncPendingModel")]
+    partial class SyncPendingModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.8");

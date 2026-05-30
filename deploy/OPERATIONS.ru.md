@@ -136,11 +136,40 @@ curl -sf http://127.0.0.1:8081/health
 curl -sf http://127.0.0.1/api/health        # через host nginx
 ```
 
-Файлы логов API (bind mount): `./logs/` в корне репозитория → `polytrader-YYYYMMDD.log` (в контейнере `/app/logs`).
+Файлы логов API (bind mount): `./logs/` в корне репозитория (в контейнере `/app/logs`):
+
+| Файл | Назначение |
+|------|------------|
+| `polytrader-YYYYMMDD.log` | Общий лог API |
+| `trade-execution-YYYYMMDD.log` | Подробный лог входов/сделок |
 
 ```bash
 ls -la logs/
 tail -f logs/polytrader-$(date +%Y%m%d).log
+tail -f logs/trade-execution-$(date +%Y%m%d).log
+```
+
+### API `unhealthy` после `docker compose up`
+
+Частая причина: API падает при старте на миграциях EF (`PendingModelChangesWarning`). Посмотреть причину:
+
+```bash
+$COMPOSE logs --tail=80 api
+```
+
+В логе ищите `PolyTrader API terminated unexpectedly` или `PendingModelChangesWarning`. Исправление — подтянуть актуальный код (`git pull`) и пересобрать:
+
+```bash
+git pull
+bash deploy/update.sh
+```
+
+Если контейнер всё ещё unhealthy — права на `logs/` (должен писать пользователь контейнера):
+
+```bash
+mkdir -p logs
+chmod 777 logs   # или chown на uid процесса в образе
+$COMPOSE up -d --force-recreate api
 ```
 
 **Миграция со старого Docker volume** (если раньше был `polytrader-logs`):
