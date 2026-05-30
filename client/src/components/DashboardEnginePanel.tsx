@@ -13,7 +13,7 @@ import {
 import { cn } from '@/lib/utils'
 
 const sectionClass =
-  'flex min-w-0 flex-col justify-center px-4 py-3 sm:min-w-[6.75rem]'
+  'flex min-w-0 flex-col justify-center px-3 py-2 sm:min-w-[6.75rem] sm:px-4 sm:py-3'
 
 const labelClass =
   'text-[11px] font-medium uppercase tracking-wider text-muted-foreground'
@@ -60,7 +60,7 @@ export function DashboardEnginePanel({
     return (
       <Panel
         className={cn(
-          'flex min-h-[7.25rem] w-full max-w-full shrink-0 divide-x divide-border sm:w-fit',
+          'flex min-h-0 w-full max-w-full shrink-0 flex-row divide-x divide-border sm:min-h-[7.25rem] sm:w-fit',
           className,
         )}
       >
@@ -150,15 +150,15 @@ export function DashboardEnginePanel({
     <>
       <Panel
         className={cn(
-          'flex min-h-[7.25rem] w-full min-w-0 max-w-full shrink-0 flex-wrap items-stretch divide-y divide-border sm:w-fit sm:flex-nowrap sm:divide-x sm:divide-y-0',
+          'flex min-h-0 w-full min-w-0 max-w-full shrink-0 flex-row flex-nowrap items-stretch divide-x divide-border sm:min-h-[7.25rem] sm:w-fit',
           className,
         )}
       >
         {paperTradingEnabled ? (
-          <div className={cn(sectionClass, 'w-full sm:min-w-[8.5rem] sm:w-auto')}>
+          <div className={cn(sectionClass, 'min-w-0 flex-1 sm:min-w-[8.5rem] sm:flex-none')}>
             <p className={labelClass}>Mode</p>
             <div
-              className="mt-2 flex w-full max-w-[8.5rem] rounded-lg border border-border bg-background p-0.5"
+              className="mt-1.5 flex w-full max-w-none rounded-lg border border-border bg-background p-0.5 sm:mt-2 sm:max-w-[8.5rem]"
               role="group"
               aria-label="Trading mode"
             >
@@ -185,7 +185,7 @@ export function DashboardEnginePanel({
             </div>
             {isLive ? (
               <p
-                className="mt-1.5 max-w-[9.5rem] text-xs leading-snug text-warn"
+                className="mt-1 hidden max-w-[9.5rem] text-xs leading-snug text-warn sm:block sm:mt-1.5"
                 title="Live mode places real Polymarket orders when CLOB is configured."
               >
                 {liveStatus?.clobConfigured
@@ -195,7 +195,7 @@ export function DashboardEnginePanel({
                   : 'Set POLYMARKET_PRIVATE_KEY'}
               </p>
             ) : (
-              <p className="mt-1.5 text-xs text-muted-foreground">
+              <p className="mt-1 hidden text-xs text-muted-foreground sm:block sm:mt-1.5">
                 Simulated fills
                 {liveStatus?.clobConfigured && liveStatus.liveBalanceUsd != null
                   ? ` · wallet $${liveStatus.liveBalanceUsd.toFixed(2)}`
@@ -205,7 +205,7 @@ export function DashboardEnginePanel({
           </div>
         ) : null}
 
-        <div className={cn(sectionClass, 'w-full sm:min-w-[7.5rem] sm:w-auto')}>
+        <div className={cn(sectionClass, 'min-w-0 flex-1 sm:min-w-[7.5rem] sm:flex-none')}>
           <div className="flex items-center gap-2">
             <p className={labelClass}>Engine</p>
             <StatusBadge
@@ -221,7 +221,7 @@ export function DashboardEnginePanel({
             size="sm"
             disabled={busy || !canStart}
             onClick={() => void setEngineRunning(!isRunning)}
-            className="mt-2 w-full min-w-[5.5rem] sm:w-auto"
+            className="mt-1.5 w-full min-w-0 sm:mt-2 sm:min-w-[5.5rem] sm:w-auto"
             title={
               !canStart && isLive
                 ? 'Configure Polymarket credentials and fund wallet'
@@ -231,7 +231,7 @@ export function DashboardEnginePanel({
             {isRunning ? 'Stop' : 'Start'}
           </Button>
           {!canStart && isPaper ? (
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 hidden text-xs text-muted-foreground sm:block">
               No paper account
             </p>
           ) : null}

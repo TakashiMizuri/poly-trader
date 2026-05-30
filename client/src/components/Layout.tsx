@@ -21,29 +21,29 @@ export function Layout() {
   return (
     <div className="flex h-screen w-full max-w-full flex-col overflow-hidden bg-background">
       <header className="shrink-0 border-b border-border bg-card/95 backdrop-blur-sm">
-        <div className="flex flex-col gap-2 px-3 py-2 sm:flex-row sm:items-stretch sm:justify-between sm:gap-3 sm:px-4 md:px-5">
-          <div className="min-w-0 shrink-0">
+        <div className="flex items-center justify-between gap-2 px-3 py-2 sm:gap-3 sm:px-4 md:px-5">
+          <div className="min-w-0 shrink">
             <h1 className="logo-glow-primary truncate text-lg font-semibold text-primary sm:text-xl">
               Poly Trader
             </h1>
-            <p className="truncate text-[11px] text-muted-foreground sm:text-xs">
+            <p className="truncate text-[10px] text-muted-foreground sm:text-xs">
               BTC 5m {'\u00b7'} Polymarket
             </p>
           </div>
-          <div className="flex min-h-0 min-w-0 flex-1 items-center justify-end gap-2 sm:items-stretch sm:gap-3">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             <HeaderConnectivity />
             <Button
               type="button"
               variant="outline"
               size="icon"
               onClick={() => setSettingsOpen(true)}
-              className="shrink-0 self-center"
+              className="size-8 shrink-0"
               aria-label="Settings"
               title="Settings"
             >
               <Settings className="size-[18px]" aria-hidden />
             </Button>
-            <div className="hidden shrink-0 self-center text-right text-xs tabular-nums text-muted-foreground lg:block">
+            <div className="hidden shrink-0 text-right text-xs tabular-nums text-muted-foreground lg:block">
               <div>{formatDisplayDate(now, useLocalTime)}</div>
               <div>{formatDisplayTime(now, timeFormat, useLocalTime)}</div>
             </div>

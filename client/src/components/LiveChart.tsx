@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
 import {
   CandlestickSeries,
   CrosshairMode,
@@ -62,14 +62,21 @@ interface LiveChartProps {
   className?: string
 }
 
-export function LiveChart({
-  candles,
-  timeframe = '5m',
-  engineMarkers = [],
-  loading = false,
-  height,
-  className,
-}: LiveChartProps) {
+export type LiveChartHandle = {
+  openSettings: () => void
+}
+
+export const LiveChart = forwardRef<LiveChartHandle, LiveChartProps>(function LiveChart(
+  {
+    candles,
+    timeframe = '5m',
+    engineMarkers = [],
+    loading = false,
+    height,
+    className,
+  },
+  ref,
+) {
   const { theme } = useTheme()
   const { timeFormat, useLocalTime } = useTimeFormat()
   const surfaceRef = useRef<HTMLDivElement>(null)
@@ -78,6 +85,10 @@ export function LiveChart({
     null,
   )
   const [settingsOpen, setSettingsOpen] = useState(false)
+
+  useImperativeHandle(ref, () => ({
+    openSettings: () => setSettingsOpen(true),
+  }), [])
   const [displayPrefs, setDisplayPrefs] = useChartDisplayPrefs()
   const chartRef = useRef<IChartApi | null>(null)
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
@@ -556,4 +567,4 @@ export function LiveChart({
       </div>
     </div>
   )
-}
+})

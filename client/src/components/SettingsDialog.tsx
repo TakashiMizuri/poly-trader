@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { EngineSettings } from '@/api/client'
-import { api } from '@/api/client'
+import { api, downloadFile } from '@/api/client'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -80,6 +80,8 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const [autoRedeemEnabled, setAutoRedeemEnabled] = useState(true)
   const [autoRedeemLoading, setAutoRedeemLoading] = useState(false)
   const [autoRedeemError, setAutoRedeemError] = useState<string | null>(null)
+  const [downloadBusy, setDownloadBusy] = useState(false)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -142,6 +144,18 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     setPaperTradingEnabled(true)
   }
 
+  async function handleDownloadDatabase() {
+    setDownloadBusy(true)
+    setDownloadError(null)
+    try {
+      await downloadFile('/api/database/export', 'polytrader-db.zip')
+    } catch (e) {
+      setDownloadError(e instanceof Error ? e.message : 'Download failed')
+    } finally {
+      setDownloadBusy(false)
+    }
+  }
+
   async function handleGlobalReset() {
     const confirmed = confirm(
       'Reset all application data? Trades, positions, snapshots, and logs are erased; the engine stops. Chart overlays are kept.',
@@ -168,6 +182,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
       onOpenChange={(next) => {
         if (!next) {
           setResetError(null)
+          setDownloadError(null)
           onClose()
         }
       }}
@@ -248,6 +263,28 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 {autoRedeemError}
               </p>
             ) : null}
+          </div>
+
+          <div className="space-y-2 border-t border-border pt-3">
+            <p className="text-xs font-medium text-foreground">Database</p>
+            <p className="text-xs text-muted-foreground">
+              Download a zip snapshot of the current SQLite database.
+            </p>
+            {downloadError ? (
+              <p className="text-xs text-destructive" role="alert">
+                {downloadError}
+              </p>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={downloadBusy}
+              onClick={() => void handleDownloadDatabase()}
+              className="h-8 w-full"
+            >
+              {downloadBusy ? 'Preparing…' : 'Download database'}
+            </Button>
           </div>
 
           <Alert variant="destructive" className="gap-2 py-3">

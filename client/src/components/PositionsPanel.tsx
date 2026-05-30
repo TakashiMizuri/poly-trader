@@ -423,7 +423,7 @@ function PositionBlock({
           <div className="min-w-0 flex-1">
             <div
               className={cn(
-                'flex justify-between gap-2',
+                'grid w-full grid-cols-[minmax(0,1fr)_auto] gap-x-2',
                 isCompact ? 'items-center' : 'items-start',
               )}
             >
@@ -433,16 +433,16 @@ function PositionBlock({
                 subtitle={isCompact ? null : statusLine}
                 compact={isCompact}
                 className={cn(
-                  'min-w-0 flex-1 [&_p]:transition-colors [&_p]:duration-500 [&_p]:ease-out motion-reduce:[&_p]:transition-none',
+                  'min-w-0 [&_p]:transition-colors [&_p]:duration-500 [&_p]:ease-out motion-reduce:[&_p]:transition-none',
                   showCompleted
                     ? '[&_p]:text-muted-foreground'
                     : '[&_p]:text-foreground',
                 )}
               />
-              <div className="flex shrink-0 items-center gap-1.5">
+              <div className="flex shrink-0 items-center justify-end gap-1">
                 {!showCompleted && waitingFill ? (
                   <span
-                    className="max-w-[42%] shrink truncate rounded-md bg-amber-500/15 px-2 py-0.5 font-mono text-[11px] font-medium tabular-nums text-amber-700 dark:text-amber-400 sm:max-w-none"
+                    className="shrink-0 whitespace-nowrap rounded-md bg-amber-500/15 px-1.5 py-0.5 font-mono text-[11px] font-medium tabular-nums text-amber-700 dark:text-amber-400 sm:px-2"
                     title={waitingEntryLabel(patience.remainingSeconds)}
                   >
                     {waitingEntryLabel(patience.remainingSeconds)}
@@ -451,7 +451,7 @@ function PositionBlock({
                 {!showCompleted && !waitingFill && progressLabel ? (
                   <span
                     className={cn(
-                      'max-w-[42%] shrink truncate rounded-md font-mono text-[11px] font-medium tabular-nums sm:max-w-none',
+                      'shrink-0 whitespace-nowrap rounded-md font-mono text-[11px] font-medium tabular-nums',
                       isCompact ? 'px-1.5 py-0.5' : 'px-2 py-0.5',
                       showLiveChrome && hasOpenBet
                         ? 'bg-primary/15 text-primary'
@@ -464,7 +464,7 @@ function PositionBlock({
                     {progressLabel}
                   </span>
                 ) : null}
-                {!isCompact && marketUrl ? (
+                {marketUrl ? (
                   <a
                     href={marketUrl}
                     target="_blank"

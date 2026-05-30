@@ -72,6 +72,7 @@ public static class DependencyInjection
         services.AddSingleton<IConnectivityService, ConnectivityService>();
         services.AddSingleton<IEntryWaitTracker, EntryWaitTracker>();
         services.AddSingleton<IEntryPatienceExecutor, EntryPatienceExecutor>();
+        services.AddSingleton<IDatabaseExportService, DatabaseExportService>();
         services.AddScoped<GlobalResetService>();
         services.AddScoped<InProgressWindowSkipService>();
         services.AddScoped<BalanceHistoryService>();

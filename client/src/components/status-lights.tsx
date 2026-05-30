@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/app-ui'
 
@@ -102,17 +103,91 @@ export function StatusLightCompact({
   )
 }
 
+/** Header dot — status only; label/detail in click tooltip (mobile-friendly). */
+export function StatusLightDot({
+  label,
+  status,
+  detail,
+}: {
+  label: string
+  status: CheckStatus
+  detail?: string
+}) {
+  const [tipOpen, setTipOpen] = useState(false)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+  const fullLabel = detail?.trim() ? `${label} — ${detail}` : label
+
+  useEffect(() => {
+    if (!tipOpen) return
+
+    const timer = globalThis.setTimeout(() => setTipOpen(false), 2500)
+    const onDocClick = (event: MouseEvent) => {
+      if (
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setTipOpen(false)
+      }
+    }
+
+    document.addEventListener('click', onDocClick)
+    return () => {
+      globalThis.clearTimeout(timer)
+      document.removeEventListener('click', onDocClick)
+    }
+  }, [tipOpen])
+
+  return (
+    <div className="relative shrink-0">
+      <button
+        ref={buttonRef}
+        type="button"
+        className="flex size-7 items-center justify-center rounded-md transition-colors hover:bg-muted/60"
+        aria-label={fullLabel}
+        title={fullLabel}
+        onClick={(event) => {
+          event.stopPropagation()
+          setTipOpen((open) => !open)
+        }}
+      >
+        <span
+          className={cn(
+            'size-2.5 rounded-full shadow-[0_0_5px]',
+            toneClass[status],
+            status === 'ok' && 'animate-pulse-live',
+            status === 'warn' && 'animate-pulse-warn',
+          )}
+          aria-hidden
+        />
+      </button>
+      {tipOpen ? (
+        <div
+          role="tooltip"
+          className="absolute right-0 top-full z-50 mt-1 w-max max-w-[14rem] rounded-md border border-border bg-popover px-2 py-1.5 text-left shadow-md"
+        >
+          <p className="text-xs font-medium leading-snug text-foreground">
+            {label}
+          </p>
+          {detail?.trim() ? (
+            <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+              {detail}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 export function StatusHeaderSkeleton({ count = 6 }: { count?: number }) {
   return (
     <>
       {Array.from({ length: count }).map((_, i) => (
-        <div
+        <Skeleton
           key={i}
-          className="flex h-6 min-w-0 select-none items-center gap-1.5 rounded-md border border-border/40 px-1.5"
-        >
-          <Skeleton className="size-2 shrink-0 self-center rounded-full" />
-          <Skeleton className="m-0 h-3 min-w-0 flex-1 leading-none" />
-        </div>
+          shimmer={false}
+          className="size-7 shrink-0 rounded-md"
+        />
       ))}
     </>
   )

@@ -159,12 +159,12 @@ function ChartViewToggle({
   onChange: (view: ChartView) => void
 }) {
   return (
-    <div className="flex rounded-lg border border-border p-0.5">
+    <div className="flex max-w-full shrink-0 rounded-md border border-border p-0.5 sm:rounded-lg">
       <Button
         type="button"
         size="xs"
         variant={view === 'equity' ? 'secondary' : 'ghost'}
-        className="h-6 px-2 text-[11px]"
+        className="h-6 min-w-0 px-1.5 text-[10px] sm:px-2 sm:text-[11px]"
         onClick={() => onChange('equity')}
       >
         Equity
@@ -173,7 +173,7 @@ function ChartViewToggle({
         type="button"
         size="xs"
         variant={view === 'payout' ? 'secondary' : 'ghost'}
-        className="h-6 px-2 text-[11px]"
+        className="h-6 min-w-0 px-1.5 text-[10px] sm:px-2 sm:text-[11px]"
         onClick={() => onChange('payout')}
       >
         Payout ×
@@ -411,23 +411,31 @@ export function DashboardBalanceChart({
       className={cn('flex min-h-[200px] min-w-0 max-w-full flex-col', className)}
       contentClassName="relative min-h-0 flex-1 overflow-hidden p-0"
       action={
-        <div className="flex flex-col items-end gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-x-1.5 gap-y-1 sm:flex-nowrap sm:gap-3">
           <ChartViewToggle view={chartView} onChange={setChartView} />
           {headerMeta ? (
             <span
-              className="truncate font-mono text-[11px] tabular-nums text-muted-foreground"
+              className="hidden truncate font-mono text-[11px] tabular-nums text-muted-foreground sm:inline"
               title={headerMeta}
             >
               {headerMeta}
             </span>
           ) : clobConfigured === false ? (
-            <span className="text-[11px] text-warn">Set POLYMARKET_PRIVATE_KEY</span>
+            <span className="hidden text-[11px] text-warn sm:inline">
+              Set POLYMARKET_PRIVATE_KEY
+            </span>
           ) : chartView === 'equity' ? (
-            <span className="text-[11px] text-muted-foreground">5m snapshots</span>
+            <span className="hidden text-[11px] text-muted-foreground sm:inline">
+              5m snapshots
+            </span>
           ) : (
-            <span className="text-[11px] text-muted-foreground">per settled trade</span>
+            <span className="hidden text-[11px] text-muted-foreground sm:inline">
+              per settled trade
+            </span>
           )}
-          {chartView === 'equity' ? <EquityLegend /> : <PayoutLegend />}
+          <span className="hidden sm:contents">
+            {chartView === 'equity' ? <EquityLegend /> : <PayoutLegend />}
+          </span>
         </div>
       }
     >

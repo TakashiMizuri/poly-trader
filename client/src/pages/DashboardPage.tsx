@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Settings } from 'lucide-react'
 import {
   api,
   type BalanceResponse,
@@ -10,8 +11,9 @@ import { PageCard } from '@/components/app-ui'
 import { DashboardBalanceChart } from '@/components/DashboardBalanceChart'
 import { DashboardBalancePanel } from '@/components/DashboardBalancePanel'
 import { DashboardEnginePanel } from '@/components/DashboardEnginePanel'
-import { LiveChart } from '@/components/LiveChart'
+import { LiveChart, type LiveChartHandle } from '@/components/LiveChart'
 import { PositionsPanel } from '@/components/PositionsPanel'
+import { Button } from '@/components/ui/button'
 import { useBinanceLiveCandles } from '@/hooks/useBinanceLiveCandles'
 import { useChartDisplayPrefs } from '@/hooks/useChartDisplayPrefs'
 import { clearPollCache, writePollCache } from '@/api/poll-cache'
@@ -128,6 +130,8 @@ export function DashboardPage() {
   const chartLoading =
     candles.length === 0 && candleStatus !== 'error'
 
+  const btcChartRef = useRef<LiveChartHandle>(null)
+
   const feedCacheKey = useMemo(() => {
     const params = new URLSearchParams({ limit: '50' })
     if (tradingMode) params.set('mode', tradingMode)
@@ -191,12 +195,26 @@ export function DashboardPage() {
           className="min-w-0 max-w-full min-h-[min(52vw,280px)] sm:min-h-[min(44vh,360px)] lg:min-h-0"
           contentClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
           action={
-            <span className="font-mono text-xs tabular-nums text-muted-foreground">
-              5m · Binance
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="hidden font-mono text-xs tabular-nums text-muted-foreground sm:inline">
+                5m · Binance
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={() => btcChartRef.current?.openSettings()}
+                className="size-7 shrink-0 text-muted-foreground hover:text-foreground"
+                aria-label="Chart settings"
+                title="Chart settings"
+              >
+                <Settings className="size-3.5" aria-hidden />
+              </Button>
+            </div>
           }
         >
           <LiveChart
+            ref={btcChartRef}
             candles={candles}
             timeframe="5m"
             engineMarkers={markers}

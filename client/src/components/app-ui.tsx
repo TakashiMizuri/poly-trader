@@ -127,9 +127,13 @@ export function PageCard({
         className,
       )}
     >
-      <CardHeader className="h-11 shrink-0 flex-row items-center justify-between space-y-0 border-b px-4 py-0">
-        <CardTitle className="min-w-0 truncate text-sm">{title}</CardTitle>
-        {action ? <CardAction className="flex items-center">{action}</CardAction> : null}
+      <CardHeader className="flex min-h-11 shrink-0 flex-row items-center justify-between gap-2 space-y-0 border-b px-3 py-1.5 sm:px-4 sm:py-0">
+        <CardTitle className="min-w-0 shrink truncate text-sm">{title}</CardTitle>
+        {action ? (
+          <CardAction className="flex min-w-0 max-w-[62%] items-center justify-end sm:max-w-none">
+            {action}
+          </CardAction>
+        ) : null}
       </CardHeader>
       <CardContent
         className={cn(

@@ -4,7 +4,7 @@ import { usePoll } from '@/api/hooks'
 import { useTradingLive, useTradingLiveEvent } from '@/api/tradingLive'
 import {
   StatusHeaderSkeleton,
-  StatusLightCompact,
+  StatusLightDot,
 } from '@/components/status-lights'
 import { GLOBAL_RESET_EVENT } from '@/lib/appReset'
 
@@ -38,14 +38,14 @@ export function HeaderConnectivity() {
 
   return (
     <div
-      className="scrollbar-none -mx-1 flex max-w-full shrink-0 select-none items-center gap-1.5 overflow-x-auto px-1 sm:mx-0 sm:grid sm:w-auto sm:grid-cols-3 sm:gap-x-2 sm:gap-y-1 sm:overflow-visible sm:px-0"
+      className="flex shrink-0 select-none items-center gap-0.5 sm:gap-1"
       aria-label="Connection status"
     >
       {pending ? (
         <StatusHeaderSkeleton count={6} />
       ) : (
         <>
-          <StatusLightCompact
+          <StatusLightDot
             label="Live updates"
             status={
               liveConnected
@@ -63,7 +63,7 @@ export function HeaderConnectivity() {
             }
           />
           {connectivity?.checks.map((c) => (
-            <StatusLightCompact
+            <StatusLightDot
               key={c.id}
               label={c.label}
               status={c.status}

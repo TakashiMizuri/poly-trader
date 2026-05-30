@@ -33,6 +33,29 @@ export async function isApiAuthRequired(): Promise<boolean> {
   }
 }
 
+export async function downloadFile(path: string, fallbackFilename: string): Promise<void> {
+  const headers: Record<string, string> = {}
+  const token = getToken()
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const res = await fetch(`${API_BASE}${path}`, { headers })
+  if (!res.ok) {
+    throw new Error(`API ${res.status}: ${await res.text()}`)
+  }
+
+  const blob = await res.blob()
+  const disposition = res.headers.get('Content-Disposition')
+  const match = disposition?.match(/filename="?([^";]+)"?/)
+  const filename = match?.[1] ?? fallbackFilename
+
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  anchor.click()
+  URL.revokeObjectURL(url)
+}
+
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
